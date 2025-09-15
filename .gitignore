@@ -49,3 +49,11 @@ Thumbs.db
 *.gslides
 *.gdoc
 *.gsheet
+
+
+# Fichier compréssé
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
