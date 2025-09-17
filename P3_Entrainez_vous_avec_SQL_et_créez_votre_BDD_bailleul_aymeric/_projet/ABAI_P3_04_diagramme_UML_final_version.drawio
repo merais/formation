@@ -1,0 +1,63 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" version="28.2.3">
+  <diagram name="Page-1" id="aBcDeFgHiJkL_UML">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="bzHYtjnGE6qinJDBjrz1-9" value="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;endArrow=none;endFill=0;" edge="1" parent="1" source="sW8jK0x-6pY9O1_oU1t-1" target="sW8jK0x-6pY9O1_oU1t-2">
+          <mxGeometry x="0.3025" y="-9" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="sW8jK0x-6pY9O1_oU1t-1" value="&lt;font style=&quot;font-size: 14px&quot;&gt;&lt;b&gt;region&lt;/b&gt;&lt;/font&gt;&lt;hr&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;u style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;PK code_reg&lt;/u&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;: INT&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;-- nom_reg: VARCHAR&lt;/span&gt;&lt;/div&gt;&lt;/font&gt;" style="html=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="1408.25" y="530" width="130" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="sW8jK0x-6pY9O1_oU1t-2" value="&lt;div style=&quot;text-align: center;&quot;&gt;&lt;b style=&quot;font-size: 14px; background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;departement&lt;/b&gt;&lt;/div&gt;&lt;hr style=&quot;text-align: center;&quot;&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;&lt;div style=&quot;&quot;&gt;&lt;u style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;PK code_dep&lt;/u&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;:&amp;nbsp;&lt;/span&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;VARCHAR&lt;/span&gt;&lt;/div&gt;-- nom_dep: VARCHAR&lt;br&gt;&lt;u&gt;FK code_reg&lt;/u&gt;: INT&lt;/font&gt;" style="html=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;align=left;" vertex="1" parent="1">
+          <mxGeometry x="1399.25" y="408" width="143" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="bzHYtjnGE6qinJDBjrz1-13" value="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=none;endFill=0;" edge="1" parent="1" source="sW8jK0x-6pY9O1_oU1t-4" target="sW8jK0x-6pY9O1_oU1t-2">
+          <mxGeometry x="-0.9503" y="10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="sW8jK0x-6pY9O1_oU1t-4" value="&lt;div style=&quot;text-align: center;&quot;&gt;&lt;b style=&quot;font-size: 14px; background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;commune&lt;/b&gt;&lt;/div&gt;&lt;hr style=&quot;text-align: center;&quot;&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;&lt;u&gt;PK code_com&lt;/u&gt;: VARCHAR&lt;/font&gt;&lt;div&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;-- nom_com: VARCHAR&lt;br&gt;-- geolocalisation: VARCHAR&lt;br&gt;-- pop_total: INT&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;&lt;u&gt;FK code_dep&lt;/u&gt;: VARCHAR&lt;/font&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;align=left;" vertex="1" parent="1">
+          <mxGeometry x="1095" y="450" width="160" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="bzHYtjnGE6qinJDBjrz1-10" value="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=none;endFill=0;" edge="1" parent="1" source="sW8jK0x-6pY9O1_oU1t-6" target="sW8jK0x-6pY9O1_oU1t-12">
+          <mxGeometry x="-0.8377" y="15" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="bzHYtjnGE6qinJDBjrz1-11" value="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=none;endFill=0;" edge="1" parent="1" source="sW8jK0x-6pY9O1_oU1t-6" target="sW8jK0x-6pY9O1_oU1t-10">
+          <mxGeometry x="-0.8703" y="8" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="bzHYtjnGE6qinJDBjrz1-12" value="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=none;endFill=0;" edge="1" parent="1" source="sW8jK0x-6pY9O1_oU1t-6" target="bzHYtjnGE6qinJDBjrz1-1">
+          <mxGeometry x="-0.879" y="12" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="sW8jK0x-6pY9O1_oU1t-6" value="&lt;div style=&quot;text-align: center;&quot;&gt;&lt;b style=&quot;font-size: 14px; background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;bien&lt;/b&gt;&lt;/div&gt;&lt;hr style=&quot;text-align: center;&quot;&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;&lt;div style=&quot;&quot;&gt;&lt;u style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;PK id_bien&lt;/u&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;: INT&lt;/span&gt;&lt;/div&gt;-- addr_num_voie: INT&lt;/font&gt;&lt;div&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;--&amp;nbsp;&lt;/font&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;addr_&lt;/span&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;suffixe: VARCHAR&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;--&amp;nbsp;&lt;/font&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;addr_&lt;/span&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;voie: VARCHAR&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;--&amp;nbsp;&lt;/font&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;addr_&lt;/span&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;section: VARCHAR&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;-- nombre_pieces_principales: INT&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;-- num_plan: INT&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;-- surf_reelle_bati: FLOAT&lt;br&gt;-- surf_terrain: FLOAT&lt;br&gt;&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;&lt;u&gt;FK com_code&lt;/u&gt;: VARCHAR&lt;br&gt;&lt;u&gt;FK code_type_local&lt;/u&gt;: INT&lt;br&gt;&lt;u&gt;FK code_type_voie&lt;/u&gt;: INT&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;&lt;u&gt;FK id_mutation&lt;/u&gt;:INT&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;&lt;br&gt;&lt;/font&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;align=left;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="641" width="190" height="228" as="geometry" />
+        </mxCell>
+        <mxCell id="sW8jK0x-6pY9O1_oU1t-7" value="1" style="endArrow=none;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;startArrow=none;startFill=0;" edge="1" parent="1" source="sW8jK0x-6pY9O1_oU1t-6" target="sW8jK0x-6pY9O1_oU1t-4">
+          <mxGeometry x="-0.7" y="-9" relative="1" as="geometry">
+            <mxPoint x="667" y="612" as="sourcePoint" />
+            <mxPoint x="667" y="672" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="sW8jK0x-6pY9O1_oU1t-10" value="&lt;div style=&quot;text-align: center;&quot;&gt;&lt;b style=&quot;font-size: 14px; background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;type_local&lt;/b&gt;&lt;/div&gt;&lt;hr style=&quot;text-align: center;&quot;&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;&lt;u&gt;PK code_type_local&lt;/u&gt;: INT&lt;br&gt;-- type_local: VARCHAR&lt;/font&gt;" style="html=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;align=left;" vertex="1" parent="1">
+          <mxGeometry x="1393.25" y="632" width="162.5" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="sW8jK0x-6pY9O1_oU1t-12" value="&lt;font style=&quot;font-size: 14px&quot;&gt;&lt;b&gt;type_v&lt;/b&gt;&lt;/font&gt;&lt;b style=&quot;font-size: 14px; background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;oie&lt;/b&gt;&lt;div&gt;&lt;hr&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;u style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;PK code_type_voie&lt;/u&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;: INT&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;-- type_voie: VARCHAR&lt;/span&gt;&lt;/div&gt;&lt;/font&gt;&lt;/div&gt;" style="html=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="1393.25" y="720" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="bzHYtjnGE6qinJDBjrz1-1" value="&lt;div style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 14px;&quot;&gt;&lt;b&gt;mutation&lt;/b&gt;&lt;/span&gt;&lt;/div&gt;&lt;hr style=&quot;text-align: center;&quot;&gt;&lt;font style=&quot;font-size: 12px;&quot;&gt;&lt;div style=&quot;&quot;&gt;&lt;u style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;PK id_mutation&lt;/u&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;: INT&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;&quot;&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;-- date_mutation: DATE&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div style=&quot;&quot;&gt;-- nature_mutation: VARCHAR&lt;/div&gt;&lt;div style=&quot;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;-- valeur_fonciere: FLOAT&lt;/span&gt;&lt;/div&gt;&lt;/font&gt;" style="html=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;align=left;" vertex="1" parent="1">
+          <mxGeometry x="1388.25" y="810" width="165" height="98" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
