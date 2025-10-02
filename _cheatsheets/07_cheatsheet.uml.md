@@ -2,7 +2,7 @@ Bien sûr, voici une antisèche complète pour les diagrammes de classe UML, ré
 
 ---
 
-### Composants de base 🧱
+### Composants de base
 
 * **Classe** : Représente un objet avec un nom, des attributs et des opérations.
     * `+` : public
@@ -22,7 +22,7 @@ Bien sûr, voici une antisèche complète pour les diagrammes de classe UML, ré
 
 ---
 
-### Relations 🔗
+### Relations
 
 * **Association** : Une relation générale entre des classes.
     * **Directionnelle (navigable)** : Une ligne continue avec une flèche. `ClasseA` peut "voir" `ClasseB`.
@@ -43,7 +43,7 @@ Bien sûr, voici une antisèche complète pour les diagrammes de classe UML, ré
 
 ---
 
-### Éléments supplémentaires ➕
+### Éléments supplémentaires
 
 * **Interface** : Une collection d'opérations qui spécifient un service, mais pas son implémentation. Représentée par un stéréotype de classe (`<<interface>>`) ou un petit cercle (notation en sucette ou "lollipop").
 * **Classe abstraite** : Une classe qui ne peut pas être instanciée. Son nom est écrit en italique.

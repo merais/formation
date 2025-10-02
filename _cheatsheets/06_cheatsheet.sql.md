@@ -2,7 +2,7 @@ Bien sûr, voici une antisèche complète pour le langage SQL, rédigée en fran
 
 ---
 
-### Langage de manipulation de données (DML) ✍️
+### Langage de manipulation de données (DML)
 
 * **SELECT** : Permet de récupérer des données d'une base de données.
     * `SELECT colonne1, colonne2 FROM nom_de_la_table;`
@@ -33,7 +33,7 @@ Bien sûr, voici une antisèche complète pour le langage SQL, rédigée en fran
 
 ---
 
-### Langage de définition de données (DDL) 🏗️
+### Langage de définition de données (DDL)
 
 * **CREATE DATABASE** : Crée une nouvelle base de données.
     * `CREATE DATABASE nom_de_la_base;`
@@ -49,7 +49,7 @@ Bien sûr, voici une antisèche complète pour le langage SQL, rédigée en fran
 
 ---
 
-### Jointures 🤝
+### Jointures
 
 * **INNER JOIN** : Renvoie les lignes ayant des valeurs correspondantes dans les deux tables.
     * `SELECT * FROM table1 INNER JOIN table2 ON table1.id = table2.id;`
@@ -62,7 +62,7 @@ Bien sûr, voici une antisèche complète pour le langage SQL, rédigée en fran
 
 ---
 
-### Fonctions d'agrégation et regroupement 📊
+### Fonctions d'agrégation et regroupement
 
 * **COUNT()** : Compte le nombre de lignes.
     * `SELECT COUNT(nom_colonne) FROM nom_de_la_table;`

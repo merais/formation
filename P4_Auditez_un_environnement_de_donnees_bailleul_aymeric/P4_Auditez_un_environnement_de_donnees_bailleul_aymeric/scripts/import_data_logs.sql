@@ -1,0 +1,1 @@
+\COPY logs (id_user, date, action, table_insert, id_ligne, champs, detail) FROM 'G:/Mon Drive/_formation_over_git/P4_Auditez_un_environnement_de_donnees_bailleul_aymeric/_projet/sources/logs.csv' WITH (FORMAT csv, DELIMITER ';', HEADER true);
