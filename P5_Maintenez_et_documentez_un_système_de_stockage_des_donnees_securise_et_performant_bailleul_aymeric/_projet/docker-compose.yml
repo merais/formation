@@ -1,0 +1,45 @@
+services:
+  # Service MongoDB
+  mongodb:
+    image: mongo:latest
+    container_name: healthcare_mongodb
+    restart: restart
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: healthcare_db
+    volumes:
+      # Volume pour la persistance des données MongoDB
+      - mongodb_data:/data/db
+      # Volume pour accéder au fichier CSV depuis le conteneur
+      - ./sources:/app/sources:ro
+    networks:
+      - healthcare_network
+
+  # Service pour exécuter le script d'import (à la demande)
+  import_script:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: healthcare_import
+    depends_on:
+      - mongodb
+    environment:
+      # URI de connexion MongoDB (nom du service docker comme hostname)
+      MONGODB_URI: mongodb://mongodb:27017/
+      MONGODB_DB: healthcare_db
+    networks:
+      - healthcare_network
+    # Le profil permet d'exécuter ce service seulement à la demande
+    profiles:
+      - import
+
+# Volumes nommés
+volumes:
+  mongodb_data:
+    driver: local
+
+# Réseau dédié
+networks:
+  healthcare_network:
+    driver: bridge
