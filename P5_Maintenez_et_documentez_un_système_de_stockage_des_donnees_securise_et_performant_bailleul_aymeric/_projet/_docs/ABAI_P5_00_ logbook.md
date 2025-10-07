@@ -8,28 +8,35 @@
 - Réflexion pour la **base de données** :
   - Nom de la BDD : `healthcare_db`.
   - Nom de la table : `patients`.
-- Création du script de création de la BDD et importation des données : `script_bdd.py`
+- Création du script de création de la BDD, de vérification et importation des données : `local_script_bdd.py`.
+- Création du script de test de la bdd : `local_test_bdd.py`.
 
 ### *Étape 2 :*
 
 - Réflexion pour **Docker** :
   - Nombre de **conteneurs** : `2`
     - `mongodb` : Conteneur standard pour la base de données.
-    - `migrator` : Conteneur qui exécute le script de migration Python.
+    - `import_scripts` : Conteneur qui exécute le script de migration Python.
   - Nombre de **volumes** : `2`
     - **Un** pour la **persistance des données** de la base de données.
-    - **Un** pour le **CSV des données**.
+    - **Un** pour le **CSV des données** et pour les **scripts python**.
+  - Quelles dépendances pour les conteneurs.
   
 ### *Étape 3 :*
 
-- Modification du script `script_bdd.py` pour prendre en compte les variables d'environnement de Docker.
-- Création du `Dockerfile` pour l'importation des sources .csv et du script d'importation.
-- Création du `docker-compose` pour orchestrer la mise en place du conteneur MongoDB et du conteneur d'importation des données ainsi que la création des volumes.
+- Création du script `docker_script_bdd.py` depuis `local_script_bdd.py` pour prendre en compte les variables d'environnement de Docker.
+- Création du script `docker_tests_bdd.py` depuis `local_tests_bdd.py` pour prendre en compte les variables d'environnement de Docker.
+- Création du `Dockerfile` pour l'importation des sources .csv et des scripts.
+- Création du `docker-compose` pour orchestrer la mise en place du conteneur `mongodb` et `import_scripts` ainsi que la création des volumes.
 - Création du `.dockerignore` pour optimiser le build.
+- Implémentation de la solution.
 
 ### *Étape 4 :*
 
-- Rédaction du `README.md`
+- Rédaction du `local_README.md`
+  - Fonctionnement des scripts.
+  -  Troubleshooting.
+- Rédaction du `docker_README.md`
   - Présentation rapide de l'architecture.
   - Prérequis avant exécution.
   - Utilisation globale :
@@ -41,5 +48,5 @@
   - Les variables d'environnement utilisées.
   - L'accès à la BDD du conteneur.
   - Exemple de commandes à utiliser.
-  - Dépannage.
+  - Troubleshooting.
   - Informations de sécurité.

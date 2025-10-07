@@ -3,7 +3,7 @@ services:
   mongodb:
     image: mongo:latest
     container_name: healthcare_mongodb
-    restart: restart
+    restart: always
     ports:
       - "27017:27017"
     environment:
@@ -17,7 +17,7 @@ services:
       - healthcare_network
 
   # Service pour exécuter le script d'import (à la demande)
-  import_script:
+  import_scripts:
     build:
       context: .
       dockerfile: Dockerfile
@@ -25,7 +25,7 @@ services:
     depends_on:
       - mongodb
     environment:
-      # URI de connexion MongoDB (nom du service docker comme hostname)
+      # URI de connexion MongoDB et nom de la base de données
       MONGODB_URI: mongodb://mongodb:27017/
       MONGODB_DB: healthcare_db
     networks:
