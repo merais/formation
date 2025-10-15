@@ -1,0 +1,12 @@
+version: "3"
+services:
+  redis:
+    image: redis
+    ports:
+      - 6379:6379
+  api:
+    image: your_image_name
+    ports:
+      - 5000:5000
+    depends_on:
+      - redis
