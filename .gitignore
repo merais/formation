@@ -1,4 +1,6 @@
+#Folder to ignore
 **/sources/
+**/_result_tests/
 # Ignore Windows desktop.ini files
 desktop.ini
 **/desktop.ini
@@ -17,9 +19,6 @@ __pycache__/
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
-
-# PyCharm
-.idea/
 
 # VSCode
 .vscode/
@@ -49,7 +48,6 @@ Thumbs.db
 *.gslides
 *.gdoc
 *.gsheet
-
 
 # Fichier compréssé
 *.zip
