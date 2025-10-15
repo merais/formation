@@ -99,6 +99,15 @@ Le script `local_tests_bdd.py` est conçu pour effectuer des tests sur la base d
 python local_tests_bdd.py
 ```
 
+## Fonctionnement du script `local_tests_bdd_pytest.py`
+
+Le script `local_tests_bdd_pytest.py` est conçu pour effectuer des tests sur la base de données MongoDB locale afin de vérifier l'intégrité et la validité des données insérées. Fait les mêmes testes que le script `local_tests_bdd.py`.
+
+## Commande pour exécuter le script
+```bash
+pytest -vv .\local_tests_bdd_pytest.py | Tee-Object -FilePath .\_result_tests\result_tests_bdd.log
+```
+
 ## Dépannage
 - **Erreur de connexion à MongoDB** : Vérifiez que MongoDB est en cours d'exécution et que l'URI est correct.
 - **Données manquantes ou incorrectes** : Vérifiez que les données ont été correctement insérées par `local_script_bdd.py`.

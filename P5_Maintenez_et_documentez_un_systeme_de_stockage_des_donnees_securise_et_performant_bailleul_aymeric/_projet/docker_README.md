@@ -31,24 +31,24 @@ Cela démarre uniquement le conteneur MongoDB sans exécuter l'import.
 docker-compose build import_scripts
 ```
 
-### 3. Exécuter les scripts
+### 3. Construire l'image de test
+
+```powershell
+docker-compose build tests
+```
+
+### 4. Exécuter les scripts
 
 Pour exécuter le script d'import des données :
 
 ```powershell
-docker-compose run --rm -e SCRIPT_TO_RUN=docker_script_bdd.py import_scripts
-```
-
-Pour exécuter le script de test de la base de données :
-
-```powershell
-docker-compose run --rm -e SCRIPT_TO_RUN=docker_tests_bdd.py import_scripts
+docker compose run --rm import_scripts
 ```
 
 Pour exécuter le script de test avec pytest :
 
 ```powershell
-docker-compose run --rm -e SCRIPT_TO_RUN=test_docker_bdd.py import_scripts
+docker compose run --rm tests
 ```
 
 Options :
@@ -58,13 +58,13 @@ Options :
 
 ---
 
-### 4. Arrêter tous les services
+### 5. Arrêter tous les services
 
 ```powershell
 docker-compose down
 ```
 
-### 5. Supprimer les données persistantes
+### 6. Supprimer les données persistantes
 
 **Attention : cela supprime toutes les données de la base** :
 
@@ -97,10 +97,6 @@ db.patients.countDocuments()
 db.patients.findOne()
 ```
 
-```powershell
-# On lance le script de test de la bdd
-docker-compose run --rm -e SCRIPT_TO_RUN=docker_tests_bdd.py import_scripts
-```
 ## Dépannage
 
 ### MongoDB ne démarre pas
@@ -135,13 +131,3 @@ docker-compose run --rm import_scripts
 - Réseau isolé
 - Secrets Docker pour les credentials
 - Limite de ressources (CPU/RAM)
-
-## Raccourcis
-
-```powershell
-# Relance mongodb, la création du conteneur de scripts et lance le script de création, test et import 
-docker-compose down -v; docker-compose up -d mongodb; docker-compose build import_scripts; docker-compose run --rm -e SCRIPT_TO_RUN=docker_script_bdd.py import_scripts
-
-# Lance le script de test de la bdd
-docker-compose run --rm -e SCRIPT_TO_RUN=docker_tests_bdd.py import_scripts
-```

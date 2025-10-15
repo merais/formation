@@ -10,8 +10,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copier le script et les sources
 COPY docker_script_bdd.py /app/
-COPY docker_tests_bdd.py /app/
 COPY sources/ /app/sources/
 
-# Commande d'execution du script
-CMD ["sh", "-c", "python ${SCRIPT_TO_RUN}"]
+# Commande d'exécution du script (classique)
+# Par défaut exécute /app/docker_script_bdd.py, surchargeable via SCRIPT_TO_RUN
+CMD ["sh", "-c", "python /app/docker_script_bdd.py"]

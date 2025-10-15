@@ -1,0 +1,15 @@
+# Image de tests pour exécuter pytest dans un environnement stable
+FROM python:3.13-slim
+
+# Répertoire de travail
+WORKDIR /app
+
+# Copier uniquement ce qui est nécessaire pour les tests
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r /app/requirements.txt
+
+# Copier les tests et scripts nécessaires
+COPY docker_tests_bdd_pytest.py /app/
+
+# Par défaut, on montre le contenu
+CMD ["pytest", "-s", "-vv", "/app/docker_tests_bdd_pytest.py"]

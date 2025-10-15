@@ -5,13 +5,12 @@ from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 
 # On place le terminal au bon endroit
-os.chdir("G:\\Mon Drive\\_formation_over_git\\P5_Maintenez_et_documentez_un_système_de_stockage_des_donnees_securise_et_performant_bailleul_aymeric\\_projet")
+os.chdir("G:\\Mon Drive\\_formation_over_git\\P5_Maintenez_et_documentez_un_systeme_de_stockage_des_donnees_securise_et_performant_bailleul_aymeric\\_projet")
 
 # Variables globales (locales)
 DB_NAME = "healthcare_db"
 URI = "mongodb://localhost:27017/"
 COLLECTION_NAME = "patients"
-SOURCE_CSV = "./sources/healthcare_dataset.csv"
 
 # Fonction de connexion a la base de données
 def connect_to_mongodb(uri, db_name):

@@ -8,6 +8,7 @@ DB_NAME = "healthcare_db"
 URI = "mongodb://localhost:27017/"
 COLLECTION_NAME = "patients"
 
+
 @pytest.fixture
 def mongodb_client():
     try:
@@ -34,30 +35,32 @@ def test_collection_exists(mongodb_db):
     assert COLLECTION_NAME in collections, f"La collection '{COLLECTION_NAME}' n'existe pas."
 
 def test_document_operations(mongodb_collection):
-    # Vérifier le nombre initial de documents
+    # 1) Compter les documents existants au départ
     initial_count = mongodb_collection.count_documents({})
 
-    # Insérer un document de test
+    # 2) Insérer un document de test
     test_document = {"test_field": "test_value"}
     insert_result = mongodb_collection.insert_one(test_document)
     assert insert_result.inserted_id is not None, "Échec de l'insertion du document."
 
-    # Vérifier que le document a été inséré
+    # 3) Vérifier que le document a été inséré
     inserted_document = mongodb_collection.find_one({"test_field": "test_value"})
     assert inserted_document is not None, "Le document inséré est introuvable."
 
-    # Modifier le document
-    update_result = mongodb_collection.update_one({"test_field": "test_value"}, {"$set": {"test_field": "updated_value"}})
+    # 4) Modifier le document
+    update_result = mongodb_collection.update_one(
+        {"test_field": "test_value"}, {"$set": {"test_field": "updated_value"}}
+    )
     assert update_result.modified_count == 1, "Échec de la modification du document."
 
-    # Vérifier la modification
+    # 5) Vérifier la modification
     updated_document = mongodb_collection.find_one({"test_field": "updated_value"})
     assert updated_document is not None, "Le document modifié est introuvable."
 
-    # Supprimer le document
+    # 6) Supprimer le document
     delete_result = mongodb_collection.delete_one({"test_field": "updated_value"})
     assert delete_result.deleted_count == 1, "Échec de la suppression du document."
 
-    # Vérifier que le document a été supprimé
+    # 7) Vérifier que le nombre final correspond au nombre initial
     final_count = mongodb_collection.count_documents({})
     assert final_count == initial_count, "Le nettoyage des documents de test a échoué."

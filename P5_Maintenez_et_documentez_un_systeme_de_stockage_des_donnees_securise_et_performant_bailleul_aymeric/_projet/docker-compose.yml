@@ -13,14 +13,22 @@ services:
       - mongodb_data:/data/db
       # Volume pour accéder au fichier CSV depuis le conteneur
       - ./sources:/app/sources:ro
+      # Scripts d'initialisation (création de la collection patients)
+      - ./mongo-init:/docker-entrypoint-initdb.d:ro
     networks:
       - healthcare_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   # Service pour exécuter le script d'import (à la demande)
   import_scripts:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.import_scripts
     container_name: healthcare_import
     depends_on:
       - mongodb
@@ -33,6 +41,23 @@ services:
     # Le profil permet d'exécuter ce service seulement à la demande
     profiles:
       - import
+
+  # Service de tests automatisés (pytest)
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.tests
+    container_name: healthcare_tests
+    working_dir: /app
+    environment:
+      MONGODB_URI: mongodb://mongodb:27017/
+      MONGODB_DB: healthcare_db
+      COLLECTION_NAME: patients
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - healthcare_network
 
 # Volumes nommés
 volumes:
