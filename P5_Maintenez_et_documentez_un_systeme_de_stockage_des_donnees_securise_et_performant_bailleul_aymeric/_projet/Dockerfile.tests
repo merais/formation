@@ -9,7 +9,9 @@ COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Copier les tests et scripts nécessaires
-COPY docker_tests_bdd_pytest.py /app/
+COPY test_bdd.py /app/
+COPY test_readonly_security.py /app/
+COPY test_readwrite_security.py /app/
 
-# Par défaut, on montre le contenu
-CMD ["pytest", "-s", "-vv", "/app/docker_tests_bdd_pytest.py"]
+# Par défaut, on exécute tous les tests
+CMD ["pytest", "-s", "-vv"]

@@ -31,13 +31,7 @@ def test_connection(mongodb_client):
 
 def test_collection_exists(mongodb_db):
     collections = mongodb_db.list_collection_names()
-    if COLLECTION_NAME not in collections:
-        try:
-            mongodb_db.create_collection(COLLECTION_NAME)
-        except CollectionInvalid:
-            # Si créée en concurrence
-            pass
-    assert COLLECTION_NAME in mongodb_db.list_collection_names(), f"La collection '{COLLECTION_NAME}' n'existe pas."
+    assert COLLECTION_NAME in collections, f"La collection '{COLLECTION_NAME}' n'existe pas."
 
 def test_count_documents(mongodb_collection):
     count = mongodb_collection.count_documents({})

@@ -1,0 +1,14 @@
+# Dockerfile for create_users script
+FROM python:3.13-slim
+
+WORKDIR /app
+
+# Install dependencies
+RUN pip install --no-cache-dir pymongo python-dotenv
+
+# Copy the script
+COPY script_create_users.py .
+COPY .env .
+
+# Run the script
+CMD ["python", "script_create_users.py"]

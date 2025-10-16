@@ -25,46 +25,46 @@ docker-compose up -d mongodb
 
 Cela démarre uniquement le conteneur MongoDB sans exécuter l'import.
 
-### 2. Construire l'image d'import (première fois seulement)
+### 2. Exécuter les scripts
 
+*Pour exécuter le script de création des comptes*
 ```powershell
-docker-compose build import_scripts
+docker compose run --build --rm create_users
 ```
 
-### 3. Construire l'image de test
-
+*Pour exécuter le script d'import des données*
 ```powershell
-docker-compose build tests
+docker compose run --build --rm import_scripts
 ```
 
-### 4. Exécuter les scripts
-
-Pour exécuter le script d'import des données :
-
+*Pour exécuter le script de test de la bdd*
 ```powershell
-docker compose run --rm import_scripts
+docker compose run --build --rm tests
 ```
 
-Pour exécuter le script de test avec pytest :
-
+*Pour exécuter le script de tests en tant qu'utilisateur ayant les droits de lecture et d'écriture*
 ```powershell
-docker compose run --rm tests
+docker compose run --build --rm readwrite_test
+```
+
+*Pour exécuter le script de tests en tant qu'utilisateur ayant les droits de lecture uniquement*
+```powershell
+docker compose run --build --rm readonly_test
 ```
 
 Options :
 - `--rm` : Supprime le conteneur après exécution
+- `--build` : Force la reconstruction du contenaire 
 - Le script détecte automatiquement si les données existent déjà
-- Ré-exécuter la commande affiche le nombre de documents existants sans réimporter
-
 ---
 
-### 5. Arrêter tous les services
+### 3. Arrêter tous les services
 
 ```powershell
 docker-compose down
 ```
 
-### 6. Supprimer les données persistantes
+### 4. Supprimer les données persistantes
 
 **Attention : cela supprime toutes les données de la base** :
 

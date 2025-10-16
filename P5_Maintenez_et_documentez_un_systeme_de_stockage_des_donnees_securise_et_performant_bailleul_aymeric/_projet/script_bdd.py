@@ -7,9 +7,34 @@ from pymongo.errors import ConnectionFailure
 
 # Variables globales (pour la dockerisation)
 DB_NAME = os.getenv("MONGODB_DB", "healthcare_db")
-URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017/")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME", "patients")
 SOURCE_CSV = os.getenv("SOURCE_CSV", "./sources/healthcare_dataset.csv")
+
+# Construction de l'URI sécurisée
+# Priorité 1 : Utiliser MONGODB_URI si défini (depuis docker-compose.yml)
+URI = os.getenv("MONGODB_URI")
+
+if URI:
+    # Extraire le username de l'URI pour l'affichage (format: mongodb://username:password@host...)
+    try:
+        username = URI.split("://")[1].split(":")[0]
+        print(f"🔒 Connexion sécurisée avec l'utilisateur: {username}")
+    except:
+        print("🔒 Connexion sécurisée (URI fournie)")
+else:
+    # Priorité 2 : Construire l'URI depuis les variables individuelles
+    MONGODB_USERNAME = os.getenv("MONGODB_USERNAME", "app_user")
+    MONGODB_PASSWORD = os.getenv("MONGODB_PASSWORD", "")
+    MONGODB_HOST = os.getenv("MONGODB_HOST", "mongodb")
+    MONGODB_PORT = os.getenv("MONGODB_PORT", "27017")
+    MONGODB_AUTH_SOURCE = os.getenv("MONGODB_AUTH_SOURCE", "healthcare_db")
+    
+    if MONGODB_USERNAME and MONGODB_PASSWORD:
+        URI = f"mongodb://{MONGODB_USERNAME}:{MONGODB_PASSWORD}@{MONGODB_HOST}:{MONGODB_PORT}/{DB_NAME}?authSource={MONGODB_AUTH_SOURCE}"
+        print(f"🔒 Connexion sécurisée avec l'utilisateur: {MONGODB_USERNAME}")
+    else:
+        URI = f"mongodb://{MONGODB_HOST}:{MONGODB_PORT}/"
+        print("⚠️  Connexion sans authentification")
 
 # Fonction de connexion a la base de données
 def connect_to_mongodb(uri, db_name):
