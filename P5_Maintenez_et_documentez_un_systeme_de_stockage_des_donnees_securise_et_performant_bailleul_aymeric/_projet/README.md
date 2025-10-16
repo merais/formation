@@ -2,6 +2,16 @@
 
 Système de gestion de base de données MongoDB sécurisé avec Docker pour les données de santé.
 
+## Liens Github et Google Drive
+**Github :**  
+- https://github.com/merais/formation/tree/a7ae03b6bbac2170ce3dd3c1e6685061bf484db9/P5_Maintenez_et_documentez_un_systeme_de_stockage_des_donnees_securise_et_performant_bailleul_aymeric/_projet
+
+**Google Drive :**
+- https://drive.google.com/drive/folders/10Qf2RcjWwrMhN26JyQrY_CDQ1LS3bxVw?usp=drive_link
+
+## Livrables :
+- Les livrables demandés sont dans `docs/`
+
 ## Table des Matières
 
 - [Vue d'ensemble](#vue-densemble)
@@ -114,21 +124,21 @@ Créer un fichier `.env` à la racine du projet :
 ```env
 # MongoDB Root Credentials
 MONGO_INITDB_ROOT_USERNAME=admin
-MONGO_INITDB_ROOT_PASSWORD=SecureAdminPassword123!
+MONGO_INITDB_ROOT_PASSWORD=MOT DE PASSE PERSONNALISÉ À MODIFIER IMPÉRATIVEMENT
 
 # MongoDB Database
 MONGO_INITDB_DATABASE=healthcare_db
 
 # Application User (Read/Write)
 MONGO_APP_USERNAME=app_user
-MONGO_APP_PASSWORD=SecureAppPassword123!
+MONGO_APP_PASSWORD=MOT DE PASSE PERSONNALISÉ À MODIFIER IMPÉRATIVEMENT
 
 # Read-Only User
 MONGO_READONLY_USERNAME=readonly_user
-MONGO_READONLY_PASSWORD=SecureReadPassword123!
+MONGO_READONLY_PASSWORD=MOT DE PASSE PERSONNALISÉ À MODIFIER IMPÉRATIVEMENT
 ```
 
-**IMPORTANT** : Modifier les mots de passe par défaut en production !
+**IMPORTANT** : Modifier les mots de passe par défaut impérativement !
 
 ### 3. Vérifier le Dataset
 
@@ -226,6 +236,12 @@ docker compose run --build --rm import_scripts
 
 # Rebuild + tests
 docker compose run --build --rm tests
+
+# Rebuild + tests sécurité R/W
+docker compose run --build --rm readwrite_test
+
+# Rebuild + tests sécurité lecture seule
+docker compose run --build --rm readonly_test
 ```
 
 #### Gestion des Services
@@ -249,7 +265,7 @@ docker compose logs -f mongodb  # Mode suivi
 docker compose exec mongodb mongosh healthcare_db
 
 # Avec authentification
-docker compose exec mongodb mongosh -u app_user -p SecureAppPassword123! --authenticationDatabase healthcare_db healthcare_db
+docker compose exec mongodb mongosh -u app_user -p "MOT DE PASSE CONFIGURER DANS LE .env" --authenticationDatabase healthcare_db healthcare_db
 ```
 
 ---
@@ -362,19 +378,6 @@ docker compose run --rm readonly_test
 - Mise à jour refusée
 - Suppression refusée
 - Suppression collection refusée
-
-### Sortie Attendue
-
-```
-======================== test session starts ========================
-test_bdd.py::test_mongodb_connection PASSED                   [ 25%]
-test_bdd.py::test_collection_exists PASSED                    [ 50%]
-test_bdd.py::test_documents_count PASSED                      [ 75%]
-test_bdd.py::test_read_document PASSED                        [100%]
-
-======================== 4 passed in 0.29s ==========================
-```
-
 ---
 
 ## Structure du Projet
@@ -400,7 +403,7 @@ _projet/
 ├── test_readwrite_security.py        # Tests R/W (12 tests)
 │
 └── sources/                          # Données
-    └── healthcare_dataset.csv       # Dataset 54 966 patients
+    └── healthcare_dataset.csv        # Dataset 54 966 patients
 ```
 
 ---
@@ -435,7 +438,7 @@ docker compose run --rm create_users
   - Normalisation des noms (Title Case)
   - Vérification des valeurs manquantes
   - Détection des doublons
-- Insertion bulk (54 966 documents)
+- Insertion (54 966 documents)
 - Vérification post-import
 
 **Exécution** :
@@ -688,24 +691,6 @@ docker compose exec mongodb mongodump --out /backup
 # Restore des données
 docker compose exec mongodb mongorestore /backup
 ```
-
----
-
-## Projet P5 - OpenClassrooms
-
-**Formation** : Data Engineer  
-**Projet** : Maintenez et documentez un système de stockage des données sécurisé et performant  
-**Technologies** : MongoDB 8.0, Docker, Python 3.13, pytest
-
----
-
-## Support
-
-Pour toute question ou problème :
-
-1. Consultez la section [Dépannage](#dépannage)
-2. Vérifiez les logs : `docker compose logs <service>`
-3. Consultez la documentation dans `md/`
 
 ---
 

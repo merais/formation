@@ -57,7 +57,8 @@ services:
       dockerfile: Dockerfile.import_scripts
     container_name: healthcare_import
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     environment:
       # URI de connexion MongoDB et nom de la base de données (utilisateur avec droits R/W)
       MONGODB_URI: mongodb://${MONGO_APP_USERNAME}:${MONGO_APP_PASSWORD}@mongodb:27017/?authSource=healthcare_db
