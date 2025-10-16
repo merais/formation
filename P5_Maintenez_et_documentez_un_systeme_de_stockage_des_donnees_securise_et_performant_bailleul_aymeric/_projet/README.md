@@ -385,7 +385,6 @@ docker compose run --rm readonly_test
 ```
 _projet/
 ├── README.md                         # Ce fichier
-├── docker_README.md                  # Documentation Docker (legacy)
 ├── docker-compose.yml                # Orchestration des services
 ├── .env                              # Credentials (NON versionné)
 ├── .dockerignore                     # Exclusions Docker
@@ -396,13 +395,13 @@ _projet/
 ├── Dockerfile.tests                  # Image tests pytest
 │
 ├── script_create_users.py            # Script création utilisateurs (227 lignes)
-├── script_bdd.py                     # Script import données (157 lignes)
+├── script_bdd.py                     # Script création bdd + import des données (157 lignes)
 │
 ├── test_bdd.py                       # Tests généraux (4 tests)
 ├── test_readonly_security.py         # Tests lecture seule (11 tests)
 ├── test_readwrite_security.py        # Tests R/W (12 tests)
 │
-└── sources/                          # Données
+└── sources/                          
     └── healthcare_dataset.csv        # Dataset 54 966 patients
 ```
 
@@ -664,17 +663,6 @@ Pour une utilisation en production, ajoutez :
 - **Backup automatisé** : Sauvegarde régulière
 - **Monitoring** : Logs centralisés et alertes
 - **Réseau privé** : Pas d'exposition du port 27017
-
-### Performance
-
-Pour améliorer les performances :
-
-```javascript
-// Créer des index
-db.patients.createIndex({ "Name": 1 })
-db.patients.createIndex({ "Medical Condition": 1 })
-db.patients.createIndex({ "Date of Admission": -1 })
-```
 
 ### Maintenance
 
