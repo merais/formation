@@ -1,0 +1,136 @@
+services:
+  # Service MongoDB
+  mongodb:
+    image: mongo:latest
+    container_name: healthcare_mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+      MONGO_APP_USERNAME: ${MONGO_APP_USERNAME}
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD}
+      MONGO_READONLY_USERNAME: ${MONGO_READONLY_USERNAME}
+      MONGO_READONLY_PASSWORD: ${MONGO_READONLY_PASSWORD}
+    volumes:
+      # Volume pour la persistance des données MongoDB
+      - mongodb_data:/data/db
+      # Volume pour accéder au fichier CSV depuis le conteneur
+      - ./sources:/app/sources:ro
+      # Scripts d'initialisation (création de la collection patients)
+      - ./mongo-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - healthcare_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # Service pour créer les utilisateurs MongoDB
+  create_users:
+    build:
+      context: .
+      dockerfile: Dockerfile.create_users
+    container_name: healthcare_create_users
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_APP_USERNAME: ${MONGO_APP_USERNAME}
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD}
+      MONGO_READONLY_USERNAME: ${MONGO_READONLY_USERNAME}
+      MONGO_READONLY_PASSWORD: ${MONGO_READONLY_PASSWORD}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - healthcare_network
+
+
+  # Service pour exécuter le script d'import (à la demande)
+  import_scripts:
+    build:
+      context: .
+      dockerfile: Dockerfile.import_scripts
+    container_name: healthcare_import
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      # URI de connexion MongoDB et nom de la base de données (utilisateur avec droits R/W)
+      MONGODB_URI: mongodb://${MONGO_APP_USERNAME}:${MONGO_APP_PASSWORD}@mongodb:27017/?authSource=healthcare_db
+      MONGODB_DB: ${MONGO_INITDB_DATABASE}
+    networks:
+      - healthcare_network
+    # Le profil permet d'exécuter ce service seulement à la demande
+    profiles:
+      - import
+
+  # Service de tests automatisés (pytest) - Tests généraux de connexion
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.tests
+    container_name: healthcare_tests
+    working_dir: /app
+    command: ["pytest", "-v", "-s", "test_bdd.py"]
+    environment:
+      MONGODB_URI: mongodb://${MONGO_APP_USERNAME}:${MONGO_APP_PASSWORD}@mongodb:27017/?authSource=healthcare_db
+      MONGODB_DB: ${MONGO_INITDB_DATABASE}
+      COLLECTION_NAME: patients
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - healthcare_network
+
+  # Service de tests de sécurité - Utilisateur avec droits d'écriture
+  readwrite_test:
+    build:
+      context: .
+      dockerfile: Dockerfile.tests
+    container_name: healthcare_readwrite_test
+    working_dir: /app
+    command: ["pytest", "-v", "-s", "test_readwrite_security.py"]
+    environment:
+      MONGODB_URI: mongodb://${MONGO_APP_USERNAME}:${MONGO_APP_PASSWORD}@mongodb:27017/?authSource=healthcare_db
+      MONGODB_DB: ${MONGO_INITDB_DATABASE}
+      COLLECTION_NAME: patients
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - healthcare_network
+
+  # Service de test avec utilisateur en lecture seule (pytest)
+  readonly_test:
+    build:
+      context: .
+      dockerfile: Dockerfile.tests
+    container_name: healthcare_readonly_test
+    working_dir: /app
+    command: ["pytest", "-v", "-s", "test_readonly_security.py"]
+    environment:
+      MONGODB_URI: mongodb://${MONGO_READONLY_USERNAME}:${MONGO_READONLY_PASSWORD}@mongodb:27017/?authSource=healthcare_db
+      MONGODB_DB: ${MONGO_INITDB_DATABASE}
+      COLLECTION_NAME: patients
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - healthcare_network
+    profiles:
+      - readonly
+
+# Volumes nommés
+volumes:
+  mongodb_data:
+    driver: local
+
+# Réseau dédié
+networks:
+  healthcare_network:
+    driver: bridge
