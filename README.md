@@ -21,44 +21,6 @@ Ce repo est destiné à mes scripts pour ma formation de Data Engineer de la pla
 |P13 | Réalisez votre portfolio de Data Engineer 											|   11/04/2026    |    04/05/2026   |
 ---
 
-## Environnement et dépendances
-
-- Python local: >= 3.13 (déclaré dans `pyproject.toml`). L'image Docker BentoML utilise Python 3.11 pour l'exécution containerisée.
-- Gestion des deps: `pyproject.toml` (PEP 621/508). Le fichier `requirements.txt` a été supprimé.
-- Outil (optionnel): Poetry est supporté et un `poetry.lock` est présent pour la reproductibilité.
-
-Installation (au choix):
-
-- Avec Poetry
-	1. Installer Poetry (ex: via pipx): `pipx install poetry`
-	2. Sélectionner Python 3.13: `poetry env use 3.13`
-	3. Installer: `poetry install`
-
-- Sans Poetry (pip pur)
-	1. Mettre à jour pip: `python -m pip install --upgrade pip`
-	2. Installer le projet (et ses dépendances): `python -m pip install .`
-
-Notes:
-- Des warnings CRLF/LF peuvent apparaître lors des commits de notebooks sous Windows; ils sont informatifs.
-
----
-
-## Service BentoML (P6 · mission 2)
-
-- Dossier: `P6_Anticipez_les_besoins_en_consommation_de_batiments_bailleul_aymeric/P6_Anticipez_les_besoins_en_consommation_de_batiments_bailleul_aymeric/mission_2/`
-- Documentation d'usage: voir le `README.md` dans ce dossier.
-- Image Docker publiée: `merais/seattle-energy-predictor:latest`
-	- Exemple d'exécution: `docker run -p 3000:3000 merais/seattle-energy-predictor:latest`
-
----
-
-## Historique des mises à jour
-
-- 2025-11-04
-	- Dépendances migrées au format PEP 508 dans `pyproject.toml`.
-	- Suppression de `requirements.txt` (remplacé par la gestion via `pyproject.toml`).
-	- Ajout des dossiers P6/P7 et mise en forme des intitulés de projets.
-
 ## Titre des dossiers par projet *(en gras celui en cours)*
 - P1_Decouvrez_votre_formation_de_data_engineer_aymeric_bailleul
 - P2_Analysez_les_donnees_de_systemes_educatifs_aymeric_bailleul
@@ -74,4 +36,3 @@ Notes:
 - P12_Gerez_un_projet_d_infrastructure_aymeric_bailleul
 - P13_Realisez_votre_portfolio_de_data_engineer_aymeric_bailleul
 ---
-
