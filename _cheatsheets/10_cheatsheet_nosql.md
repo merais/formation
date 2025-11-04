@@ -34,7 +34,7 @@ Ce mémo résume l'essentiel pour choisir et utiliser une base NoSQL, d'après l
 - − Modèle spécialisé; volumétrie extrême à concevoir finement
 - Usages: réseaux sociaux, recommandations, détection de fraude, IAM
 
-## Théorème CAP (rappel express)
+## Théorème CAP
 
 - C = Cohérence, A = Disponibilité, P = Tolérance au partitionnement.
 - Sous partition réseau, on ne peut pas garantir C et A parfaites en même temps.

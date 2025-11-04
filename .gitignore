@@ -1,9 +1,7 @@
 #Folder to ignore
 **/sources/
 **/_result_tests/
-# Ignore Windows desktop.ini files
-desktop.ini
-**/desktop.ini
+**/tools/
 
 # Python virtual environments
 **/.venv/
@@ -39,6 +37,8 @@ poetry.lock
 .Trashes
 ehthumbs.db
 Thumbs.db
+desktop.ini
+**/desktop.ini
 
 # Temporary files
 *.tmp
