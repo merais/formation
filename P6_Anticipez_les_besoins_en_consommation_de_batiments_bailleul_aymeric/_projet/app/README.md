@@ -138,13 +138,13 @@ bentoml build
 ```bash
 # Utilisez le tag généré lors du build (exemple)
 # Le tag change à chaque build - utilisez celui affiché après 'bentoml build'
-bentoml containerize seattle-energy-predictor:<VOTRE_TAG>
+bentoml containerize seattle-energy-predictor:rgz23h5256v64pak
 ```
 
 ### 3. Lancer le container
 ```bash
 # Utilisez le même tag que pour la containerisation
-docker run --rm -p 3000:3000 seattle-energy-predictor:<VOTRE_TAG>
+docker run --rm -p 3000:3000 seattle-energy-predictor:rgz23h5256v64pak
 ```
 
 ### 4. Accéder au service containerisé
