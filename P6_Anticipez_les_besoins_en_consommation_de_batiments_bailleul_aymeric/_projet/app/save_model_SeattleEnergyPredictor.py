@@ -1,14 +1,23 @@
-# Script de sauvegarde du modèle Seattle Energy Predictor avec BentoML
+"""
+Script de sauvegarde du modèle Seattle Energy Predictor avec BentoML
+
+Mise à jour pour alignement avec le notebook code 06:
+- Charge X et y depuis les mêmes fichiers que code 05
+- Applique une garde anti-fuite (regex) sur X
+- Entraîne un RandomForestRegressor avec des hyperparamètres fournis (pas de recherche)
+- Sauvegarde le modèle avec BentoML en incluant les hyperparamètres dans les métadonnées
+"""
 
 import os
 import sys
+import re
 import pandas as pd
 import numpy as np
 import bentoml
 from datetime import datetime
 
 # Import Scikit-learn
-from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 
@@ -17,8 +26,9 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(script_dir)
 print(f"Répertoire de travail: {os.getcwd()}")
 
-# Chemin vers le fichier de données (modifiable selon votre structure)
-DATA_PATH = "../sources/2016_Building_Energy_Benchmarking_03_encoded.csv"
+# Chemins vers les fichiers X/y alignés avec code 05
+X_PATH = "../sources/2016_Building_Energy_Benchmarking_03X_building_consumption.csv"
+Y_PATH = "../sources/2016_Building_Energy_Benchmarking_03y_building_consumption.csv"
 
 # Nom du modèle BentoML
 MODEL_NAME = "seattle_energy_predictor"
@@ -53,90 +63,100 @@ def clean_old_models(model_name=MODEL_NAME):
         print(f"Erreur lors de la sauvegarde: {e}")
         return None
 
-def load_and_prepare_data(data_path=DATA_PATH):
-    # Charge et prépare les données d'entraînement
-    print_section("Chargement des données...")
-    
-    # Vérifier l'existence du fichier
-    if not os.path.exists(data_path):
-        print(f"Fichier non trouvé: {data_path}")
-        print("Veuillez vous assurer que les données sont disponibles dans le dossier sources/")
+def load_and_prepare_data(x_path=X_PATH, y_path=Y_PATH, target='SiteEnergyUse(kWh)'):
+    """Charge X et y comme dans le notebook code 05, applique la garde anti-fuite, et nettoie les NaN."""
+    print_section("Chargement des données (X/y alignés avec code 05)...")
+
+    # Vérifier l'existence des fichiers
+    if not os.path.exists(x_path):
+        print(f"Fichier X non trouvé: {x_path}")
         sys.exit(1)
-    
-    # Charger les données
-    data = pd.read_csv(data_path)
-    print(f"Données chargées: {data.shape[0]} lignes, {data.shape[1]} colonnes")
-    
-    # Features et target
-    features = [
-        'PropertyGFATotal', 'NumberofFloors', 
-        'Electricity(kWh)', 'NaturalGas(kWh)',
-        'PrimaryPropertyType_Large Office', 'PrimaryPropertyType_Other',
-        'PrimaryPropertyType_Retail Store', 'PrimaryPropertyType_Small- and Mid-Sized Office',
-        'PrimaryPropertyType_Warehouse'
-    ]
-    
-    target = 'SiteEnergyUse(kWh)'
-    
-    print_section("Préparation des données d'entraînement...")
-    print(f"Features utilisées: {len(features)}")
+    if not os.path.exists(y_path):
+        print(f"Fichier y non trouvé: {y_path}")
+        sys.exit(1)
+
+    # Charger X/y
+    X = pd.read_csv(x_path)
+    y = pd.read_csv(y_path)
+    print(f"X: {X.shape[0]} lignes, {X.shape[1]} colonnes")
+    print(f"y: {y.shape}")
+
+    # Normaliser y en Series
+    if isinstance(y, pd.DataFrame):
+        if y.shape[1] == 1:
+            y = y.iloc[:, 0]
+        else:
+            tgt_candidates = [c for c in y.columns if 'SiteEnergyUse(kWh)' in c or 'SiteEnergyUse' in c]
+            y = y[tgt_candidates[0]] if tgt_candidates else y.iloc[:, 0]
+
+    print_section("Préparation des données d'entraînement (anti-fuite)...")
+    # Important: élargir la garde anti-fuite pour inclure les termes FR souvent utilisés
+    # Exclut explicitement toute variable liée à la consommation effective ou dérivée
+    # (même si les noms de colonnes sont en français)
+    risk_pattern = re.compile(
+        r"(electric|kwh|kbtu|naturalgas|gas|steam|fuel|energyuse|consumption|eui|ghg|consommation|energie|energetique|densite|par[_\- ]?etage)",
+        re.IGNORECASE,
+    )
+    safe_cols = [c for c in X.columns if not risk_pattern.search(c)]
+    # Retirer la cible de X si présente par erreur
+    if target in safe_cols:
+        safe_cols.remove(target)
+    X = X[safe_cols].copy()
+
+    print(f"Features utilisées (sans fuite): {len(X.columns)}")
     print(f"Target: {target}")
-    
-    # Vérification des colonnes disponibles
-    available_features = [f for f in features if f in data.columns]
-    missing_features = [f for f in features if f not in data.columns]
-    
-    if missing_features:
-        print(f"Features manquantes: {missing_features}")
-    
-    print(f"Features disponibles: {len(available_features)}")
-    for i, feature in enumerate(available_features, 1):
-        print(f"  {i:2d}. {feature}")
-    
-    # Extraction des données
-    X = data[available_features].copy()
-    y = data[target].copy()
-    
+
     print_section("Nettoyage des données...")
-    print(f"Valeurs manquantes X: {X.isnull().sum().sum()}")
-    print(f"Valeurs manquantes y: {y.isnull().sum()}")
-    
+    print(f"Valeurs manquantes X: {int(X.isnull().sum().sum())}")
+    print(f"Valeurs manquantes y: {int(pd.isnull(y).sum())}")
+
     # Suppression des valeurs manquantes
-    mask = ~(X.isnull().any(axis=1) | y.isnull())
+    mask = (~X.isnull().any(axis=1)) & (~pd.isnull(y))
     X_clean = X[mask]
     y_clean = y[mask]
-    
+
     print(f"Données nettoyées: {len(X_clean)} échantillons")
     print(f"Forme finale X: {X_clean.shape}")
     print(f"Forme finale y: {y_clean.shape}")
-    
+
+    available_features = list(X_clean.columns)
     return X_clean, y_clean, available_features
 
 def train_model(X, y):
-    # Entraîne le modèle Linear Regression
+    """Entraîne un RandomForestRegressor avec hyperparamètres fournis (pas de recherche)."""
     print_section("Division des données...")
-    
+
     # Division des données
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
-    
+
     print(f"Train set: {X_train.shape[0]} échantillons")
     print(f"Test set: {X_test.shape[0]} échantillons")
-    
-    print_section("Entraînement du modèle Linear Regression...")
-    
-    # Entraînement
-    model = LinearRegression()
+
+    print_section("Entraînement du modèle Random Forest (paramètres fournis)...")
+
+    provided_params = {
+        'n_estimators': 150,
+        'max_depth': 30,
+        'min_samples_split': 2,
+        'min_samples_leaf': 2,
+        'max_features': 1.0,
+        'bootstrap': True,
+        'random_state': 42,
+        'n_jobs': -1,
+    }
+
+    model = RandomForestRegressor(**provided_params)
     model.fit(X_train, y_train)
     print("Modèle entraîné avec succès!")
-    
+
     print_section("Évaluation du modèle...")
-    
+
     # Prédictions
     y_pred_train = model.predict(X_train)
     y_pred_test = model.predict(X_test)
-    
+
     # Calcul des métriques
     r2_train = r2_score(y_train, y_pred_train)
     r2_test = r2_score(y_test, y_pred_test)
@@ -144,21 +164,25 @@ def train_model(X, y):
     mae_test = mean_absolute_error(y_test, y_pred_test)
     rmse_train = np.sqrt(mean_squared_error(y_train, y_pred_train))
     rmse_test = np.sqrt(mean_squared_error(y_test, y_pred_test))
-    
+
     # Affichage des résultats
     print(f"Performance sur Train:")
     print(f"   R² Score: {r2_train:.4f} ({r2_train*100:.2f}%)")
     print(f"   MAE: {mae_train:,.0f} kWh")
     print(f"   RMSE: {rmse_train:,.0f} kWh")
-    
+
     print(f"\nPerformance sur Test:")
-    print(f"   R² Score: {r2_test:.4f} ({r2_test*100:.2f}%)")  
+    print(f"   R² Score: {r2_test:.4f} ({r2_test*100:.2f}%)")
     print(f"   MAE: {mae_test:,.0f} kWh")
     print(f"   RMSE: {rmse_test:,.0f} kWh")
-    
+
     # Stockage des métriques
+    # Assurer des types primitifs pour BentoML
+    safe_best_params = {k: (v if v is not None else "None") for k, v in provided_params.items()}
+
     model_metrics = {
-        "algorithm": "Linear Regression",
+        "algorithm": "Random Forest Regressor",
+        "best_params": safe_best_params,
         "r2_train": float(r2_train),
         "r2_test": float(r2_test),
         "mae_train": float(mae_train),
@@ -167,9 +191,9 @@ def train_model(X, y):
         "rmse_test": float(rmse_test),
         "n_features": len(X.columns),
         "n_train_samples": len(X_train),
-        "n_test_samples": len(X_test)
+        "n_test_samples": len(X_test),
     }
-    
+
     return model, model_metrics, X_test, y_test
 
 def save_model_with_bentoml(model, model_metrics, available_features, X_test, target):
@@ -179,7 +203,7 @@ def save_model_with_bentoml(model, model_metrics, available_features, X_test, ta
     # Préparation des métadonnées
     metadata = {
         "project": "P6_Seattle_Energy_Prediction",
-        "algorithm": "Linear Regression",
+        "algorithm": "Random Forest Regressor",
         "performance": {
             "r2_score": f"{model_metrics['r2_test']:.4f} ({model_metrics['r2_test']*100:.2f}%)",
             "mae_test": f"{model_metrics['mae_test']:,.0f} kWh",
@@ -190,16 +214,17 @@ def save_model_with_bentoml(model, model_metrics, available_features, X_test, ta
         "training_date": datetime.now().isoformat(),
         "model_version": "v1.0.0",
         "author": "ABAI_P6",
-        "description": "Modèle Linear Regression pour prédiction énergétique bâtiments Seattle"
+        "description": "Modèle Random Forest (params fournis) pour prédiction énergétique bâtiments Seattle",
+        "best_params": model_metrics.get("best_params", {}),
     }
     
     # Labels pour identification
     labels = {
         "project": "seattle_energy_prediction",
-        "algorithm": "linear_regression", 
+        "algorithm": "random_forest",
         "version": "1.0.0",
         "stage": "production",
-        "framework": "scikit-learn"
+        "framework": "scikit-learn",
     }
     
     # Sauvegarde avec BentoML
@@ -247,7 +272,7 @@ def verify_saved_model(bentoml_model):
         print(f"Erreur lors de la vérification: {str(e)}")
         return False
 
-def main(data_path=DATA_PATH):
+def main(x_path=X_PATH, y_path=Y_PATH):
     # Fonction principale
     print_section("SAUVEGARDE MODÈLE SEATTLE ENERGY PREDICTOR", "=", 120)
     
@@ -256,7 +281,7 @@ def main(data_path=DATA_PATH):
         clean_old_models()
         
         # 2. Chargement et préparation des données
-        X, y, available_features = load_and_prepare_data(data_path)
+        X, y, available_features = load_and_prepare_data(x_path=x_path, y_path=y_path)
         
         # 3. Entraînement du modèle
         model, model_metrics, X_test, y_test = train_model(X, y)
@@ -282,4 +307,4 @@ def main(data_path=DATA_PATH):
         sys.exit(1)
 
 if __name__ == "__main__":
-    main(DATA_PATH)
+    main(x_path=X_PATH, y_path=Y_PATH)
