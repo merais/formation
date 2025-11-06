@@ -130,7 +130,7 @@ curl -X POST "http://localhost:3000/validate_data" \
 
 ### 1. Construire le Bento
 ```bash
-# Dans le dossier app/
+# Dans le dossier app/ (celui du bentofile.yaml)
 bentoml build
 ```
 
@@ -150,6 +150,31 @@ docker run --rm -p 3000:3000 seattle-energy-predictor:rgz23h5256v64pak
 ### 4. Accéder au service containerisé
 - **API** : `http://localhost:3000`
 
+## Publier l'image sur Docker Hub (mainteneur)
+
+Vous pouvez publier l'image construite localement sur Docker Hub pour la partager.
+
+Pré-requis: avoir construit et containerisé le Bento localement (image `seattle-energy-predictor:rgz23h5256v64pak`).
+
+### Étapes (PowerShell)
+
+```powershell
+# 1) Connexion (si nécessaire)
+docker login
+
+# 2) Taguer l'image locale avec votre dépôt Docker Hub
+docker tag seattle-energy-predictor:rgz23h5256v64pak merais/seattle-energy-predictor:rgz23h5256v64pak
+docker tag seattle-energy-predictor:rgz23h5256v64pak merais/seattle-energy-predictor:latest
+
+# 3) Pousser les tags vers Docker Hub
+docker push merais/seattle-energy-predictor:rgz23h5256v64pak
+docker push merais/seattle-energy-predictor:latest
+```
+
+Notes:
+- Remplacez `merais` par votre propre namespace Docker Hub si vous forkiez le projet.
+- Le tag long (`rgz23h5256v64pak`) est immuable et permet la reproductibilité; `latest` pointe vers la version actuelle.
+
 ## Utiliser l'image depuis Docker Hub
 
 Vous pouvez directement récupérer l'image déjà publiée sur Docker Hub et l'exécuter localement.
@@ -160,7 +185,7 @@ Vous pouvez directement récupérer l'image déjà publiée sur Docker Hub et l'
 docker pull merais/seattle-energy-predictor:latest
 
 # Version figée (reproductible)
-docker pull merais/seattle-energy-predictor:z5ctjo5wkgv3ypak
+docker pull merais/seattle-energy-predictor:rgz23h5256v64pak
 ```
 
 ### Lancer l'image
@@ -169,7 +194,7 @@ docker pull merais/seattle-energy-predictor:z5ctjo5wkgv3ypak
 docker run --rm -p 3000:3000 merais/seattle-energy-predictor:latest
 
 # Ou avec le tag spécifique
-docker run --rm -p 3000:3000 merais/seattle-energy-predictor:z5ctjo5wkgv3ypak
+docker run --rm -p 3000:3000 merais/seattle-energy-predictor:rgz23h5256v64pak
 ```
 
 ### Accéder à l'API
