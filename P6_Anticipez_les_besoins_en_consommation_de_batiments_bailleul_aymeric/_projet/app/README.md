@@ -197,6 +197,10 @@ docker run --rm -p 3000:3000 merais/seattle-energy-predictor:latest
 docker run --rm -p 3000:3000 merais/seattle-energy-predictor:rgz23h5256v64pak
 ```
 
+### URL pour Google Cloud > Cloud Run 
+
+docker.io/merais/seattle-energy-predictor:rgz23h5256v64pak
+
 ### Accéder à l'API
 - **Swagger UI / API** : `http://localhost:3000`
 
