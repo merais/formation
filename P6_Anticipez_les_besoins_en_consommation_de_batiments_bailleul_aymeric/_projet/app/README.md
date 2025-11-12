@@ -71,25 +71,31 @@ http://localhost:3000
 
 **Endpoints disponibles :**
 
+> **⚠️ Important:** BentoML exige que les données soient enveloppées dans une clé `"data"` lors d'appels directs via curl/PowerShell. L'interface Swagger UI ajoute automatiquement ce wrapper.
+
 #### `/predict_single` – Prédiction
 ```bash
 # curl
 curl -X POST "http://localhost:3000/predict_single" \
      -H "Content-Type: application/json" \
      -d '{
-       "PropertyGFATotal": 50000,
-       "NumberofFloors": 5,
-       "PrimaryPropertyType": "Large Office",
-       "YearBuilt": 1995
+       "data": {
+         "PropertyGFATotal": 50000,
+         "NumberofFloors": 5,
+         "PrimaryPropertyType": "Large Office",
+         "YearBuilt": 1995
+       }
      }'
 
 # PowerShell (Windows)
 $body = @{
-  PropertyGFATotal = 50000
-  NumberofFloors = 5
-  PrimaryPropertyType = "Large Office"
-  YearBuilt = 1995
-} | ConvertTo-Json
+  data = @{
+    PropertyGFATotal = 50000
+    NumberofFloors = 5
+    PrimaryPropertyType = "Large Office"
+    YearBuilt = 1995
+  }
+} | ConvertTo-Json -Depth 3
 Invoke-RestMethod -Uri "http://localhost:3000/predict_single" -Method Post -ContentType "application/json" -Body $body
 ```
 
@@ -97,10 +103,12 @@ Invoke-RestMethod -Uri "http://localhost:3000/predict_single" -Method Post -Cont
 ```bash
 curl -X POST "http://localhost:3000/predict_batch" \
      -H "Content-Type: application/json" \
-     -d '[
-       {"PropertyGFATotal": 30000, "NumberofFloors": 3, "PrimaryPropertyType": "Other", "YearBuilt": 1980},
-       {"PropertyGFATotal": 75000, "NumberofFloors": 8, "PrimaryPropertyType": "Large Office", "YearBuilt": 2005}
-     ]'
+     -d '{
+       "data_list": [
+         {"PropertyGFATotal": 30000, "NumberofFloors": 3, "PrimaryPropertyType": "Other", "YearBuilt": 1980},
+         {"PropertyGFATotal": 75000, "NumberofFloors": 8, "PrimaryPropertyType": "Large Office", "YearBuilt": 2005}
+       ]
+     }'
 ```
 
 #### `/get_feature_info` – Informations dynamiques
@@ -120,9 +128,11 @@ curl "http://localhost:3000/get_group_map"
 curl -X POST "http://localhost:3000/validate_data" \
      -H "Content-Type: application/json" \
      -d '{
-       "PropertyGFATotal": 25000,
-       "NumberofFloors": 2,
-       "PrimaryPropertyType": "Retail Store"
+       "data": {
+         "PropertyGFATotal": 25000,
+         "NumberofFloors": 2,
+         "PrimaryPropertyType": "Retail Store"
+       }
      }'
 ```
 
@@ -144,7 +154,7 @@ bentoml containerize seattle-energy-predictor:rgz23h5256v64pak
 ### 3. Lancer le container
 ```bash
 # Utilisez le même tag que pour la containerisation
-docker run --rm -p 3000:3000 seattle-energy-predictor:rgz23h5256v64pak
+docker run --rm -p 3000:3000 merais/seattle-energy-predictor:rgz23h5256v64pak
 ```
 
 ### 4. Accéder au service containerisé
@@ -203,6 +213,50 @@ docker.io/merais/seattle-energy-predictor:rgz23h5256v64pak
 
 ### Accéder à l'API
 - **Swagger UI / API** : `http://localhost:3000`
+
+## Validations et gestion des erreurs
+
+Le service utilise **Pydantic V2** pour valider automatiquement toutes les entrées.
+
+### Validations actives
+- `PropertyGFATotal` : doit être ≥ 0
+- `NumberofFloors` : doit être ≥ 1
+- `PrimaryPropertyType` : doit appartenir à la liste autorisée (voir `/get_feature_info`)
+- `YearBuilt` : si fourni, doit être entre 1800 et 2100
+
+### Erreurs courantes
+
+#### 1. Oubli du wrapper "data"
+```json
+❌ {"PropertyGFATotal": 50000, ...}
+✅ {"data": {"PropertyGFATotal": 50000, ...}}
+```
+**Erreur:** `Field required` pour `"data"`
+
+#### 2. Valeur négative
+```json
+{"data": {"PropertyGFATotal": -1000, ...}}
+```
+**Erreur:** `Input should be greater than or equal to 0`
+
+#### 3. Type de bâtiment invalide
+```json
+{"data": {"PrimaryPropertyType": "InvalidType", ...}}
+```
+**Erreur:** `Value error, PrimaryPropertyType doit être dans [...]`
+
+### Tester les validations
+```powershell
+# Test avec valeur invalide (doit échouer)
+$body = @{
+  data = @{
+    PropertyGFATotal = -1000
+    NumberofFloors = 5
+    PrimaryPropertyType = "Large Office"
+  }
+} | ConvertTo-Json -Depth 3
+Invoke-RestMethod -Uri "http://localhost:3000/predict_single" -Method Post -ContentType "application/json" -Body $body
+```
 
 Note:
 - Si le dépôt Docker Hub est privé, connectez-vous avant le pull: `docker login`
