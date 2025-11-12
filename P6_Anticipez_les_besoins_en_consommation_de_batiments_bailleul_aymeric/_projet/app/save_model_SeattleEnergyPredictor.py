@@ -1,12 +1,10 @@
-"""
-Script de sauvegarde du modèle Seattle Energy Predictor avec BentoML
-
-Mise à jour pour alignement avec le notebook code 06:
-- Charge X et y depuis les mêmes fichiers que code 05
-- Applique une garde anti-fuite (regex) sur X
-- Entraîne un RandomForestRegressor avec des hyperparamètres fournis (pas de recherche)
-- Sauvegarde le modèle avec BentoML en incluant les hyperparamètres dans les métadonnées
-"""
+# Script de sauvegarde du modèle Seattle Energy Predictor avec BentoML
+#
+# Mise à jour pour alignement avec le notebook code 06:
+# - Charge X et y depuis les mêmes fichiers que code 05
+# - Applique une garde anti-leakage (regex) sur X
+# - Entraîne un RandomForestRegressor avec des hyperparamètres fournis (pas de recherche)
+# - Sauvegarde le modèle avec BentoML en incluant les hyperparamètres dans les métadonnées
 
 import os
 import sys
@@ -64,7 +62,7 @@ def clean_old_models(model_name=MODEL_NAME):
         return None
 
 def load_and_prepare_data(x_path=X_PATH, y_path=Y_PATH, target='SiteEnergyUse(kWh)'):
-    """Charge X et y comme dans le notebook code 05, applique la garde anti-fuite, et nettoie les NaN."""
+    # Charge X et y comme dans le notebook code 05, applique la garde anti-leakage, et nettoie les NaN.
     print_section("Chargement des données (X/y alignés avec code 05)...")
 
     # Vérifier l'existence des fichiers
@@ -89,8 +87,8 @@ def load_and_prepare_data(x_path=X_PATH, y_path=Y_PATH, target='SiteEnergyUse(kW
             tgt_candidates = [c for c in y.columns if 'SiteEnergyUse(kWh)' in c or 'SiteEnergyUse' in c]
             y = y[tgt_candidates[0]] if tgt_candidates else y.iloc[:, 0]
 
-    print_section("Préparation des données d'entraînement (anti-fuite)...")
-    # Important: élargir la garde anti-fuite pour inclure les termes FR souvent utilisés
+    print_section("Préparation des données d'entraînement (anti-leakage)...")
+    # Important: élargir la garde anti-leakage pour inclure les termes FR souvent utilisés
     # Exclut explicitement toute variable liée à la consommation effective ou dérivée
     # (même si les noms de colonnes sont en français)
     risk_pattern = re.compile(
@@ -123,7 +121,7 @@ def load_and_prepare_data(x_path=X_PATH, y_path=Y_PATH, target='SiteEnergyUse(kW
     return X_clean, y_clean, available_features
 
 def train_model(X, y):
-    """Entraîne un RandomForestRegressor avec hyperparamètres fournis (pas de recherche)."""
+    # Entraîne un RandomForestRegressor avec hyperparamètres fournis (pas de recherche).
     print_section("Division des données...")
 
     # Division des données

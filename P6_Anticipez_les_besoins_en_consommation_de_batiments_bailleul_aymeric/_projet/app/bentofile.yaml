@@ -2,7 +2,7 @@ service: "service.py:SeattleEnergyPredictor"
 name: "seattle-energy-predictor"
 description: |
   Service BentoML pour prédire la consommation énergétique annuelle des bâtiments de Seattle
-  basé sur un modèle Random Forest Regressor (pipeline anti-fuite).
+  basé sur un modèle Random Forest Regressor (pipeline anti-leakage).
   
   ## Fonctionnalités
   - Prédiction individuelle : `/predict_single`

@@ -2,7 +2,7 @@
 
 ## Description
 
-API de prédiction de consommation énergétique pour les bâtiments de Seattle basée sur un **Random Forest Regressor** (pipeline sans fuite). Le service attend une entrée minimale et reconstruit les features complètes attendues par le modèle.
+API de prédiction de consommation énergétique pour les bâtiments de Seattle basée sur un **Random Forest Regressor** (pipeline anti-leakage). Le service attend une entrée minimale et reconstruit les features complètes attendues par le modèle.
 
 ## Utilisation
 
@@ -18,7 +18,7 @@ python save_model_SeattleEnergyPredictor.py
 Ce script :
 - Se place dans le bon répertoire de travail
 - Charge X/y depuis `../sources/2016_Building_Energy_Benchmarking_03X_building_consumption.csv` et `../sources/2016_Building_Energy_Benchmarking_03y_building_consumption.csv`
-- Applique une regex anti-fuite (exclut toute colonne liée à consommation/énergie)
+- Applique une regex anti-leakage (exclut toute colonne liée à consommation/énergie)
 - Entraîne un RandomForest avec des hyperparamètres fournis
 - Sauvegarde le modèle dans BentoML avec métadonnées et objets personnalisés (`feature_names`, `sample_input`)
 - Vérifie la sauvegarde
@@ -54,7 +54,7 @@ http://localhost:3000
 - **Réponses formatées** : Résultats JSON bien structurés
 
 ### Endpoints disponibles dans Swagger
-1. **`POST /predict_single`** – Prédiction (entrée minimale et sans fuite)
+1. **`POST /predict_single`** – Prédiction (entrée minimale anti-leakage)
 2. **`POST /predict_batch`** – Prédictions multiples (entrée minimale)
 3. **`POST /validate_data`** – Validation seule sans prédiction
 4. **`GET /get_feature_info`** – Documentation dynamique (features, types, exemples)
