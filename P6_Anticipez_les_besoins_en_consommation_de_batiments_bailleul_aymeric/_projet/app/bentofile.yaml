@@ -2,22 +2,24 @@ service: "service.py:SeattleEnergyPredictor"
 name: "seattle-energy-predictor"
 description: |
   Service BentoML pour prédire la consommation énergétique annuelle des bâtiments de Seattle
-  basé sur un modèle Linear Regression.
+  basé sur un modèle Random Forest Regressor (pipeline anti-fuite).
   
   ## Fonctionnalités
   - Prédiction individuelle : `/predict_single`
   - Prédiction par lot : `/predict_batch`
   - Validation seule : `/validate_data`
   - Documentation des features : `/get_feature_info`
+  - Mapping PrimaryPropertyType → Building_Group : `/get_group_map`
   - Statut du service : `/health`
   - Interface Swagger UI interactive
-  - Validation Pydantic V2 avec avertissements intelligents
+  - Validation Pydantic V2 stricte (PropertyGFATotal >10 ≤1M, NumberofFloors 1-100, YearBuilt >1800 ≤2050)
 
 labels:
   owner: "Formation Data Engineer"
   project: "P6_Seattle_Energy_Prediction"
   stage: "production"
-  version: "1.0.0"
+  version: "1.1.0"
+  algorithm: "RandomForest"
 
 models:
   - "seattle_energy_predictor"

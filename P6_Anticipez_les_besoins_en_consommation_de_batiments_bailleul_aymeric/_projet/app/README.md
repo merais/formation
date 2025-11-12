@@ -148,13 +148,13 @@ bentoml build
 ```bash
 # Utilisez le tag généré lors du build (exemple)
 # Le tag change à chaque build - utilisez celui affiché après 'bentoml build'
-bentoml containerize seattle-energy-predictor:rgz23h5256v64pak
+bentoml containerize seattle-energy-predictor:tqmfu3v7t6626pak
 ```
 
 ### 3. Lancer le container
 ```bash
 # Utilisez le même tag que pour la containerisation
-docker run --rm -p 3000:3000 merais/seattle-energy-predictor:rgz23h5256v64pak
+docker run --rm -p 3000:3000 seattle-energy-predictor:tqmfu3v7t6626pak
 ```
 
 ### 4. Accéder au service containerisé
@@ -173,17 +173,17 @@ Pré-requis: avoir construit et containerisé le Bento localement (image `seattl
 docker login
 
 # 2) Taguer l'image locale avec votre dépôt Docker Hub
-docker tag seattle-energy-predictor:rgz23h5256v64pak merais/seattle-energy-predictor:rgz23h5256v64pak
-docker tag seattle-energy-predictor:rgz23h5256v64pak merais/seattle-energy-predictor:latest
+docker tag seattle-energy-predictor:tqmfu3v7t6626pak merais/seattle-energy-predictor:tqmfu3v7t6626pak
+docker tag seattle-energy-predictor:tqmfu3v7t6626pak merais/seattle-energy-predictor:latest
 
 # 3) Pousser les tags vers Docker Hub
-docker push merais/seattle-energy-predictor:rgz23h5256v64pak
+docker push merais/seattle-energy-predictor:tqmfu3v7t6626pak
 docker push merais/seattle-energy-predictor:latest
 ```
 
 Notes:
 - Remplacez `merais` par votre propre namespace Docker Hub si vous forkiez le projet.
-- Le tag long (`rgz23h5256v64pak`) est immuable et permet la reproductibilité; `latest` pointe vers la version actuelle.
+- Le tag long (`tqmfu3v7t6626pak`) est immuable et permet la reproductibilité; `latest` pointe vers la version actuelle.
 
 ## Utiliser l'image depuis Docker Hub
 
@@ -195,7 +195,7 @@ Vous pouvez directement récupérer l'image déjà publiée sur Docker Hub et l'
 docker pull merais/seattle-energy-predictor:latest
 
 # Version figée (reproductible)
-docker pull merais/seattle-energy-predictor:rgz23h5256v64pak
+docker pull merais/seattle-energy-predictor:tqmfu3v7t6626pak
 ```
 
 ### Lancer l'image
@@ -204,12 +204,12 @@ docker pull merais/seattle-energy-predictor:rgz23h5256v64pak
 docker run --rm -p 3000:3000 merais/seattle-energy-predictor:latest
 
 # Ou avec le tag spécifique
-docker run --rm -p 3000:3000 merais/seattle-energy-predictor:rgz23h5256v64pak
+docker run --rm -p 3000:3000 merais/seattle-energy-predictor:tqmfu3v7t6626pak
 ```
 
 ### URL pour Google Cloud > Cloud Run 
 
-docker.io/merais/seattle-energy-predictor:rgz23h5256v64pak
+docker.io/merais/seattle-energy-predictor:tqmfu3v7t6626pak
 
 ### Accéder à l'API
 - **Swagger UI / API** : `http://localhost:3000`
@@ -219,45 +219,7 @@ docker.io/merais/seattle-energy-predictor:rgz23h5256v64pak
 Le service utilise **Pydantic V2** pour valider automatiquement toutes les entrées.
 
 ### Validations actives
-- `PropertyGFATotal` : doit être ≥ 0
-- `NumberofFloors` : doit être ≥ 1
+- `PropertyGFATotal` : doit être **> 10** et **≤ 1,000,000** sq ft
+- `NumberofFloors` : doit être **≥ 1** et **≤ 100**
 - `PrimaryPropertyType` : doit appartenir à la liste autorisée (voir `/get_feature_info`)
-- `YearBuilt` : si fourni, doit être entre 1800 et 2100
-
-### Erreurs courantes
-
-#### 1. Oubli du wrapper "data"
-```json
-❌ {"PropertyGFATotal": 50000, ...}
-✅ {"data": {"PropertyGFATotal": 50000, ...}}
-```
-**Erreur:** `Field required` pour `"data"`
-
-#### 2. Valeur négative
-```json
-{"data": {"PropertyGFATotal": -1000, ...}}
-```
-**Erreur:** `Input should be greater than or equal to 0`
-
-#### 3. Type de bâtiment invalide
-```json
-{"data": {"PrimaryPropertyType": "InvalidType", ...}}
-```
-**Erreur:** `Value error, PrimaryPropertyType doit être dans [...]`
-
-### Tester les validations
-```powershell
-# Test avec valeur invalide (doit échouer)
-$body = @{
-  data = @{
-    PropertyGFATotal = -1000
-    NumberofFloors = 5
-    PrimaryPropertyType = "Large Office"
-  }
-} | ConvertTo-Json -Depth 3
-Invoke-RestMethod -Uri "http://localhost:3000/predict_single" -Method Post -ContentType "application/json" -Body $body
-```
-
-Note:
-- Si le dépôt Docker Hub est privé, connectez-vous avant le pull: `docker login`
-- Les tags changent à chaque build automatisé; utilisez toujours le tag affiché après `bentoml build` pour rester cohérent.
+- `YearBuilt` : si fourni, doit être **> 1800** et **≤ 2050**

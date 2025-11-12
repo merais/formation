@@ -58,14 +58,14 @@ PRIMARY_TYPE_EXAMPLES: List[Dict] = [
 
 
 class RestrictedPredictionInput(BaseModel):
-    PropertyGFATotal: float = Field(..., ge=0, description="Surface totale du bâtiment en sq ft")
-    NumberofFloors: int = Field(..., ge=1, description="Nombre d'étages (>=1)")
+    PropertyGFATotal: float = Field(..., gt=10, le=1000000, description="Surface totale du bâtiment en sq ft (>10 et <=1,000,000)")
+    NumberofFloors: int = Field(..., ge=1, le=100, description="Nombre d'étages (>=1 et <=100)")
     PrimaryPropertyType: str = Field(
         ...,
         description="Type principal du bâtiment (doit appartenir à la liste autorisée)",
         json_schema_extra={"enum": PRIMARY_TYPES},
     )
-    YearBuilt: Optional[int] = Field(None, ge=1800, le=2100, description="Année de construction si connue")
+    YearBuilt: Optional[int] = Field(None, gt=1800, le=2050, description="Année de construction (>1800 et <=2050)")
 
     @field_validator("PrimaryPropertyType")
     def validate_primary_type(cls, v):
