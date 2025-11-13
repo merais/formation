@@ -2,6 +2,7 @@
 **/sources/
 **/_result_tests/
 **/tools/
+**/data/
 
 # Python virtual environments
 **/.venv/
