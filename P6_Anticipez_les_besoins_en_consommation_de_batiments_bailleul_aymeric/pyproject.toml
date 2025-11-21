@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "p6-consommation-batiments"
+version = "0.1.0"
+description = "Projet d'anticipation des besoins en consommation énergétique de bâtiments"
+authors = ["Aymeric Bailleul"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.14"
+pandas = "^2.3.3"
+numpy = "^2.3.5"
+matplotlib = "^3.10.7"
+seaborn = "^0.13.2"
+scikit-learn = "^1.7.0"
+bentoml = "^1.4.0"
+pydantic = "^2.10.6"
+ipython = "^9.7.0"
+jupyter = "^1.1.1"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
