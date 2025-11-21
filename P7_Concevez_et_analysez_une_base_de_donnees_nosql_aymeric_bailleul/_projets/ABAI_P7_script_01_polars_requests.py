@@ -19,7 +19,7 @@ class MongoDBConnection:
     
     def __init__(self, connection_string: Optional[str] = None, 
                  host: str = "localhost", 
-                 port: int = 27017):
+                 port: int = 27001):
         """
         Initialise la connexion MongoDB
         """
@@ -332,14 +332,14 @@ def identifier_quartiers_plus_fort_taux_reservation_par_mois(collection) -> pl.D
 if __name__ == "__main__":
     
     # Configuration de la connexion
-    mongo = MongoDBConnection(host="localhost", port=27017)
+    mongo = MongoDBConnection(host="localhost", port=27001)
 
     # Connexion à la base de données
     if mongo.connect("listings"):  
         print("\tConnexion établie --> Les requêtes peuvent commencer.")
         
         # Récupérer la collection
-        collection = mongo.db["paris"]  # Remplacer "paris" par le nom de votre collection
+        collection = mongo.db["short_location"]  # Remplacer "paris" par le nom de votre collection
         if collection is None:
             print("\tLa collection n'existe pas dans la base de données.")
             mongo.close()

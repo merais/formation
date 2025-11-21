@@ -82,7 +82,7 @@
 
 - **Exécuter le script d'ajout des shards**
 
-      `mongosh --port 27001 --file conf_01_add_shards.js`
+    `mongosh --port 27001 --file conf_01_add_shards.js`
       
 - **OU Configuration manuelle**
 
@@ -97,7 +97,7 @@
 
 - **Exécuter le script d'intégration des données**
 
-      `python ABAI_P7_script_02_integration_data.py`
+    `python ABAI_P7_script_02_integration_data.py`
       
 - **Important** : Vérifier que les ports des mongos sont bien 27001 et 27002 dans le script
 
@@ -105,7 +105,7 @@
 
 - **Exécuter le script de configuration du sharding**
 
-      `mongosh --port 27001 --file conf_02_setup_sharding_collection.js`
+    `mongosh --port 27001 --file conf_02_setup_sharding_collection.js`
       
 - **OU Configuration manuelle**
 
