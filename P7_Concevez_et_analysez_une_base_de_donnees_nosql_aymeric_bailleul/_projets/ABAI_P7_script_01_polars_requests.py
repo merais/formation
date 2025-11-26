@@ -82,127 +82,93 @@ def aggregate_to_polars(collection, pipeline: List[Dict]) -> pl.DataFrame:
     
     return pl.DataFrame(result)
 
-def calculer_taux_reservation_moyen_par_type(collection) -> pl.DataFrame:
+def calculer_taux_reservation_moyen_par_type_polars(collection) -> pl.DataFrame:
     """
     Calcule le taux de réservation moyen par mois et par type de logement
+    Version Polars : utilise Polars pour les calculs au lieu de l'agrégation MongoDB
+    Mode lazy pour optimiser les performances
     """
-    pipeline = [
-        {
-            "$match": {
-                "availability_365": {"$exists": True, "$ne": None},
-                "room_type": {"$exists": True, "$ne": None}
-            }
-        },
-        {
-            "$group": {
-                "_id": "$room_type",
-                "disponibilite_moyenne": {"$avg": "$availability_365"}
-            }
-        },
-        {
-            "$project": {
-                "_id": 0,
-                "room_type": "$_id",
-                "taux_reservation_mensuel_moyen": {
-                    "$round": [
-                        {"$divide": [
-                            {"$multiply": [
-                                {"$divide": [
-                                    {"$subtract": [365, "$disponibilite_moyenne"]},
-                                    365
-                                ]},
-                                100
-                            ]},
-                            12
-                        ]},
-                        2
-                    ]
-                }
-            }
-        },
-        {
-            "$sort": {"taux_reservation_mensuel_moyen": -1}
-        }
-    ]
+    # Récupérer les données brutes depuis MongoDB
+    query = {
+        "availability_365": {"$exists": True, "$ne": None},
+        "room_type": {"$exists": True, "$ne": None}
+    }
+    projection = {"room_type": 1, "availability_365": 1, "_id": 0}
     
-    return aggregate_to_polars(collection, pipeline)
+    df_logements = query_to_polars(collection, query=query, projection=projection)
+    
+    if df_logements.is_empty():
+        return pl.DataFrame()
+    
+    # Effectuer les calculs avec Polars en mode lazy
+    df_taux_par_type = (
+        df_logements.lazy()
+        .group_by("room_type")
+        .agg(pl.col("availability_365").mean().alias("disponibilite_moyenne"))
+        .with_columns([
+            (
+                ((365 - pl.col("disponibilite_moyenne")) / 365 * 100) / 12
+            ).round(2).alias("taux_reservation_mensuel_moyen")
+        ])
+        .select(["room_type", "taux_reservation_mensuel_moyen"])
+        .sort("taux_reservation_mensuel_moyen", descending=True)
+        .collect()
+    )
+    
+    return df_taux_par_type
 
-def calculer_médiane_nombre_avis_all_logements(collection) -> pl.DataFrame:
+def calculer_médiane_nombre_avis_all_logements_polars(collection) -> pl.DataFrame:
     """
-    Calcule la médiane des nombre d’avis pour tous les logements
+    Calcule la médiane des nombre d'avis pour tous les logements
+    Version Polars : utilise Polars pour les calculs au lieu de l'agrégation MongoDB
+    Mode lazy pour optimiser les performances
     """
-    pipeline = [
-        {
-            "$match": {
-                "number_of_reviews": {"$exists": True, "$ne": None}
-            }
-        },
-        {
-            "$group": {
-                "_id": None,
-                "values": {"$push": "$number_of_reviews"}
-            }
-        },
-        {
-            "$project": {
-                "_id": 0,
-                "mediane_nombre_avis": {
-                    "$percentile": {
-                        "input": "$values",
-                        "p": [0.5],
-                        "method": "approximate"
-                    }
-                }
-            }
-        },
-        {
-            "$project": {
-                "mediane_nombre_avis": {"$arrayElemAt": ["$mediane_nombre_avis", 0]}
-            }
-        }
-    ]
+    # Récupérer les données brutes depuis MongoDB
+    query = {"number_of_reviews": {"$exists": True, "$ne": None}}
+    projection = {"number_of_reviews": 1, "_id": 0}
     
-    return aggregate_to_polars(collection, pipeline)
+    df_avis = query_to_polars(collection, query=query, projection=projection)
+    
+    if df_avis.is_empty():
+        return pl.DataFrame()
+    
+    # Calculer la médiane avec Polars en mode lazy
+    df_mediane = (
+        df_avis.lazy()
+        .select(pl.col("number_of_reviews").median().alias("mediane_nombre_avis"))
+        .collect()
+    )
+    
+    return df_mediane
 
-def calculer_médiane_nombre_avis_categorie_hote(collection) -> pl.DataFrame:
+def calculer_médiane_nombre_avis_categorie_hote_polars(collection) -> pl.DataFrame:
     """
-    Calcule la médiane des nombre d’avis par catégorie d’hôte
+    Calcule la médiane des nombre d'avis par catégorie d'hôte
+    Version Polars : utilise Polars pour les calculs au lieu de l'agrégation MongoDB
+    Mode lazy pour optimiser les performances
     """
-    pipeline = [
-        {
-            "$match": {
-                "number_of_reviews": {"$exists": True, "$ne": None},
-                "host_is_superhost": {"$exists": True, "$ne": None}
-            }
-        },
-        {
-            "$group": {
-                "_id": "$host_is_superhost",
-                "values": {"$push": "$number_of_reviews"}
-            }
-        },
-        {
-            "$project": {
-                "_id": 0,
-                "host_is_superhost": "$_id",
-                "mediane_nombre_avis": {
-                    "$percentile": {
-                        "input": "$values",
-                        "p": [0.5],
-                        "method": "approximate"
-                    }
-                }
-            }
-        },
-        {
-            "$project": {
-                "host_is_superhost": 1,
-                "mediane_nombre_avis": {"$arrayElemAt": ["$mediane_nombre_avis", 0]}
-            }
-        }
-    ]
+    # Récupérer les données brutes depuis MongoDB
+    query = {
+        "number_of_reviews": {"$exists": True, "$ne": None},
+        "host_is_superhost": {"$exists": True, "$ne": None}
+    }
+    projection = {"number_of_reviews": 1, "host_is_superhost": 1, "_id": 0}
     
-    return aggregate_to_polars(collection, pipeline)
+    df_avis_hotes = query_to_polars(collection, query=query, projection=projection)
+    
+    if df_avis_hotes.is_empty():
+        return pl.DataFrame()
+    
+    # Calculer la médiane par catégorie avec Polars en mode lazy
+    df_mediane_par_categorie = (
+        df_avis_hotes.lazy()
+        .group_by("host_is_superhost")
+        .agg(pl.col("number_of_reviews").median().alias("mediane_nombre_avis"))
+        .sort("host_is_superhost")
+        .collect()
+    )
+    
+    return df_mediane_par_categorie
 
 def calculer_densite_logements_par_quartier(collection) -> pl.DataFrame:
     """
@@ -255,30 +221,34 @@ def calculer_densite_logements_par_quartier(collection) -> pl.DataFrame:
     ]
     
     # Récupérer les données depuis MongoDB
-    df_arrondissements = aggregate_to_polars(collection, pipeline)
+    df_quartiers_brut = aggregate_to_polars(collection, pipeline)
     
-    if df_arrondissements.is_empty():
-        return df_arrondissements
+    if df_quartiers_brut.is_empty():
+        return df_quartiers_brut
     
-    # Ajouter les surfaces avec un mapping explicite
-    df_arrondissements = df_arrondissements.with_columns([
-        pl.col("arrondissement").replace_strict(arrondissements_surface, default=None, return_dtype=pl.Float64).alias("surface_km2")
-    ])
+    # Effectuer les transformations en mode lazy
+    df_quartiers_densite = (
+        df_quartiers_brut.lazy()
+        # Ajouter les surfaces avec un mapping explicite
+        .with_columns([
+            pl.col("arrondissement").replace_strict(arrondissements_surface, default=None, return_dtype=pl.Float64).alias("surface_km2")
+        ])
+        # Calculer la densité
+        .with_columns([
+            (pl.col("nombre_logements") / pl.col("surface_km2")).round(2).alias("densite_logements_par_km2")
+        ])
+        # Sélectionner et trier
+        .select([
+            "arrondissement",
+            "nombre_logements",
+            "surface_km2",
+            "densite_logements_par_km2"
+        ])
+        .sort("densite_logements_par_km2", descending=True)
+        .collect()
+    )
     
-    # Calculer la densité
-    df_arrondissements = df_arrondissements.with_columns([
-        (pl.col("nombre_logements") / pl.col("surface_km2")).round(2).alias("densite_logements_par_km2")
-    ])
-    
-    # Sélectionner et trier
-    df_arrondissements = df_arrondissements.select([
-        "arrondissement",
-        "nombre_logements",
-        "surface_km2",
-        "densite_logements_par_km2"
-    ]).sort("densite_logements_par_km2", descending=True)
-    
-    return df_arrondissements
+    return df_quartiers_densite
 
 def identifier_quartiers_plus_fort_taux_reservation_par_mois(collection) -> pl.DataFrame:
     """
@@ -351,21 +321,21 @@ if __name__ == "__main__":
         print("\n" + "="*100)
         print("TAUX DE RÉSERVATION MOYEN PAR TYPE DE LOGEMENT")
         print("="*100)
-        df_taux = calculer_taux_reservation_moyen_par_type(collection)
+        df_taux = calculer_taux_reservation_moyen_par_type_polars(collection)
         print(df_taux)
 
         # Médiane des nombre d’avis pour tous les logements
         print("\n" + "="*100)
         print("MÉDIANE DES NOMBRE D’AVIS POUR TOUS LES LOGEMENTS")
         print("="*100)
-        df_mediane_all_logement = calculer_médiane_nombre_avis_all_logements(collection)
+        df_mediane_all_logement = calculer_médiane_nombre_avis_all_logements_polars(collection)
         print(df_mediane_all_logement)
 
         # Médiane des nombres d’avis par catégorie d’hôte
         print("\n" + "="*100)
         print("MÉDIANE DES NOMBRE D’AVIS PAR CATÉGORIE D’HÔTE")
         print("="*100)
-        df_mediane_categorie_hote = calculer_médiane_nombre_avis_categorie_hote(collection)
+        df_mediane_categorie_hote = calculer_médiane_nombre_avis_categorie_hote_polars(collection)
         print(df_mediane_categorie_hote)
 
         # Densité de logements par quartier de Paris
