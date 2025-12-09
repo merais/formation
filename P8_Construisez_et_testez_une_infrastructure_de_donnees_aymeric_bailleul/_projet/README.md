@@ -51,14 +51,14 @@ Le projet utilise une architecture microservices avec Docker Compose :
 Copy-Item .env.example .env
 ```
 
-2. Éditer `.env` avec vos identifiants :
+2. Éditer `.env` avec vos identifiants et autre donnée en italique:
 
 ```dotenv
 # AWS S3
-AWS_ACCESS_KEY_ID=votre_access_key
-AWS_SECRET_ACCESS_KEY=votre_secret_key
-AWS_REGION=eu-west-1
-S3_BUCKET_NAME=votre-bucket
+AWS_ACCESS_KEY_ID=*votre_access_key*
+AWS_SECRET_ACCESS_KEY=*votre_secret_key*
+AWS_REGION=*eu-west-1*
+S3_BUCKET_NAME=*votre-bucket*
 S3_PREFIX_SOURCE=01_raw/
 S3_PREFIX_DESTINATION=02_cleaned/
 S3_PREFIX_ARCHIVE=03_archived/
@@ -70,8 +70,8 @@ MONGODB_DATABASE=weather_data
 MONGODB_COLLECTION=measurements
 
 # Mongo Express (Interface Web)
-MONGO_EXPRESS_USER=admin
-MONGO_EXPRESS_PASSWORD=pass
+MONGO_EXPRESS_USER=*admin*
+MONGO_EXPRESS_PASSWORD=*pass*
 
 # Services
 WATCH_INTERVAL=300          # Import automatique (5 minutes)

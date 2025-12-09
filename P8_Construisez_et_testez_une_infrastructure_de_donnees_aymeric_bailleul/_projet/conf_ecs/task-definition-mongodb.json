@@ -1,0 +1,71 @@
+{
+  "family": "weather-mongodb",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/WeatherPipelineECSTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/WeatherPipelineECSTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "mongodb",
+      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/weather-mongodb:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 27017,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "MONGO_INITDB_DATABASE",
+          "value": "weather_data"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "MONGO_INITDB_ROOT_USERNAME",
+          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:weather-pipeline/mongodb-credentials:MONGODB_ROOT_USER::"
+        },
+        {
+          "name": "MONGO_INITDB_ROOT_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:weather-pipeline/mongodb-credentials:MONGODB_ROOT_PASSWORD::"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "mongodb-data",
+          "containerPath": "/data/db",
+          "readOnly": false
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/weather-mongodb",
+          "awslogs-region": "REGION",
+          "awslogs-stream-prefix": "ecs",
+          "awslogs-create-group": "true"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "mongosh --eval 'db.runCommand(\"ping\").ok' --quiet || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ],
+  "volumes": [
+    {
+      "name": "mongodb-data",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "EFS_ID",
+        "rootDirectory": "/mongodb",
+        "transitEncryption": "ENABLED"
+      }
+    }
+  ]
+}
