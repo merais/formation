@@ -1,20 +1,20 @@
 # P8 - Projet ETL Données Météorologiques
 
-Mon pipeline ETL dockerisé pour lire, nettoyer et intégrer automatiquement les données météorologiques depuis AWS S3 vers MongoDB.
+Pipeline ETL dockerisé pour lire, nettoyer et intégrer automatiquement les données météorologiques depuis AWS S3 vers MongoDB.
 
 ## Description
 
-J'extrais les données météorologiques au format JSONL depuis mon bucket S3, j'applique des transformations de nettoyage et de conversion d'unités, puis je les importe automatiquement dans MongoDB.
+Ce projet extrait des données météorologiques au format JSONL depuis un bucket S3, applique des transformations de nettoyage et de conversion d'unités, puis les importe automatiquement dans MongoDB.
 
 ## 🏗️ Architecture
 
 J'utilise une architecture microservices avec Docker Compose :
 
-- **MongoDB 7.0** : Ma base de données NoSQL pour stocker les données météorologiques
+- **MongoDB 7.0** : Base de données NoSQL pour stocker les données météorologiques
 - **Mongo Express** : Interface web d'administration MongoDB accessible sur http://localhost:8081
 - **ETL Pipeline** : Nettoyage et transformation des données
 - **MongoDB Importer** : Import automatique des données nettoyées (toutes les 5 minutes)
-- **S3 Cleanup** : Service de nettoyage automatique de mon bucket S3 (toutes les heures)
+- **S3 Cleanup** : Service de nettoyage automatique du bucket S3 (toutes les heures)
 
 ### Fonctionnalités principales
 
@@ -31,6 +31,7 @@ J'utilise une architecture microservices avec Docker Compose :
   - Types numériques corrects
   - Clé unique composite (id_station + timestamp)
   - Timestamp de traitement
+  - **Traçabilité complète** : nom_station et source_file
 - ✅ **Export S3** : Sauvegarde du résultat dans un dossier de destination
 - ✅ **Import MongoDB automatique** : Surveillance du bucket S3 et import automatique des nouveaux fichiers
 - ✅ **Docker Compose** : Orchestration complète avec MongoDB, Mongo Express et services ETL
@@ -51,7 +52,7 @@ J'utilise une architecture microservices avec Docker Compose :
 Copy-Item .env.example .env
 ```
 
-2. Éditer `.env` avec mes identifiants et autres données en italique :
+2. Éditer `.env` avec vos identifiants et autre donnée en italique:
 
 ```dotenv
 # AWS S3
@@ -127,7 +128,7 @@ docker-compose down
 
 ### Tests de connexion MongoDB
 
-Avant chaque import, mon système exécute automatiquement une suite de tests pour vérifier :
+Avant chaque import, le système exécute automatiquement une suite de tests pour vérifier :
 - ✅ Disponibilité de MongoDB
 - ✅ Existence de la base de données et de la collection
 - ✅ Permissions CRUD (Create, Read, Update, Delete)
@@ -147,8 +148,8 @@ docker-compose run --rm mongodb-importer python ABAI_P8_script_03_test_mongodb.p
 
 ### Nettoyage et archivage S3
 
-Mon service `s3-cleanup` nettoie automatiquement le bucket S3 toutes les heures :
-1. Vérifie que mes données cleaned sont bien dans MongoDB
+Le service `s3-cleanup` nettoie automatiquement le bucket S3 toutes les heures :
+1. Vérifie que les données cleaned sont bien dans MongoDB
 2. Déplace les fichiers cleaned vers `03_archived/`
 3. Supprime les fichiers raw de `01_raw/`
 
@@ -178,18 +179,19 @@ poetry run python ABAI_P8_script_01_clean_data.py
 docker-compose run --rm etl-pipeline
 ```
 
-Mon script propose plusieurs options interactives :
+Le script propose plusieurs options interactives :
 1. Sauvegarder le premier fichier localement (CSV)
 2. Lire et combiner tous les fichiers du bucket
 3. Sauvegarder le résultat dans S3 (format MongoDB)
 
 ### Structure des données en sortie
 
-Mon script génère un fichier JSON avec 19 colonnes par enregistrement :
+Le script génère un fichier JSON avec **21 colonnes** par enregistrement (incluant traçabilité) :
 
 ```json
 {
   "id_station": "07015",
+  "nom_station": "Lille-Lesquin",
   "dh_utc": "2024-10-05T00:00:00.000Z",
   "temperature": 7.6,
   "pression": 1020.7,
@@ -206,21 +208,17 @@ Mon script génère un fichier JSON avec 19 colonnes par enregistrement :
   "solar": null,
   "precip_rate": null,
   "uv": null,
-  "processed_at": "2025-12-08T15:56:18.000Z",
+  "source_file": "20251209_160500_weather_data.json",
+  "processed_at": "2025-12-09T16:05:18.000Z",
   "unique_key": "07015_2024-10-05T00:00:00.000Z"
 }
 ```
-
-**Colonnes supprimées lors du nettoyage :**
-- `time` : Redondante avec `dh_utc`
-- `temps_omm` : Très peu de valeurs (< 1%)
-- `nebulosite` : Très peu de valeurs (< 2%)
 
 ## Import dans MongoDB
 
 ### Automatique (Docker Compose)
 
-Mon service `mongodb-importer` surveille automatiquement le dossier `02_cleaned/` de mon bucket S3 et importe les nouveaux fichiers toutes les 5 minutes (configurable via `WATCH_INTERVAL`).
+Le service `mongodb-importer` surveille automatiquement le dossier `02_cleaned/` du bucket S3 et importe les nouveaux fichiers toutes les 5 minutes (configurable via `WATCH_INTERVAL`).
 
 ### Manuel
 
@@ -315,6 +313,33 @@ _projet/
 - **python-dotenv** ^1.0.0 : Gestion des variables d'environnement
 - **pymongo** ^4.10.0 : Driver MongoDB pour Python
 - **pytest** ^8.0.0 : Framework de tests (dev)
+
+## 🎯 Traçabilité des données
+
+Chaque document MongoDB contient des métadonnées de traçabilité :
+
+- **`nom_station`** : Nom de la ville/station météo (extrait du mapping Airbyte)
+  - Exemple : `"Lille-Lesquin"` pour l'ID station `"07015"`
+  - Permet d'identifier rapidement la localisation géographique
+
+- **`source_file`** : Nom du fichier JSONL source
+  - Exemple : `"20251209_160500_weather_data.json"`
+  - Permet de tracer l'origine exacte de chaque mesure
+  - Utile pour le débogage et l'audit des données
+
+- **`processed_at`** : Timestamp du traitement ETL
+  - Format ISO 8601 : `"2025-12-09T16:05:18.000Z"`
+  - Permet de suivre le délai entre extraction et traitement
+
+- **`unique_key`** : Clé composite unique
+  - Format : `"id_station_dh_utc"`
+  - Garantit l'unicité et facilite les upserts
+
+**Avantages :**
+- ✅ Audit complet : fichier → extraction → traitement → base de données
+- ✅ Retraitement sélectif : possibilité de supprimer et retraiter un fichier source spécifique
+- ✅ Analyse qualité : suivi de la qualité par lot d'extraction
+- ✅ Débogage facilité : identification rapide des problèmes par fichier source
 
 ## Transformations appliquées
 
