@@ -1,20 +1,20 @@
 # P8 - Projet ETL Données Météorologiques
 
-Pipeline ETL dockerisé pour lire, nettoyer et intégrer automatiquement des données météorologiques depuis AWS S3 vers MongoDB.
+Mon pipeline ETL dockerisé pour lire, nettoyer et intégrer automatiquement les données météorologiques depuis AWS S3 vers MongoDB.
 
 ## Description
 
-Ce projet extrait des données météorologiques au format JSONL depuis un bucket S3, applique des transformations de nettoyage et de conversion d'unités, puis les importe automatiquement dans MongoDB.
+J'extrais les données météorologiques au format JSONL depuis mon bucket S3, j'applique des transformations de nettoyage et de conversion d'unités, puis je les importe automatiquement dans MongoDB.
 
 ## 🏗️ Architecture
 
-Le projet utilise une architecture microservices avec Docker Compose :
+J'utilise une architecture microservices avec Docker Compose :
 
-- **MongoDB 7.0** : Base de données NoSQL pour stocker les données météorologiques
+- **MongoDB 7.0** : Ma base de données NoSQL pour stocker les données météorologiques
 - **Mongo Express** : Interface web d'administration MongoDB accessible sur http://localhost:8081
 - **ETL Pipeline** : Nettoyage et transformation des données
 - **MongoDB Importer** : Import automatique des données nettoyées (toutes les 5 minutes)
-- **S3 Cleanup** : Service de nettoyage automatique du bucket S3 (toutes les heures)
+- **S3 Cleanup** : Service de nettoyage automatique de mon bucket S3 (toutes les heures)
 
 ### Fonctionnalités principales
 
@@ -51,7 +51,7 @@ Le projet utilise une architecture microservices avec Docker Compose :
 Copy-Item .env.example .env
 ```
 
-2. Éditer `.env` avec vos identifiants et autre donnée en italique:
+2. Éditer `.env` avec mes identifiants et autres données en italique :
 
 ```dotenv
 # AWS S3
@@ -127,7 +127,7 @@ docker-compose down
 
 ### Tests de connexion MongoDB
 
-Avant chaque import, le système exécute automatiquement une suite de tests pour vérifier :
+Avant chaque import, mon système exécute automatiquement une suite de tests pour vérifier :
 - ✅ Disponibilité de MongoDB
 - ✅ Existence de la base de données et de la collection
 - ✅ Permissions CRUD (Create, Read, Update, Delete)
@@ -147,8 +147,8 @@ docker-compose run --rm mongodb-importer python ABAI_P8_script_03_test_mongodb.p
 
 ### Nettoyage et archivage S3
 
-Le service `s3-cleanup` nettoie automatiquement le bucket S3 toutes les heures :
-1. Vérifie que les données cleaned sont bien dans MongoDB
+Mon service `s3-cleanup` nettoie automatiquement le bucket S3 toutes les heures :
+1. Vérifie que mes données cleaned sont bien dans MongoDB
 2. Déplace les fichiers cleaned vers `03_archived/`
 3. Supprime les fichiers raw de `01_raw/`
 
@@ -178,14 +178,14 @@ poetry run python ABAI_P8_script_01_clean_data.py
 docker-compose run --rm etl-pipeline
 ```
 
-Le script propose plusieurs options interactives :
+Mon script propose plusieurs options interactives :
 1. Sauvegarder le premier fichier localement (CSV)
 2. Lire et combiner tous les fichiers du bucket
 3. Sauvegarder le résultat dans S3 (format MongoDB)
 
 ### Structure des données en sortie
 
-Le script génère un fichier JSON avec 19 colonnes par enregistrement :
+Mon script génère un fichier JSON avec 19 colonnes par enregistrement :
 
 ```json
 {
@@ -220,7 +220,7 @@ Le script génère un fichier JSON avec 19 colonnes par enregistrement :
 
 ### Automatique (Docker Compose)
 
-Le service `mongodb-importer` surveille automatiquement le dossier `02_cleaned/` du bucket S3 et importe les nouveaux fichiers toutes les 5 minutes (configurable via `WATCH_INTERVAL`).
+Mon service `mongodb-importer` surveille automatiquement le dossier `02_cleaned/` de mon bucket S3 et importe les nouveaux fichiers toutes les 5 minutes (configurable via `WATCH_INTERVAL`).
 
 ### Manuel
 

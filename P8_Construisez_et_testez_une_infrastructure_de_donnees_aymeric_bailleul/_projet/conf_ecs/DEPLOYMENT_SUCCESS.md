@@ -182,11 +182,6 @@ S3: 03_archived/
 - ✅ **weather-importer:3** - Importe dans MongoDB
 - ✅ **s3-cleanup:3** - Archive après vérification
 
-**Résultats actuels :**
-- 📦 ~46 fichiers archivés dans `03_archived/`
-- 📊 Données disponibles dans MongoDB via Mongo Express
-- ⏰ Traitement automatique toutes les heures
-
 ## 🚀 Commandes Utiles
 
 ### Vérifier l'état des services
@@ -229,11 +224,6 @@ aws ecs update-service \
 - Data Transfer : ~$5-10
 - **Total : ~$110-140/mois**
 
-**Optimisations possibles :**
-- Réduire la fréquence du pipeline (3h ou 6h au lieu d'1h)
-- Utiliser Spot instances (non supporté pour Fargate)
-- Arrêter les services non critiques en dehors des heures de travail
-
 ## 📚 Documentation
 
 Tous les détails de déploiement sont dans :
@@ -243,15 +233,6 @@ Tous les détails de déploiement sont dans :
 - `conf_ecs/iam-roles.yaml` - Rôles IAM avec CloudWatch Logs
 - `conf_ecs/task-definition-*.json` - Définitions des tâches (5 fichiers)
 
-## ✨ Améliorations Futures
-
-1. 🔒 Ajouter un Application Load Balancer pour Mongo Express (HTTPS)
-2. 📊 Configurer CloudWatch Alarms pour monitoring (CPU, Memory, erreurs)
-3. 💾 Implémenter des sauvegardes automatiques de MongoDB (snapshots EFS)
-4. 📈 Ajouter auto-scaling basé sur les métriques CPU/Memory
-5. 🔐 Restreindre l'accès Mongo Express à des IPs spécifiques
-6. 🗄️ Configurer la rotation des logs CloudWatch (retention policy)
-
 ## 🎉 Statut Final
 
 **✅ PIPELINE ENTIÈREMENT OPÉRATIONNEL**
@@ -259,7 +240,6 @@ Tous les détails de déploiement sont dans :
 - 🌐 Mongo Express accessible : http://34.253.99.234:8081 (admin/pass)
 - 📊 5 services ECS en production (1/1 running)
 - 🔄 Traitement automatique toutes les heures
-- 📦 ~46 fichiers archivés avec succès
 - 🗄️ Données disponibles dans MongoDB
 - ⚡ Infrastructure scalable et résiliente
 

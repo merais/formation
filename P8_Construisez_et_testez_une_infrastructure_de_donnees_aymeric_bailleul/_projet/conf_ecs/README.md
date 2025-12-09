@@ -1,6 +1,6 @@
 # Déploiement sur AWS ECS - Guide Complet
 
-Ce guide vous accompagne étape par étape pour déployer l'infrastructure météorologique sur AWS ECS.
+Guide étape par étape pour déployer l'infrastructure météorologique sur AWS ECS.
 
 ## 📋 Prérequis
 
@@ -8,13 +8,13 @@ Ce guide vous accompagne étape par étape pour déployer l'infrastructure mét�
 - AWS CLI installé et configuré (`aws configure`)
 - Docker installé localement
 - Fichier `.env` configuré dans le dossier `_projet` avec vos credentials AWS admin
-- Votre ID de compte AWS (ou utilisez le script automatisé `deploy.ps1`)
+- ID de compte AWS (ou utilisez le script automatisé `deploy.ps1`)
 
 ## 🚀 Méthode Rapide : Script Automatisé
 
 ### Option A : Déploiement Automatique (Recommandé)
 
-Le script `deploy.ps1` automatise tout le processus de déploiement :
+Script `deploy.ps1` automatise tout le processus de déploiement :
 
 ```powershell
 # Depuis le dossier conf_ecs
@@ -31,7 +31,7 @@ Le script effectue automatiquement :
 7. ✅ Enregistrement des Task Definitions
 8. ✅ Création des services ECS
 
-**Note :** Le script utilise automatiquement les credentials `AWS_ADMIN_ACCESS_KEY_ID` et `AWS_ADMIN_SECRET_ACCESS_KEY` depuis votre fichier `.env`
+**Note :** Le script utilise automatiquement les credentials `AWS_ADMIN_ACCESS_KEY_ID` et `AWS_ADMIN_SECRET_ACCESS_KEY` depuis le fichier `.env`
 
 ---
 
@@ -60,7 +60,7 @@ aws ecr create-repository `
     --region $REGION `
     --image-scanning-configuration scanOnPush=true
 
-# Créer le repository pour MongoDB (optionnel, on peut utiliser l'image officielle)
+# Créer le repository pour MongoDB
 # Mais pour la personnaliser avec init-mongo.js :
 aws ecr create-repository `
     --repository-name weather-mongodb `
