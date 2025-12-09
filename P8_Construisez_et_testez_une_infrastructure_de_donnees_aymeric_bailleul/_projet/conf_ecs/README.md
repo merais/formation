@@ -319,7 +319,7 @@ aws ecs register-task-definition `
 
 # S3 Cleanup
 aws ecs register-task-definition `
-    --cli-input-json file://task-definition-s3-cleanup.json `
+    --cli-input-json file://task-definition-cleanup.json `
     --region $REGION
 ```
 
@@ -390,11 +390,22 @@ aws ecs create-service `
     --enable-execute-command `
     --region $REGION
 
+# Service ETL (sous-réseaux privés, long-running avec cycle horaire)
+aws ecs create-service `
+    --cluster weather-pipeline-cluster `
+    --service-name weather-etl `
+    --task-definition weather-etl `
+    --desired-count 1 `
+    --launch-type FARGATE `
+    --network-configuration "awsvpcConfiguration={subnets=[$PRIVATE_SUBNET1,$PRIVATE_SUBNET2],securityGroups=[$ECS_SG],assignPublicIp=DISABLED}" `
+    --enable-execute-command `
+    --region $REGION
+
 # Service S3 Cleanup (sous-réseaux privés, long-running)
 aws ecs create-service `
     --cluster weather-pipeline-cluster `
     --service-name s3-cleanup `
-    --task-definition weather-s3-cleanup `
+    --task-definition s3-cleanup `
     --desired-count 1 `
     --launch-type FARGATE `
     --network-configuration "awsvpcConfiguration={subnets=[$PRIVATE_SUBNET1,$PRIVATE_SUBNET2],securityGroups=[$ECS_SG],assignPublicIp=DISABLED}" `
@@ -404,26 +415,24 @@ aws ecs create-service `
 
 **Note importante :** Les services dans les sous-réseaux privés utilisent la NAT Gateway pour accéder à Internet (S3, ECR, Secrets Manager).
 
-### Étape 12 : Créer une tâche planifiée pour l'ETL (EventBridge)
+### Étape 12 : Configuration du Pipeline Automatisé
 
-```powershell
-# Créer une règle EventBridge pour exécuter l'ETL une fois par jour
-aws events put-rule `
-    --name weather-etl-daily `
-    --schedule-expression "cron(0 2 * * ? *)" `
-    --state ENABLED `
-    --region $REGION
+Le pipeline est maintenant configuré pour s'exécuter automatiquement en continu :
 
-# Ajouter la permission à EventBridge
-$TASK_ROLE_ARN = (aws cloudformation describe-stacks `
-    --stack-name weather-pipeline-iam `
-    --query 'Stacks[0].Outputs[?OutputKey==`ECSTaskRoleArn`].OutputValue' `
-    --output text `
-    --region $REGION)
+**Configuration des intervalles (WATCH_INTERVAL = 3600 secondes) :**
+- ⏰ **weather-etl** : Nettoie les données brutes toutes les heures (01_raw/ → 02_cleaned/)
+- ⏰ **mongodb-importer** : Importe les données dans MongoDB toutes les heures (02_cleaned/ → MongoDB)
+- ⏰ **s3-cleanup** : Archive les fichiers traités toutes les heures (02_cleaned/ → 03_archived/)
 
-# Créer la cible (nécessite un rôle IAM pour EventBridge)
-# Voir le fichier eventbridge-rule.json
+**Flux de données complet :**
 ```
+01_raw/          →  weather-etl  →  02_cleaned/
+02_cleaned/      →  mongodb-importer  →  MongoDB (weather_data.measurements)
+02_cleaned/      →  s3-cleanup  →  03_archived/
+                    (après vérification MongoDB)
+```
+
+Tous les services tournent en continu avec un cycle horaire synchronisé.
 
 ### Étape 13 : Vérification du déploiement
 
@@ -511,16 +520,30 @@ Write-Host "Mongo Express accessible sur : http://${PUBLIC_IP}:8081"
    - **Problème :** MongoDB ne pouvait pas monter `/mongodb` car le répertoire n'existait pas
    - **Solution :** Création d'un **EFS Access Point** avec le répertoire `/mongodb` pré-créé et permissions MongoDB (UID/GID 999)
 
-4. **❌ Secret S3 non trouvé**
-   - **Problème :** Format d'ARN incorrect pour les secrets Secrets Manager
-   - **Solution :** Utilisation du format `arn:aws:secretsmanager:REGION:ACCOUNT:secret:NAME:KEY::` sans suffixe de version
+4. **❌ Secrets Secrets Manager avec suffixes aléatoires**
+   - **Problème :** AWS ajoute des suffixes aléatoires aux noms de secrets (ex: `-2KPEIG`)
+   - **Solution :** Récupération des ARNs réels avec `aws secretsmanager describe-secret` et mise à jour de toutes les task definitions
+
+5. **❌ Service s3-cleanup ne peut pas se connecter à MongoDB**
+   - **Problème :** Le script utilisait `MONGODB_URI=mongodb://mongodb:27017/` au lieu de Service Discovery DNS
+   - **Solution :** Modification de `ABAI_P8_script_04_cleanup_s3.py` pour construire l'URI à partir de `MONGODB_HOST`, `MONGODB_PORT`, `MONGODB_ROOT_USER`, `MONGODB_ROOT_PASSWORD`
+
+6. **❌ Secret aws-credentials manquant AWS_DEFAULT_REGION**
+   - **Problème :** Le secret ne contenait que `AWS_ACCESS_KEY_ID` et `AWS_SECRET_ACCESS_KEY`
+   - **Solution :** Ajout de `AWS_DEFAULT_REGION: eu-west-1` au secret
 
 ### Fichiers corrigés
 
 - ✅ `vpc-infrastructure.yaml` : Règle d'ingress séparée pour éviter dépendance circulaire
 - ✅ `iam-roles.yaml` : Permissions CloudWatch Logs ajoutées
 - ✅ `task-definition-mongodb.json` : Utilisation d'Access Point EFS au lieu de rootDirectory
-- ✅ Toutes les task definitions : ARNs corrects (Account ID, Region, awslogs-region)
+- ✅ `task-definition-mongo-express.json` : Variables `ME_CONFIG_MONGODB_SERVER` et `ME_CONFIG_MONGODB_PORT`
+- ✅ `task-definition-etl.json` : WATCH_INTERVAL=3600, ARNs secrets avec suffixes corrects
+- ✅ `task-definition-importer.json` : WATCH_INTERVAL=3600, variables MongoDB séparées (HOST/PORT/USER/PASSWORD)
+- ✅ `task-definition-cleanup.json` : WATCH_INTERVAL=3600, ajout variables et secrets MongoDB
+- ✅ `ABAI_P8_script_02_import_to_mongodb.py` : Construction URI MongoDB depuis variables d'environnement
+- ✅ `ABAI_P8_script_04_cleanup_s3.py` : Construction URI MongoDB depuis variables d'environnement
+- ✅ Secret `weather-pipeline/aws-credentials` : Ajout de `AWS_DEFAULT_REGION`
 
 ## 🔄 Mise à jour des services
 

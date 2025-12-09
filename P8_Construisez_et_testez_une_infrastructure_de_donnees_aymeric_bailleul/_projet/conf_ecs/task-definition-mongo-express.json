@@ -19,8 +19,12 @@
       ],
       "environment": [
         {
-          "name": "ME_CONFIG_MONGODB_URL",
-          "value": "mongodb://MONGODB_USER:MONGODB_PASSWORD@mongodb.weather-pipeline.local:27017/"
+          "name": "ME_CONFIG_MONGODB_SERVER",
+          "value": "mongodb.weather-pipeline.local"
+        },
+        {
+          "name": "ME_CONFIG_MONGODB_PORT",
+          "value": "27017"
         }
       ],
       "secrets": [

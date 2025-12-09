@@ -1,29 +1,21 @@
 {
-  "family": "weather-importer",
+  "family": "s3-cleanup",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
-  "cpu": "512",
-  "memory": "1024",
+  "cpu": "256",
+  "memory": "512",
   "executionRoleArn": "arn:aws:iam::343374742393:role/WeatherPipelineECSTaskExecutionRole",
   "taskRoleArn": "arn:aws:iam::343374742393:role/WeatherPipelineECSTaskRole",
   "containerDefinitions": [
     {
-      "name": "mongodb-importer",
+      "name": "s3-cleanup",
       "image": "343374742393.dkr.ecr.eu-west-1.amazonaws.com/weather-etl:latest",
       "essential": true,
-      "command": ["python", "ABAI_P8_script_02_import_to_mongodb.py"],
+      "command": ["python", "ABAI_P8_script_04_cleanup_s3.py"],
       "environment": [
         {
-          "name": "AWS_REGION",
-          "value": "eu-west-1"
-        },
-        {
-          "name": "MONGODB_DATABASE",
-          "value": "weather_data"
-        },
-        {
-          "name": "MONGODB_COLLECTION",
-          "value": "measurements"
+          "name": "WATCH_INTERVAL",
+          "value": "3600"
         },
         {
           "name": "MONGODB_HOST",
@@ -34,8 +26,12 @@
           "value": "27017"
         },
         {
-          "name": "WATCH_INTERVAL",
-          "value": "3600"
+          "name": "MONGODB_DATABASE",
+          "value": "weather_data"
+        },
+        {
+          "name": "MONGODB_COLLECTION",
+          "value": "measurements"
         }
       ],
       "secrets": [
@@ -48,26 +44,26 @@
           "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/aws-credentials-2KPEIG:AWS_SECRET_ACCESS_KEY::"
         },
         {
-          "name": "MONGODB_ROOT_USER",
-          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/mongodb-credentials-4mUhUe:MONGODB_ROOT_USER::"
-        },
-        {
-          "name": "MONGODB_ROOT_PASSWORD",
-          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/mongodb-credentials-4mUhUe:MONGODB_ROOT_PASSWORD::"
+          "name": "AWS_DEFAULT_REGION",
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/aws-credentials-2KPEIG:AWS_DEFAULT_REGION::"
         },
         {
           "name": "S3_BUCKET_NAME",
           "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/s3-config-rORPK7:S3_BUCKET_NAME::"
         },
         {
-          "name": "S3_PREFIX_DESTINATION",
-          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/s3-config-rORPK7:S3_PREFIX_DESTINATION::"
+          "name": "MONGODB_ROOT_USER",
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/mongodb-credentials-4mUhUe:MONGODB_ROOT_USER::"
+        },
+        {
+          "name": "MONGODB_ROOT_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/mongodb-credentials-4mUhUe:MONGODB_ROOT_PASSWORD::"
         }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/weather-importer",
+          "awslogs-group": "/ecs/weather-s3-cleanup",
           "awslogs-region": "eu-west-1",
           "awslogs-stream-prefix": "ecs",
           "awslogs-create-group": "true"

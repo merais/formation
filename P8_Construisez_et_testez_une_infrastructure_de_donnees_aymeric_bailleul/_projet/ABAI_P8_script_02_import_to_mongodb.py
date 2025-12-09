@@ -24,7 +24,18 @@ def get_s3_client():
 
 def get_mongo_client():
     """Créer un client MongoDB"""
-    mongo_uri = os.getenv('MONGODB_URI', 'mongodb://mongodb:27017/')
+    # Construire l'URI MongoDB à partir des variables d'environnement
+    mongo_host = os.getenv('MONGODB_HOST', 'mongodb.weather-pipeline.local')
+    mongo_port = os.getenv('MONGODB_PORT', '27017')
+    mongo_user = os.getenv('MONGODB_ROOT_USER', 'admin')
+    mongo_password = os.getenv('MONGODB_ROOT_PASSWORD', '')
+    
+    if mongo_user and mongo_password:
+        mongo_uri = f"mongodb://{mongo_user}:{mongo_password}@{mongo_host}:{mongo_port}/"
+    else:
+        mongo_uri = f"mongodb://{mongo_host}:{mongo_port}/"
+    
+    print(f"[INFO] Connexion MongoDB: mongodb://{mongo_user}:****@{mongo_host}:{mongo_port}/")
     return MongoClient(mongo_uri)
 
 def list_s3_files(s3_client, bucket, prefix):

@@ -28,28 +28,32 @@
         {
           "name": "MONGODB_URI",
           "value": "mongodb://MONGODB_USER:MONGODB_PASSWORD@mongodb.weather-pipeline.local:27017/"
+        },
+        {
+          "name": "WATCH_INTERVAL",
+          "value": "3600"
         }
       ],
       "secrets": [
         {
           "name": "AWS_ACCESS_KEY_ID",
-          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/aws-credentials:AWS_ACCESS_KEY_ID::"
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/aws-credentials-2KPEIG:AWS_ACCESS_KEY_ID::"
         },
         {
           "name": "AWS_SECRET_ACCESS_KEY",
-          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/aws-credentials:AWS_SECRET_ACCESS_KEY::"
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/aws-credentials-2KPEIG:AWS_SECRET_ACCESS_KEY::"
         },
         {
           "name": "S3_BUCKET_NAME",
-          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/s3-config:S3_BUCKET_NAME::"
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/s3-config-rORPK7:S3_BUCKET_NAME::"
         },
         {
           "name": "S3_PREFIX_SOURCE",
-          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/s3-config:S3_PREFIX_SOURCE::"
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/s3-config-rORPK7:S3_PREFIX_SOURCE::"
         },
         {
           "name": "S3_PREFIX_DESTINATION",
-          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/s3-config:S3_PREFIX_DESTINATION::"
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/s3-config-rORPK7:S3_PREFIX_DESTINATION::"
         }
       ],
       "logConfiguration": {
