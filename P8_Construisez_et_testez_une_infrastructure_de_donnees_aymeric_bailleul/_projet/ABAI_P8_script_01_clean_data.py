@@ -199,13 +199,19 @@ def apply_data_cleaning(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def prepare_for_mongodb(df: pd.DataFrame) -> pd.DataFrame:
+def prepare_for_mongodb(df: pd.DataFrame, source_file: str = None, station_mapping: dict = None) -> pd.DataFrame:
     """
     Prépare le DataFrame pour l'intégration dans MongoDB.
     - Convertit les types de données appropriés
     - Convertit les dates en format ISO
     - Remplace NaN/None par None (null en JSON)
     - Assure que les champs numériques sont bien typés
+    - Ajoute source_file et nom_station pour la traçabilité
+    
+    Args:
+        df: DataFrame à préparer
+        source_file: Nom du fichier source (pour traçabilité)
+        station_mapping: Dictionnaire {id_station: nom_station}
     """
     df = df.copy()
     
@@ -229,6 +235,16 @@ def prepare_for_mongodb(df: pd.DataFrame) -> pd.DataFrame:
     
     # Remplacer les NaN par None (null en JSON/MongoDB)
     df = df.where(pd.notna(df), None)
+    
+    # Ajouter le nom de la station si le mapping est disponible
+    if station_mapping and 'id_station' in df.columns:
+        df['nom_station'] = df['id_station'].map(station_mapping)
+        print(f"   📍 {df['nom_station'].nunique()} station(s) identifiée(s)")
+    
+    # Ajouter le fichier source pour la traçabilité
+    if source_file:
+        df['source_file'] = source_file
+        print(f"   📎 Traçabilité: {source_file}")
     
     # Ajouter un timestamp de traitement
     df['processed_at'] = datetime.now().strftime('%Y-%m-%dT%H:%M:%S.000Z')
@@ -395,10 +411,19 @@ def main():
                 print("\n   🔍 Détection du format Airbyte - extraction des données...")
                 # Extraire et parser la colonne _airbyte_data
                 data_records = []
+                station_mapping = {}  # Mapping id_station -> nom_station
+                
                 for idx, row in df.iterrows():
                     airbyte_data = row['_airbyte_data']
                     if isinstance(airbyte_data, str):
                         airbyte_data = json.loads(airbyte_data)
+                    
+                    # Extraire le mapping des stations si disponible
+                    if isinstance(airbyte_data, dict) and 'stations' in airbyte_data:
+                        if isinstance(airbyte_data['stations'], list):
+                            for station in airbyte_data['stations']:
+                                if isinstance(station, dict) and 'id' in station and 'name' in station:
+                                    station_mapping[station['id']] = station['name']
                     
                     # Extraire les données météo si disponibles
                     if isinstance(airbyte_data, dict):
@@ -424,6 +449,8 @@ def main():
                 if data_records:
                     df = pd.DataFrame(data_records)
                     print(f"   ✅ {len(data_records)} enregistrements météo extraits")
+                    if station_mapping:
+                        print(f"   🗺️  {len(station_mapping)} station(s) dans le mapping")
                 else:
                     print(f"   ⚠️  Aucune donnée météo trouvée dans ce fichier")
         else:
@@ -450,10 +477,12 @@ def main():
         print(df.info())
         
         # Lire tous les fichiers automatiquement
-        if len(files) > 1:
-            print(f"\n📚 Lecture de tous les {len(files)} fichiers...")
+        if len(files) >= 1:
+            print(f"\n📚 Lecture de tous les {len(files)} fichier(s)...")
             if True:
                 all_dataframes = []
+                global_station_mapping = {}  # Mapping global pour toutes les stations
+                
                 for file in files:
                     print(f"   📖 Lecture de {file['key']}...")
                     response = s3_client.get_object(Bucket=s3_bucket, Key=file['key'])
@@ -477,6 +506,13 @@ def main():
                                 airbyte_data = row['_airbyte_data']
                                 if isinstance(airbyte_data, str):
                                     airbyte_data = json.loads(airbyte_data)
+                                
+                                # Extraire le mapping des stations
+                                if isinstance(airbyte_data, dict) and 'stations' in airbyte_data:
+                                    if isinstance(airbyte_data['stations'], list):
+                                        for station in airbyte_data['stations']:
+                                            if isinstance(station, dict) and 'id' in station and 'name' in station:
+                                                global_station_mapping[station['id']] = station['name']
                                 
                                 if isinstance(airbyte_data, dict):
                                     # Cas 1: données dans 'data'
@@ -510,7 +546,9 @@ def main():
                 
                 # Préparer les données pour MongoDB
                 print("\n🔧 Préparation des données pour MongoDB...")
-                combined_df = prepare_for_mongodb(combined_df)
+                # Utiliser le nom du premier fichier comme source_file
+                first_file_name = file_keys[0].split('/')[-1] if file_keys else 'unknown'
+                combined_df = prepare_for_mongodb(combined_df, source_file=first_file_name, station_mapping=global_station_mapping if global_station_mapping else None)
                 print("   ✅ Données prêtes pour MongoDB!")
                 
                 print(f"\n✅ Tous les fichiers combinés!")
