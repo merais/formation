@@ -1,91 +1,213 @@
-# Projet P8 - Construction et test d'une infrastructure de données
+# P8 - Construisez et testez une infrastructure de données
 
-Ce projet contient la configuration et les tests d'une infrastructure de données avec Airbyte.
+## Description
+Projet de construction et test d'une infrastructure de données météorologiques avec pipeline ETL, stockage S3, et base de données MongoDB conteneurisée.
 
-## 📦 Dépendances
+## 🏗️ Architecture
 
-Le projet utilise les bibliothèques Python suivantes :
-- **airbyte** : SDK Python pour Airbyte (gestion des pipelines de données)
-- **duckdb** : Base de données analytique embarquée
-- **pandas** : Manipulation et analyse de données
-- **sqlalchemy** : ORM et toolkit SQL
+Le projet utilise une architecture microservices avec Docker Compose :
 
-## 🚀 Utilisation de l'environnement virtuel
+- **MongoDB** : Base de données NoSQL pour stocker les données météorologiques
+- **Mongo Express** : Interface web d'administration MongoDB
+- **ETL Pipeline** : Nettoyage et transformation des données
+- **MongoDB Importer** : Import automatique des données nettoyées
+- **S3 Cleanup** : Service de nettoyage automatique du bucket S3
 
-### Option 1 : Activation manuelle de l'environnement
-```powershell
-cd "G:\Mon Drive\_formation_over_git\P8_Construisez_et_testez_une_infrastructure_de_donnees_aymeric_bailleul"
-.\.venv\Scripts\Activate.ps1
-```
+## 🛠️ Technologies utilisées
 
-### Option 2 : Exécution directe avec Python 3.10
-```powershell
-cd "G:\Mon Drive\_formation_over_git\P8_Construisez_et_testez_une_infrastructure_de_donnees_aymeric_bailleul"
-.\.venv\Scripts\python.exe _cours\tuto_airbyte_main.py
-```
+### Backend & Data
+- **Python 3.10+** : Langage principal
+- **Poetry** : Gestionnaire de dépendances
+- **PyAirbyte 0.33.6** : Bibliothèque pour les connecteurs Airbyte
+- **Pandas** : Manipulation de données
+- **SQLAlchemy** : ORM pour bases de données
 
-## 📊 Utiliser Airbyte
+### Infrastructure
+- **Docker & Docker Compose** : Conteneurisation et orchestration
+- **MongoDB 7.0** : Base de données NoSQL
+- **Mongo Express** : Interface web MongoDB
+- **AWS S3** : Stockage cloud des fichiers
 
-```powershell
-# Activer l'environnement
-.\.venv\Scripts\Activate.ps1
-
-# Lister les connecteurs disponibles
-python -c "import airbyte as ab; print(ab.get_available_connectors())"
-
-# Exécuter le script de test
-python _cours\tuto_airbyte_main.py
-```
-
-## 🔧 Configuration Airbyte
-
-Airbyte est un outil d'intégration de données open-source qui permet de :
-- Extraire des données de diverses sources (API, bases de données, fichiers, etc.)
-- Transformer les données selon vos besoins
-- Charger les données vers des destinations (data warehouses, lacs de données, etc.)
-
-### Connecteurs supportés
-Le SDK Airbyte Python supporte de nombreux connecteurs :
-- Sources : GitHub, Stripe, Postgres, MySQL, MongoDB, etc.
-- Destinations : Snowflake, BigQuery, DuckDB, Postgres, etc.
-
-## 📋 Scripts disponibles
-
-| Script | Description |
-|--------|-------------|
-| `_cours/tuto_airbyte_main.py` | Script de test des fonctionnalités Airbyte |
-
-## 🐳 Intégration Docker
-
-Pour utiliser Airbyte en production, vous pouvez :
-1. Utiliser Docker Compose pour déployer Airbyte localement
-2. Configurer vos sources et destinations via l'interface web
-3. Utiliser le SDK Python pour orchestrer vos pipelines
-
-```powershell
-# Démarrer Airbyte avec Docker Compose
-docker-compose up -d
-
-# L'interface web sera disponible sur http://localhost:8000
-```
-
-## ⚙️ Version Python
-
-Ce projet nécessite **Python 3.10** (ou 3.11, 3.12) car la bibliothèque `airbyte` n'est pas compatible avec Python 3.13+.
+### Développement
+- **Pytest** : Tests unitaires
+- **Black** : Formatage du code
+- **Flake8** : Linting
+- **Mypy** : Vérification de types
 
 ## 📁 Structure du projet
 
 ```
 P8_Construisez_et_testez_une_infrastructure_de_donnees_aymeric_bailleul/
-├── _cours/
-│   └── tuto_airbyte_main.py      # Script de test Airbyte
-├── .venv/                         # Environnement virtuel Python 3.10
-├── pyproject.toml                 # Configuration Poetry
-└── README.md                      # Ce fichier
+├── _cours/                      # Matériel de cours
+├── _projet/                     # Dossier principal du projet
+│   ├── .env                     # Variables d'environnement (à ne pas commiter)
+│   ├── .env.example             # Template des variables d'environnement
+│   ├── docker-compose.yml       # Configuration Docker Compose
+│   ├── Dockerfile               # Image Docker pour les services Python
+│   ├── init-mongo.js            # Script d'initialisation MongoDB
+│   ├── pyproject.toml           # Configuration Poetry du projet
+│   ├── ABAI_P8_script_01_clean_data.py       # Script de nettoyage des données
+│   ├── ABAI_P8_script_02_import_to_mongodb.py # Script d'import MongoDB
+│   ├── ABAI_P8_script_03_test_mongodb.py     # Tests MongoDB
+│   └── ABAI_P8_script_04_cleanup_s3.py       # Script de nettoyage S3
+├── src/                         # Code source Python (environnement Poetry)
+├── tests/                       # Tests unitaires
+├── pyproject.toml               # Configuration Poetry racine
+└── README.md                    # Ce fichier
 ```
 
-## 🔗 Ressources
+## 🚀 Installation et démarrage
 
-- [Documentation Airbyte](https://docs.airbyte.com/)
-- [SDK Python Airbyte](https://pypi.org/project/airbyte/)
-- [Airbyte GitHub](https://github.com/airbytehq/airbyte)
+### Prérequis
+- Python 3.10 ou supérieur
+- Poetry installé (`pip install poetry`)
+- Docker et Docker Compose installés
+- Compte AWS avec accès S3
+
+### 1. Configuration de l'environnement Python (optionnel)
+
+```bash
+# Installer les dépendances Poetry
+poetry install
+
+# Activer l'environnement virtuel
+poetry shell
+```
+
+### 2. Configuration des variables d'environnement
+
+```bash
+# Copier le fichier d'exemple
+cd _projet
+cp .env.example .env
+
+# Éditer .env avec vos credentials AWS et MongoDB
+```
+
+Variables requises dans `.env` :
+```env
+# AWS S3
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+AWS_REGION=eu-west-1
+S3_BUCKET_NAME=p8-weather-data
+
+# MongoDB
+MONGODB_ROOT_USER=admin
+MONGODB_ROOT_PASSWORD=admin123
+MONGODB_DATABASE=weather_data
+MONGODB_COLLECTION=measurements
+
+# Mongo Express
+MONGO_EXPRESS_USER=admin
+MONGO_EXPRESS_PASSWORD=pass
+```
+
+### 3. Démarrage des services Docker
+
+```bash
+cd _projet
+
+# Lancer tous les services en arrière-plan
+docker-compose up -d
+
+# Vérifier l'état des conteneurs
+docker-compose ps
+
+# Voir les logs
+docker-compose logs -f
+```
+
+## 🌐 Accès aux services
+
+- **MongoDB** : `mongodb://localhost:27017`
+- **Mongo Express** : http://localhost:8081
+  - Username : `admin`
+  - Password : `pass` (configurable dans `.env`)
+
+## 📊 Utilisation
+
+### Pipeline ETL complet
+
+Les services Docker s'exécutent automatiquement :
+
+1. **ETL Pipeline** : Nettoie les données brutes du S3
+2. **MongoDB Importer** : Importe les données nettoyées dans MongoDB toutes les 5 minutes
+3. **S3 Cleanup** : Archive les fichiers traités toutes les heures
+
+### Exécution manuelle des scripts
+
+```bash
+# Nettoyage des données
+docker-compose run etl-pipeline python ABAI_P8_script_01_clean_data.py
+
+# Import vers MongoDB
+docker-compose run mongodb-importer python ABAI_P8_script_02_import_to_mongodb.py
+
+# Test de connexion MongoDB
+docker-compose run etl-pipeline python ABAI_P8_script_03_test_mongodb.py
+
+# Nettoyage S3
+docker-compose run s3-cleanup python ABAI_P8_script_04_cleanup_s3.py
+```
+
+## 🧪 Tests
+
+```bash
+# Avec Poetry
+poetry run pytest
+
+# Avec Docker
+docker-compose run etl-pipeline pytest
+```
+
+## 🛑 Arrêt des services
+
+```bash
+# Arrêter tous les services
+docker-compose down
+
+# Arrêter et supprimer les volumes
+docker-compose down -v
+```
+
+## 📝 Commandes utiles
+
+### Docker Compose
+```bash
+docker-compose up -d              # Démarrer en arrière-plan
+docker-compose down               # Arrêter les services
+docker-compose logs -f [service]  # Voir les logs
+docker-compose restart [service]  # Redémarrer un service
+docker-compose ps                 # État des conteneurs
+```
+
+### Poetry
+```bash
+poetry install                    # Installer les dépendances
+poetry add <package>              # Ajouter un package
+poetry remove <package>           # Supprimer un package
+poetry update                     # Mettre à jour les dépendances
+poetry shell                      # Activer l'environnement virtuel
+```
+
+### Formatage & Linting
+```bash
+poetry run black .                # Formater le code
+poetry run flake8 .               # Linter le code
+poetry run mypy .                 # Vérifier les types
+```
+
+## 🔐 Sécurité
+
+- ⚠️ Ne jamais commiter le fichier `.env`
+- ✅ Utiliser `.env.example` comme template
+- ✅ Le `docker-compose.yml` ne contient aucun credential en clair
+- ✅ Les credentials AWS sont chargés depuis le `.env`
+
+## 📚 Ressources
+
+- [Documentation PyAirbyte](https://github.com/airbytehq/PyAirbyte)
+- [MongoDB Documentation](https://docs.mongodb.com/)
+- [Docker Compose Documentation](https://docs.docker.com/compose/)
+- [AWS S3 Documentation](https://docs.aws.amazon.com/s3/)

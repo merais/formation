@@ -3,6 +3,7 @@
 **/_result_tests/
 **/tools/
 **/data*/
+**/__old_dev/
 
 # Python virtual environments
 **/.venv/

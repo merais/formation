@@ -1,16 +1,37 @@
 [tool.poetry]
-name = "p8-infrastructure-donnees-airbyte"
+name = "p8-infrastructure-donnees"
 version = "0.1.0"
-description = "Projet de construction et test d'infrastructure de données avec Airbyte"
+description = "Projet P8 - Construisez et testez une infrastructure de données avec Airbyte"
 authors = ["Aymeric Bailleul"]
 readme = "README.md"
-package-mode = false
+packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.13"
-airbyte = "^0.33.1"
+python = ">=3.10,<3.15"
+airbyte = "^0.33.6"
+pandas = "^2.2.0"
+sqlalchemy = "^2.0.0"
+psycopg2-binary = "^2.9.0"
+duckdb = "^1.0.0"
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+black = "^24.0.0"
+flake8 = "^7.0.0"
+mypy = "^1.8.0"
+jupyter = "^1.0.0"
+ipykernel = "^6.29.0"
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false

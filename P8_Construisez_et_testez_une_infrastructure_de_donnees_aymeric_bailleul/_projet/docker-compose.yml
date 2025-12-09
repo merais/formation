@@ -1,0 +1,117 @@
+version: '3.8'
+
+name: weather_pipeline
+
+services:
+  # Service MongoDB
+  mongodb:
+    image: mongo:7.0
+    container_name: weather-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - weather-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Interface Web MongoDB - Mongo Express
+  mongo-express:
+    image: mongo-express:latest
+    container_name: weather-mongo-express
+    restart: unless-stopped
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGODB_ROOT_USER}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGODB_ROOT_PASSWORD}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGODB_ROOT_USER}:${MONGODB_ROOT_PASSWORD}@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD}
+    ports:
+      - "8081:8081"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - weather-network
+
+  # Service ETL - Nettoyage des données
+  etl-pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: weather-etl
+    restart: "no"
+    env_file:
+      - .env
+    environment:
+      - MONGODB_URI=mongodb://${MONGODB_ROOT_USER}:${MONGODB_ROOT_PASSWORD}@mongodb:27017/
+      - MONGODB_DATABASE=${MONGODB_DATABASE}
+      - MONGODB_COLLECTION=${MONGODB_COLLECTION}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - weather-network
+    command: python ABAI_P8_script_01_clean_data.py
+
+  # Service d'import automatique MongoDB
+  mongodb-importer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: weather-importer
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - MONGODB_URI=mongodb://${MONGODB_ROOT_USER}:${MONGODB_ROOT_PASSWORD}@mongodb:27017/
+      - MONGODB_DATABASE=${MONGODB_DATABASE}
+      - MONGODB_COLLECTION=${MONGODB_COLLECTION}
+      - WATCH_INTERVAL=${WATCH_INTERVAL}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - weather-network
+    command: python ABAI_P8_script_02_import_to_mongodb.py
+
+  # Service de nettoyage S3
+  s3-cleanup:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: weather-s3-cleanup
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - MONGODB_URI=mongodb://${MONGODB_ROOT_USER}:${MONGODB_ROOT_PASSWORD}@mongodb:27017/
+      - MONGODB_DATABASE=${MONGODB_DATABASE}
+      - MONGODB_COLLECTION=${MONGODB_COLLECTION}
+      - CLEANUP_INTERVAL=${CLEANUP_INTERVAL}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - weather-network
+    command: python ABAI_P8_script_04_cleanup_s3.py --watch
+
+volumes:
+  mongodb_data:
+    name: weather-mongodb-data
+
+networks:
+  weather-network:
+    name: weather-network
+    driver: bridge
