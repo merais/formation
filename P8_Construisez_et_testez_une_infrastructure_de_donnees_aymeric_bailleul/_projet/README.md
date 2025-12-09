@@ -1,10 +1,20 @@
-# Projet ETL Données Météorologiques
+# P8 - Projet ETL Données Météorologiques
 
 Pipeline ETL dockerisé pour lire, nettoyer et intégrer automatiquement des données météorologiques depuis AWS S3 vers MongoDB.
 
 ## Description
 
 Ce projet extrait des données météorologiques au format JSONL depuis un bucket S3, applique des transformations de nettoyage et de conversion d'unités, puis les importe automatiquement dans MongoDB.
+
+## 🏗️ Architecture
+
+Le projet utilise une architecture microservices avec Docker Compose :
+
+- **MongoDB 7.0** : Base de données NoSQL pour stocker les données météorologiques
+- **Mongo Express** : Interface web d'administration MongoDB accessible sur http://localhost:8081
+- **ETL Pipeline** : Nettoyage et transformation des données
+- **MongoDB Importer** : Import automatique des données nettoyées (toutes les 5 minutes)
+- **S3 Cleanup** : Service de nettoyage automatique du bucket S3 (toutes les heures)
 
 ### Fonctionnalités principales
 
@@ -23,7 +33,8 @@ Ce projet extrait des données météorologiques au format JSONL depuis un bucke
   - Timestamp de traitement
 - ✅ **Export S3** : Sauvegarde du résultat dans un dossier de destination
 - ✅ **Import MongoDB automatique** : Surveillance du bucket S3 et import automatique des nouveaux fichiers
-- ✅ **Docker Compose** : Orchestration complète avec MongoDB et services ETL
+- ✅ **Docker Compose** : Orchestration complète avec MongoDB, Mongo Express et services ETL
+- ✅ **Sécurité** : Aucun credential en clair dans les fichiers Docker
 
 ## Installation
 
@@ -40,25 +51,31 @@ Ce projet extrait des données météorologiques au format JSONL depuis un bucke
 Copy-Item .env.example .env
 ```
 
-2. Éditer `.env` avec vos identifiants et autre donnée en italique:
+2. Éditer `.env` avec vos identifiants :
 
 ```dotenv
 # AWS S3
-AWS_ACCESS_KEY_ID=*votre_access_key*
-AWS_SECRET_ACCESS_KEY=*votre_secret_key*
+AWS_ACCESS_KEY_ID=votre_access_key
+AWS_SECRET_ACCESS_KEY=votre_secret_key
 AWS_REGION=eu-west-1
-S3_BUCKET_NAME=*votre-bucket*
+S3_BUCKET_NAME=votre-bucket
 S3_PREFIX_SOURCE=01_raw/
 S3_PREFIX_DESTINATION=02_cleaned/
+S3_PREFIX_ARCHIVE=03_archived/
 
 # MongoDB
-MONGODB_ROOT_USER=*admin*
-MONGODB_ROOT_PASSWORD=*admin123*
+MONGODB_ROOT_USER=admin
+MONGODB_ROOT_PASSWORD=admin123
 MONGODB_DATABASE=weather_data
 MONGODB_COLLECTION=measurements
 
-# Import automatique (intervalle en secondes)
-WATCH_INTERVAL=300
+# Mongo Express (Interface Web)
+MONGO_EXPRESS_USER=admin
+MONGO_EXPRESS_PASSWORD=pass
+
+# Services
+WATCH_INTERVAL=300          # Import automatique (5 minutes)
+CLEANUP_INTERVAL=3600       # Nettoyage S3 (1 heure)
 ```
 
 3. Lancer l'environnement complet :
@@ -66,6 +83,11 @@ WATCH_INTERVAL=300
 ```powershell
 docker-compose up -d
 ```
+
+4. Accéder à Mongo Express :
+   - URL : http://localhost:8081
+   - Username : `admin`
+   - Password : `pass` (ou celui défini dans `.env`)
 
 ### Configuration locale (Développement)
 
@@ -98,9 +120,10 @@ docker-compose down
 **Services disponibles :**
 
 1. **mongodb** : Base de données MongoDB (port 27017)
-2. **etl-pipeline** : Script de nettoyage des données (exécution unique)
-3. **mongodb-importer** : Service d'import automatique (surveille S3 toutes les 5 minutes)
-4. **s3-cleanup** : Service de nettoyage S3 (archive et supprime toutes les heures)
+2. **mongo-express** : Interface web MongoDB (port 8081)
+3. **etl-pipeline** : Script de nettoyage des données (exécution unique)
+4. **mongodb-importer** : Service d'import automatique (surveille S3 toutes les 5 minutes)
+5. **s3-cleanup** : Service de nettoyage S3 (archive et supprime toutes les heures)
 
 ### Tests de connexion MongoDB
 
@@ -232,24 +255,36 @@ db.measurements.find({ id_station: "07015" }).limit(5)
 db.measurements.find({ dh_utc: { $gte: ISODate("2024-10-01") } }).count()
 ```
 
-## Architecture du projet
+## 📁 Architecture du projet
 
 ```
-c:\_data\projet/
+_projet/
 ├── .env                              # Configuration (non versionné)
 ├── .env.example                      # Exemple de configuration
 ├── .gitignore                        # Exclusions Git
-├── docker-compose.yml                # Orchestration Docker
+├── docker-compose.yml                # Orchestration Docker (5 services)
 ├── Dockerfile                        # Image Docker pour ETL
 ├── init-mongo.js                     # Script d'initialisation MongoDB
-├── pyproject.toml                           # Configuration Poetry
-├── poetry.lock                              # Versions des dépendances
-├── README.md                                # Documentation
+├── pyproject.toml                    # Configuration Poetry
+├── poetry.lock                       # Versions des dépendances
+├── README.md                         # Documentation
 ├── ABAI_P8_script_01_clean_data.py         # Script principal ETL
 ├── ABAI_P8_script_02_import_to_mongodb.py  # Service d'import automatique
 ├── ABAI_P8_script_03_test_mongodb.py       # Tests CRUD MongoDB (pytest)
 └── ABAI_P8_script_04_cleanup_s3.py         # Nettoyage et archivage S3
 ```
+
+## 🛠️ Technologies
+
+- **Python 3.10+** : Langage principal
+- **Docker & Docker Compose** : Conteneurisation et orchestration
+- **MongoDB 7.0** : Base de données NoSQL
+- **Mongo Express** : Interface web MongoDB
+- **AWS S3** : Stockage cloud
+- **Poetry** : Gestionnaire de dépendances
+- **Boto3** : Client AWS
+- **Pandas** : Manipulation de données
+- **PyMongo** : Driver MongoDB
 
 ### Flux de données
 
