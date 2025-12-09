@@ -4,8 +4,8 @@
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "256",
   "memory": "512",
-  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/WeatherPipelineECSTaskExecutionRole",
-  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/WeatherPipelineECSTaskRole",
+  "executionRoleArn": "arn:aws:iam::343374742393:role/WeatherPipelineECSTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::343374742393:role/WeatherPipelineECSTaskRole",
   "containerDefinitions": [
     {
       "name": "mongo-express",
@@ -26,26 +26,26 @@
       "secrets": [
         {
           "name": "ME_CONFIG_MONGODB_ADMINUSERNAME",
-          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:weather-pipeline/mongodb-credentials:MONGODB_ROOT_USER::"
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/mongodb-credentials:MONGODB_ROOT_USER::"
         },
         {
           "name": "ME_CONFIG_MONGODB_ADMINPASSWORD",
-          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:weather-pipeline/mongodb-credentials:MONGODB_ROOT_PASSWORD::"
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/mongodb-credentials:MONGODB_ROOT_PASSWORD::"
         },
         {
           "name": "ME_CONFIG_BASICAUTH_USERNAME",
-          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:weather-pipeline/mongo-express-credentials:MONGO_EXPRESS_USER::"
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/mongo-express-credentials:MONGO_EXPRESS_USER::"
         },
         {
           "name": "ME_CONFIG_BASICAUTH_PASSWORD",
-          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:weather-pipeline/mongo-express-credentials:MONGO_EXPRESS_PASSWORD::"
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/mongo-express-credentials:MONGO_EXPRESS_PASSWORD::"
         }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
           "awslogs-group": "/ecs/weather-mongo-express",
-          "awslogs-region": "REGION",
+          "awslogs-region": "eu-west-1",
           "awslogs-stream-prefix": "ecs",
           "awslogs-create-group": "true"
         }

@@ -42,34 +42,55 @@ function Get-AWSAccountId {
     }
 }
 
+# Charger les variables depuis le fichier .env
+function Get-EnvVariables {
+    $envFile = Join-Path (Split-Path $PSScriptRoot -Parent) ".env"
+    
+    if (-not (Test-Path $envFile)) {
+        Write-Error "Fichier .env introuvable à : $envFile"
+        return $null
+    }
+    
+    Write-Info "Chargement des variables depuis .env..."
+    
+    $envVars = @{}
+    Get-Content $envFile | ForEach-Object {
+        if ($_ -match '^\s*([^#][^=]+)=(.*)$') {
+            $key = $matches[1].Trim()
+            $value = $matches[2].Trim()
+            $envVars[$key] = $value
+        }
+    }
+    
+    return $envVars
+}
+
 # Créer les secrets
 function New-Secrets {
     param($AccountId, $Region)
     
     Write-Info "`n=== Création des secrets dans Secrets Manager ==="
     
-    Write-Host "Entrez vos credentials AWS S3:"
-    $awsAccessKey = Read-Host "AWS_ACCESS_KEY_ID"
-    $awsSecretKey = Read-Host "AWS_SECRET_ACCESS_KEY" -AsSecureString
-    $awsSecretKeyPlain = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
-        [Runtime.InteropServices.Marshal]::SecureStringToBSTR($awsSecretKey))
+    # Charger les variables du .env
+    $envVars = Get-EnvVariables
+    if ($null -eq $envVars) {
+        Write-Error "Impossible de charger le fichier .env"
+        return
+    }
     
-    Write-Host "`nEntrez vos credentials MongoDB:"
-    $mongoUser = Read-Host "MONGODB_ROOT_USER (default: admin)" 
-    if ([string]::IsNullOrEmpty($mongoUser)) { $mongoUser = "admin" }
-    $mongoPass = Read-Host "MONGODB_ROOT_PASSWORD" -AsSecureString
-    $mongoPassPlain = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
-        [Runtime.InteropServices.Marshal]::SecureStringToBSTR($mongoPass))
+    # Récupérer les valeurs du .env
+    $awsAccessKey = $envVars["AWS_ACCESS_KEY_ID"]
+    $awsSecretKeyPlain = $envVars["AWS_SECRET_ACCESS_KEY"]
+    $mongoUser = $envVars["MONGODB_ROOT_USER"]
+    $mongoPassPlain = $envVars["MONGODB_ROOT_PASSWORD"]
+    $expressUser = $envVars["MONGO_EXPRESS_USER"]
+    $expressPassPlain = $envVars["MONGO_EXPRESS_PASSWORD"]
+    $bucketName = $envVars["S3_BUCKET_NAME"]
     
-    Write-Host "`nEntrez vos credentials Mongo Express:"
-    $expressUser = Read-Host "MONGO_EXPRESS_USER (default: admin)"
-    if ([string]::IsNullOrEmpty($expressUser)) { $expressUser = "admin" }
-    $expressPass = Read-Host "MONGO_EXPRESS_PASSWORD" -AsSecureString
-    $expressPassPlain = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
-        [Runtime.InteropServices.Marshal]::SecureStringToBSTR($expressPass))
-    
-    Write-Host "`nEntrez votre configuration S3:"
-    $bucketName = Read-Host "S3_BUCKET_NAME"
+    Write-Success "✓ Credentials chargés depuis .env"
+    Write-Info "  - S3 Bucket: $bucketName"
+    Write-Info "  - MongoDB User: $mongoUser"
+    Write-Info "  - Mongo Express User: $expressUser"
     
     # Créer les secrets
     $secrets = @{
@@ -232,11 +253,43 @@ function Register-TaskDefinitions {
     }
 }
 
+# Configurer les credentials AWS Admin pour le déploiement
+function Set-AWSAdminCredentials {
+    Write-Info "`n=== Configuration des credentials AWS Admin ==="
+    
+    $envVars = Get-EnvVariables
+    if ($null -eq $envVars) {
+        Write-Error "Impossible de charger le fichier .env"
+        return $false
+    }
+    
+    $adminAccessKey = $envVars["AWS_ADMIN_ACCESS_KEY_ID"]
+    $adminSecretKey = $envVars["AWS_ADMIN_SECRET_ACCESS_KEY"]
+    
+    if ([string]::IsNullOrEmpty($adminAccessKey) -or [string]::IsNullOrEmpty($adminSecretKey)) {
+        Write-Error "AWS_ADMIN_ACCESS_KEY_ID ou AWS_ADMIN_SECRET_ACCESS_KEY non trouvé dans .env"
+        Write-Error "Veuillez ajouter vos credentials admin dans le fichier .env"
+        return $false
+    }
+    
+    $env:AWS_ACCESS_KEY_ID = $adminAccessKey
+    $env:AWS_SECRET_ACCESS_KEY = $adminSecretKey
+    $env:AWS_DEFAULT_REGION = $Region
+    
+    Write-Success "✓ Credentials AWS Admin configurés"
+    return $true
+}
+
 # Script principal
 Write-Info "=== Déploiement Weather Pipeline sur AWS ECS ==="
 Write-Info "Région: $Region"
 
 if (-not (Test-AWSCli)) {
+    exit 1
+}
+
+# Configurer les credentials admin
+if (-not (Set-AWSAdminCredentials)) {
     exit 1
 }
 

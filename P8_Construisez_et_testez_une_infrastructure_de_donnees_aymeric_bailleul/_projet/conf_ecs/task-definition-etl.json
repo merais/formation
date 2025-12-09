@@ -4,18 +4,18 @@
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "1024",
   "memory": "2048",
-  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/WeatherPipelineECSTaskExecutionRole",
-  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/WeatherPipelineECSTaskRole",
+  "executionRoleArn": "arn:aws:iam::343374742393:role/WeatherPipelineECSTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::343374742393:role/WeatherPipelineECSTaskRole",
   "containerDefinitions": [
     {
       "name": "etl-pipeline",
-      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/weather-etl:latest",
+      "image": "343374742393.dkr.ecr.eu-west-1.amazonaws.com/weather-etl:latest",
       "essential": true,
       "command": ["python", "ABAI_P8_script_01_clean_data.py"],
       "environment": [
         {
           "name": "AWS_REGION",
-          "value": "REGION"
+          "value": "eu-west-1"
         },
         {
           "name": "MONGODB_DATABASE",
@@ -33,30 +33,30 @@
       "secrets": [
         {
           "name": "AWS_ACCESS_KEY_ID",
-          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:weather-pipeline/aws-credentials:AWS_ACCESS_KEY_ID::"
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/aws-credentials:AWS_ACCESS_KEY_ID::"
         },
         {
           "name": "AWS_SECRET_ACCESS_KEY",
-          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:weather-pipeline/aws-credentials:AWS_SECRET_ACCESS_KEY::"
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/aws-credentials:AWS_SECRET_ACCESS_KEY::"
         },
         {
           "name": "S3_BUCKET_NAME",
-          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:weather-pipeline/s3-config:S3_BUCKET_NAME::"
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/s3-config:S3_BUCKET_NAME::"
         },
         {
           "name": "S3_PREFIX_SOURCE",
-          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:weather-pipeline/s3-config:S3_PREFIX_SOURCE::"
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/s3-config:S3_PREFIX_SOURCE::"
         },
         {
           "name": "S3_PREFIX_DESTINATION",
-          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:weather-pipeline/s3-config:S3_PREFIX_DESTINATION::"
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:343374742393:secret:weather-pipeline/s3-config:S3_PREFIX_DESTINATION::"
         }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
           "awslogs-group": "/ecs/weather-etl",
-          "awslogs-region": "REGION",
+          "awslogs-region": "eu-west-1",
           "awslogs-stream-prefix": "ecs",
           "awslogs-create-group": "true"
         }

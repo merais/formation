@@ -151,11 +151,6 @@ Resources:
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: 27017
-          ToPort: 27017
-          SourceSecurityGroupId: !Ref ECSSecurityGroup
-          Description: MongoDB port
-        - IpProtocol: tcp
           FromPort: 8081
           ToPort: 8081
           CidrIp: 0.0.0.0/0
@@ -166,6 +161,17 @@ Resources:
       Tags:
         - Key: Name
           Value: weather-pipeline-ecs-sg
+
+  # Règle d'ingress séparée pour éviter la dépendance circulaire
+  ECSMongoDBIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref ECSSecurityGroup
+      IpProtocol: tcp
+      FromPort: 27017
+      ToPort: 27017
+      SourceSecurityGroupId: !Ref ECSSecurityGroup
+      Description: MongoDB port (self-reference)
 
   EFSSecurityGroup:
     Type: AWS::EC2::SecurityGroup
