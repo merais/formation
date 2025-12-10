@@ -45,19 +45,20 @@ services:
     networks:
       - weather-network
 
-  # Service ETL - Nettoyage des données
+  # Service ETL - Nettoyage des données (mode continu)
   etl-pipeline:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: weather-etl
-    restart: "no"
+    restart: unless-stopped
     env_file:
       - .env
     environment:
       - MONGODB_URI=mongodb://${MONGODB_ROOT_USER}:${MONGODB_ROOT_PASSWORD}@mongodb:27017/
       - MONGODB_DATABASE=${MONGODB_DATABASE}
       - MONGODB_COLLECTION=${MONGODB_COLLECTION}
+      - WATCH_INTERVAL=3600
     depends_on:
       mongodb:
         condition: service_healthy
