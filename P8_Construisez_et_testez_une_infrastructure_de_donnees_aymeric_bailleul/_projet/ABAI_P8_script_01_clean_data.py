@@ -213,8 +213,8 @@ def create_dh_utc_from_time(df: pd.DataFrame) -> pd.DataFrame:
     """
     # Créer dh_utc si time existe et que dh_utc est vide/inexistant
     if 'time' in df.columns:
-        # Vérifier si dh_utc existe et est vide (tous NaN/None)
-        needs_dh_utc = 'dh_utc' not in df.columns or df['dh_utc'].isna().all()
+        # Vérifier si dh_utc existe et est vide (tous NaN/None ou strings vides)
+        needs_dh_utc = 'dh_utc' not in df.columns or df['dh_utc'].isna().all() or (df['dh_utc'].astype(str).str.strip() == '').all()
         
         if needs_dh_utc:
             # Pour les fichiers Excel, on utilise une date de référence (date d'extraction)
