@@ -174,6 +174,53 @@ docker-compose run --rm s3-cleanup python ABAI_P8_script_04_cleanup_s3.py --dry-
 poetry run python ABAI_P8_script_04_cleanup_s3.py --help
 ```
 
+### Benchmark de performance MongoDB
+
+Le script `ABAI_P8_script_05_benchmark_mongodb.py` mesure les performances des opérations MongoDB :
+-  **Écriture** : Insert en batch (insert_many)
+-  **Lecture séquentielle** : Full scan avec limite
+-  **Lecture indexée** : Recherche par unique_key
+-  **Mise à jour** : Update de documents
+-  **Agrégation** : Group by station
+
+**Exécution locale :**
+
+```powershell
+# Avec Poetry
+poetry run python ABAI_P8_script_05_benchmark_mongodb.py
+
+# Avec Docker Compose
+docker-compose run --rm mongodb-importer python ABAI_P8_script_05_benchmark_mongodb.py
+```
+
+**Exécution sur AWS ECS :**
+
+```powershell
+# 1. Redémarrer les services nécessaires (si arrêtés)
+aws ecs update-service --cluster weather-pipeline-cluster --service mongodb --desired-count 1 --region eu-west-1
+aws ecs update-service --cluster weather-pipeline-cluster --service mongodb-importer --desired-count 1 --region eu-west-1
+
+# 2. Attendre que les tâches soient en cours d'exécution (~30s)
+aws ecs wait services-stable --cluster weather-pipeline-cluster --services mongodb mongodb-importer --region eu-west-1
+
+# 3. Récupérer l'ARN de la tâche mongodb-importer
+$taskArn = (aws ecs list-tasks --cluster weather-pipeline-cluster --service-name mongodb-importer --region eu-west-1 --query 'taskArns[0]' --output text)
+
+# 4. Exécuter le benchmark dans le conteneur
+aws ecs execute-command --cluster weather-pipeline-cluster `
+                        --task $taskArn `
+                        --container mongodb-importer `
+                        --command "python ABAI_P8_script_05_benchmark_mongodb.py" `
+                        --region eu-west-1 `
+                        --interactive
+
+# 5. (Optionnel) Arrêter les services pour économiser
+aws ecs update-service --cluster weather-pipeline-cluster --service mongodb-importer --desired-count 0 --region eu-west-1
+aws ecs update-service --cluster weather-pipeline-cluster --service mongodb --desired-count 0 --region eu-west-1
+```
+
+**Note :** Le benchmark nécessite que MongoDB soit accessible. Sur AWS, assurez-vous que les services `mongodb` et `mongodb-importer` sont démarrés.
+
 ### Exécution manuelle du script ETL
 
 ```powershell
@@ -280,19 +327,20 @@ db.measurements.find({ dh_utc: { $gte: ISODate("2024-10-01") } }).count()
 
 ```
 _projet/
-├── .env                              # Configuration (non versionné)
-├── .env.example                      # Exemple de configuration
-├── .gitignore                        # Exclusions Git
-├── docker-compose.yml                # Orchestration Docker (5 services)
-├── Dockerfile                        # Image Docker pour ETL
-├── init-mongo.js                     # Script d'initialisation MongoDB
-├── pyproject.toml                    # Configuration Poetry
-├── poetry.lock                       # Versions des dépendances
-├── README.md                         # Documentation
+├── .env                                    # Configuration (non versionné)
+├── .env.example                            # Exemple de configuration
+├── .gitignore                              # Exclusions Git
+├── docker-compose.yml                      # Orchestration Docker (5 services)
+├── Dockerfile                              # Image Docker pour ETL
+├── init-mongo.js                           # Script d'initialisation MongoDB
+├── pyproject.toml                          # Configuration Poetry
+├── poetry.lock                             # Versions des dépendances
+├── README.md                               # Documentation
 ├── ABAI_P8_script_01_clean_data.py         # Script principal ETL
 ├── ABAI_P8_script_02_import_to_mongodb.py  # Service d'import automatique
 ├── ABAI_P8_script_03_test_mongodb.py       # Tests CRUD MongoDB (pytest)
-└── ABAI_P8_script_04_cleanup_s3.py         # Nettoyage et archivage S3
+├── ABAI_P8_script_04_cleanup_s3.py         # Nettoyage et archivage S3
+└── ABAI_P8_script_05_benchmark_mongodb.py  # Benchmark performance MongoDB
 ```
 
 ## ️ Technologies
