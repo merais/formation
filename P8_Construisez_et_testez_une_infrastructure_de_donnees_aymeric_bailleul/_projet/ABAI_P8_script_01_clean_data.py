@@ -2,6 +2,7 @@
 Script pour lire le contenu d'un bucket S3 avec boto3
 """
 import os
+import time
 from dotenv import load_dotenv
 import boto3
 from botocore.exceptions import ClientError, NoCredentialsError
@@ -675,4 +676,22 @@ def main():
         print("  - Les permissions IAM sont configurées correctement")
 
 if __name__ == "__main__":
-    main()
+    # Récupérer l'intervalle de surveillance (en secondes)
+    watch_interval = int(os.getenv("WATCH_INTERVAL", "3600"))
+    
+    print(f"\n Démarrage du service ETL en mode continu")
+    print(f"   Intervalle de surveillance: {watch_interval} secondes ({watch_interval//60} minutes)")
+    print(f"   Appuyez sur Ctrl+C pour arrêter\n")
+    
+    try:
+        while True:
+            print(f"\n{'='*80}")
+            print(f" Exécution ETL - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"{'='*80}")
+            
+            main()
+            
+            print(f"\n Attente de {watch_interval} secondes avant la prochaine exécution...")
+            time.sleep(watch_interval)
+    except KeyboardInterrupt:
+        print("\n\n Service ETL arrêté par l'utilisateur")
