@@ -307,9 +307,16 @@ def prepare_for_mongodb(df: pd.DataFrame, source_file: str = None, station_mappi
     # Ajouter un timestamp de traitement
     df['processed_at'] = datetime.now().strftime('%Y-%m-%dT%H:%M:%S.000Z')
     
-    # Générer une clé unique: id_station + timestamp
+    # Générer une clé unique: id_station + timestamp + sequence (pour éviter les doublons Excel)
     if 'id_station' in df.columns and 'dh_utc' in df.columns:
-        df['unique_key'] = df['id_station'] + '_' + df['dh_utc']
+        # Ajouter un numéro de séquence par groupe (station, dh_utc) pour gérer les doublons
+        df['_seq'] = df.groupby(['id_station', 'dh_utc']).cumcount()
+        df['unique_key'] = df.apply(
+            lambda row: f"{row['id_station']}_{row['dh_utc']}" if row['_seq'] == 0 
+            else f"{row['id_station']}_{row['dh_utc']}_seq{row['_seq']}", 
+            axis=1
+        )
+        df = df.drop(columns=['_seq'])
     
     return df
 
