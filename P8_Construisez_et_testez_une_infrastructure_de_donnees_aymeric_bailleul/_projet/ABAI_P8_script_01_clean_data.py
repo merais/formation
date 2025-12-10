@@ -237,14 +237,13 @@ def prepare_for_mongodb(df: pd.DataFrame, source_file: str = None, station_mappi
     - Remplace NaN/None par None (null en JSON)
     - Assure que les champs numériques sont bien typés
     - Ajoute source_file et nom_station pour la traçabilité
-    - Génère une clé unique avec id_station + timestamp + random 10 digits
+    - Génère une clé unique avec id_station + timestamp
     
     Args:
         df: DataFrame à préparer
         source_file: Nom du fichier source (pour traçabilité)
         station_mapping: Dictionnaire {id_station: nom_station}
     """
-    import random
     df = df.copy()
     
     # Convertir dh_utc en datetime puis en ISO format string
@@ -295,13 +294,9 @@ def prepare_for_mongodb(df: pd.DataFrame, source_file: str = None, station_mappi
     # Ajouter un timestamp de traitement
     df['processed_at'] = datetime.now().strftime('%Y-%m-%dT%H:%M:%S.000Z')
     
-    # Générer une clé unique: id_station + timestamp + random 10 digits
+    # Générer une clé unique: id_station + timestamp
     if 'id_station' in df.columns and 'dh_utc' in df.columns:
-        # Générer un ID aléatoire à 10 chiffres pour chaque ligne
-        df['unique_key'] = df.apply(
-            lambda row: f"{row['id_station']}_{row['dh_utc']}_{random.randint(1000000000, 9999999999)}", 
-            axis=1
-        )
+        df['unique_key'] = df['id_station'] + '_' + df['dh_utc']
     
     return df
 

@@ -356,11 +356,11 @@ Chaque document MongoDB contient des métadonnées de traçabilité :
   - Format ISO 8601 : `"2025-12-09T16:05:18.000Z"`
   - Permet de suivre le délai entre extraction et traitement
 
-- **`unique_key`** : Clé composite unique avec random
-  - Format : `"id_station_dh_utc_random10digits"`
-  - Exemple : `"07015_2024-10-05T00:00:00.000Z_6686150138"`
-  - Les 10 chiffres aléatoires garantissent l'unicité absolue
-  - Facilite les upserts et évite les collisions
+- **`unique_key`** : Clé composite unique
+  - Format : `"id_station_dh_utc"`
+  - Exemple : `"07015_2024-10-05T00:00:00.000Z"`
+  - Combinaison station + timestamp garantit l'unicité
+  - Facilite les upserts et la détection de doublons
 
 **Avantages :**
 -  Audit complet : fichier → extraction → traitement → base de données
