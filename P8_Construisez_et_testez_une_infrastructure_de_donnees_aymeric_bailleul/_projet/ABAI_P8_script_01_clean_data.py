@@ -211,26 +211,33 @@ def create_dh_utc_from_time(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         DataFrame avec la colonne dh_utc créée
     """
-    # Créer dh_utc si time existe et que dh_utc est vide/inexistant
+    # Créer dh_utc si time existe
     if 'time' in df.columns:
-        # Vérifier si dh_utc existe et est vide (tous NaN/None ou strings vides)
-        needs_dh_utc = 'dh_utc' not in df.columns or df['dh_utc'].isna().all() or (df['dh_utc'].astype(str).str.strip() == '').all()
+        # S'assurer que dh_utc existe
+        if 'dh_utc' not in df.columns:
+            df['dh_utc'] = None
         
-        if needs_dh_utc:
+        # Identifier les lignes avec dh_utc vide ou invalide
+        mask_empty = df['dh_utc'].isna() | (df['dh_utc'].astype(str).str.strip() == '')
+        
+        if mask_empty.any():
             # Pour les fichiers Excel, on utilise une date de référence (date d'extraction)
-            # On prend la date du jour comme référence
             from datetime import datetime, date
             reference_date = date.today()
             
-            # Créer dh_utc en combinant la date de référence avec l'heure
-            df['dh_utc'] = df['time'].apply(
+            # Créer dh_utc UNIQUEMENT pour les lignes vides
+            df.loc[mask_empty, 'dh_utc'] = df.loc[mask_empty, 'time'].apply(
                 lambda t: f"{reference_date} {t}" if pd.notna(t) else None
             )
             
-            # Convertir en datetime
-            df['dh_utc'] = pd.to_datetime(df['dh_utc'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
+            # Convertir en datetime les valeurs qui ont été remplies
+            df.loc[mask_empty, 'dh_utc'] = pd.to_datetime(df.loc[mask_empty, 'dh_utc'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
             
-            print(f"    Colonne dh_utc créée à partir de Time (date de référence: {reference_date})")
+            print(f"    Colonne dh_utc créée pour {mask_empty.sum()} lignes à partir de Time (date de référence: {reference_date})")
+        
+        # S'assurer que toute la colonne est en datetime
+        if not pd.api.types.is_datetime64_any_dtype(df['dh_utc']):
+            df['dh_utc'] = pd.to_datetime(df['dh_utc'], errors='coerce')
     
     return df
 
