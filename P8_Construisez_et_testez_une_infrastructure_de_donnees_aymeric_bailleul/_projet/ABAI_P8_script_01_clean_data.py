@@ -211,21 +211,26 @@ def create_dh_utc_from_time(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         DataFrame avec la colonne dh_utc créée
     """
-    if 'time' in df.columns and 'dh_utc' not in df.columns:
-        # Pour les fichiers Excel, on utilise une date de référence (date d'extraction)
-        # On prend la date du jour comme référence
-        from datetime import datetime, date
-        reference_date = date.today()
+    # Créer dh_utc si time existe et que dh_utc est vide/inexistant
+    if 'time' in df.columns:
+        # Vérifier si dh_utc existe et est vide (tous NaN/None)
+        needs_dh_utc = 'dh_utc' not in df.columns or df['dh_utc'].isna().all()
         
-        # Créer dh_utc en combinant la date de référence avec l'heure
-        df['dh_utc'] = df['time'].apply(
-            lambda t: f"{reference_date} {t}" if pd.notna(t) else None
-        )
-        
-        # Convertir en datetime
-        df['dh_utc'] = pd.to_datetime(df['dh_utc'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
-        
-        print(f"    Colonne dh_utc créée à partir de Time (date de référence: {reference_date})")
+        if needs_dh_utc:
+            # Pour les fichiers Excel, on utilise une date de référence (date d'extraction)
+            # On prend la date du jour comme référence
+            from datetime import datetime, date
+            reference_date = date.today()
+            
+            # Créer dh_utc en combinant la date de référence avec l'heure
+            df['dh_utc'] = df['time'].apply(
+                lambda t: f"{reference_date} {t}" if pd.notna(t) else None
+            )
+            
+            # Convertir en datetime
+            df['dh_utc'] = pd.to_datetime(df['dh_utc'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
+            
+            print(f"    Colonne dh_utc créée à partir de Time (date de référence: {reference_date})")
     
     return df
 
