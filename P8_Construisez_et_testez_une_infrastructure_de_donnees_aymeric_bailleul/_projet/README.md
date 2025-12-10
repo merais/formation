@@ -221,6 +221,32 @@ aws ecs update-service --cluster weather-pipeline-cluster --service mongodb --de
 
 **Note :** Le benchmark nécessite que MongoDB soit accessible. Sur AWS, assurez-vous que les services `mongodb` et `mongodb-importer` sont démarrés.
 
+## 📊 Surveillance et Monitoring
+
+### Dashboard CloudWatch (AWS)
+
+Un dashboard CloudWatch est disponible pour surveiller l'infrastructure AWS en temps réel :
+
+**Accès :** https://eu-west-1.console.aws.amazon.com/cloudwatch/home?region=eu-west-1#dashboards/dashboard/weather-pipeline-monitoring
+
+**Métriques surveillées :**
+- 📊 **CPU et Mémoire MongoDB** : Utilisation en temps réel (échelle 0-20% CPU, 0-50% RAM)
+- 📊 **CPU et Mémoire des services** : ETL, Importer, Cleanup, Mongo Express (échelle 0-30% CPU, 0-60% RAM)
+- 📈 **Nombre de tâches actives** : Compteur par service (0-5 tâches)
+- 💾 **Stockage S3** : Taille du bucket et nombre d'objets
+- 📝 **Logs MongoDB** : 50 dernières entrées en temps réel
+
+**Création du dashboard :**
+
+```powershell
+# Le dashboard est créé automatiquement via le fichier de configuration
+aws cloudwatch put-dashboard --dashboard-name weather-pipeline-monitoring --region eu-west-1 --dashboard-body (Get-Content conf_ecs/cloudwatch-dashboard.json -Raw)
+```
+
+**Actualisation :** Le dashboard se met à jour automatiquement toutes les 5 minutes.
+
+**Coût :** Gratuit (inclus dans l'offre AWS Free Tier pour les 3 premiers dashboards).
+
 ### Exécution manuelle du script ETL
 
 ```powershell
@@ -340,7 +366,12 @@ _projet/
 ├── ABAI_P8_script_02_import_to_mongodb.py  # Service d'import automatique
 ├── ABAI_P8_script_03_test_mongodb.py       # Tests CRUD MongoDB (pytest)
 ├── ABAI_P8_script_04_cleanup_s3.py         # Nettoyage et archivage S3
-└── ABAI_P8_script_05_benchmark_mongodb.py  # Benchmark performance MongoDB
+├── ABAI_P8_script_05_benchmark_mongodb.py  # Benchmark performance MongoDB
+├── conf_ecs/                               # Configuration AWS ECS
+│   ├── cloudwatch-dashboard.json           # Dashboard de monitoring CloudWatch
+│   ├── task-definition-*.json              # Définitions des tâches ECS
+│   └── ...
+└── local/                                  # Environnement local (non versionné)
 ```
 
 ## ️ Technologies
