@@ -1,0 +1,181 @@
+{
+  "widgets": [
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 0,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/ECS", "CPUUtilization", "ServiceName", "mongodb", "ClusterName", "weather-pipeline-cluster", {"stat": "Average"}]
+        ],
+        "period": 300,
+        "stat": "Average",
+        "region": "eu-west-1",
+        "title": "MongoDB - CPU Utilization (%)",
+        "yAxis": {
+          "left": {
+            "min": 0,
+            "max": 20
+          }
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 0,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/ECS", "MemoryUtilization", "ServiceName", "mongodb", "ClusterName", "weather-pipeline-cluster", {"stat": "Average"}]
+        ],
+        "period": 300,
+        "stat": "Average",
+        "region": "eu-west-1",
+        "title": "MongoDB - Memory Utilization (%)",
+        "yAxis": {
+          "left": {
+            "min": 0,
+            "max": 50
+          }
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 6,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/ECS", "CPUUtilization", "ServiceName", "mongo-express", "ClusterName", "weather-pipeline-cluster"],
+          ["...", "weather-etl", ".", "."],
+          ["...", "mongodb-importer", ".", "."],
+          ["...", "s3-cleanup", ".", "."]
+        ],
+        "period": 300,
+        "stat": "Average",
+        "region": "eu-west-1",
+        "title": "All Services - CPU Utilization (%)",
+        "yAxis": {
+          "left": {
+            "min": 0,
+            "max": 30
+          }
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 6,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/ECS", "MemoryUtilization", "ServiceName", "mongo-express", "ClusterName", "weather-pipeline-cluster"],
+          ["...", "weather-etl", ".", "."],
+          ["...", "mongodb-importer", ".", "."],
+          ["...", "s3-cleanup", ".", "."]
+        ],
+        "period": 300,
+        "stat": "Average",
+        "region": "eu-west-1",
+        "title": "All Services - Memory Utilization (%)",
+        "yAxis": {
+          "left": {
+            "min": 0,
+            "max": 60
+          }
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 12,
+      "width": 24,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/ECS", "RunningTasksCount", "ServiceName", "mongodb", "ClusterName", "weather-pipeline-cluster", {"label": "MongoDB"}],
+          ["...", "mongo-express", ".", ".", {"label": "Mongo Express"}],
+          ["...", "weather-etl", ".", ".", {"label": "ETL Pipeline"}],
+          ["...", "mongodb-importer", ".", ".", {"label": "Importer"}],
+          ["...", "s3-cleanup", ".", ".", {"label": "S3 Cleanup"}]
+        ],
+        "period": 300,
+        "stat": "Average",
+        "region": "eu-west-1",
+        "title": "Running Tasks Count",
+        "yAxis": {
+          "left": {
+            "min": 0,
+            "max": 5
+          }
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 18,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/S3", "BucketSizeBytes", "BucketName", "p8-weather-data", "StorageType", "StandardStorage", {"stat": "Average"}]
+        ],
+        "period": 86400,
+        "stat": "Average",
+        "region": "eu-west-1",
+        "title": "S3 Bucket Size (MB)",
+        "yAxis": {
+          "left": {
+            "min": 0,
+            "label": "Bytes"
+          }
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 18,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/S3", "NumberOfObjects", "BucketName", "p8-weather-data", "StorageType", "AllStorageTypes", {"stat": "Average"}]
+        ],
+        "period": 86400,
+        "stat": "Average",
+        "region": "eu-west-1",
+        "title": "S3 Object Count",
+        "yAxis": {
+          "left": {
+            "min": 0,
+            "max": 20
+          }
+        }
+      }
+    },
+    {
+      "type": "log",
+      "x": 0,
+      "y": 24,
+      "width": 24,
+      "height": 6,
+      "properties": {
+        "query": "SOURCE '/ecs/weather-mongodb'\n| fields @timestamp, @message\n| sort @timestamp desc\n| limit 50",
+        "region": "eu-west-1",
+        "title": "MongoDB Recent Logs (Last 50)",
+        "stacked": false
+      }
+    }
+  ]
+}

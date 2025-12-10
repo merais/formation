@@ -16,3 +16,6 @@ build/
 htmlcov/
 .DS_Store
 poetry.lock
+
+# Dossier local (environnement de développement)
+local/
