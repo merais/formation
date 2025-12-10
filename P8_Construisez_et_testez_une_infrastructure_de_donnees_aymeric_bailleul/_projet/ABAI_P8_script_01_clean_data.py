@@ -199,6 +199,36 @@ def apply_data_cleaning(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def create_dh_utc_from_time(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Crée la colonne dh_utc à partir de la colonne Time pour les fichiers Excel.
+    Utilise la date d'extraction Airbyte comme référence.
+    
+    Args:
+        df: DataFrame contenant une colonne 'time' (en minuscule après nettoyage)
+        
+    Returns:
+        DataFrame avec la colonne dh_utc créée
+    """
+    if 'time' in df.columns and 'dh_utc' not in df.columns:
+        # Pour les fichiers Excel, on utilise une date de référence (date d'extraction)
+        # On prend la date du jour comme référence
+        from datetime import datetime, date
+        reference_date = date.today()
+        
+        # Créer dh_utc en combinant la date de référence avec l'heure
+        df['dh_utc'] = df['time'].apply(
+            lambda t: f"{reference_date} {t}" if pd.notna(t) else None
+        )
+        
+        # Convertir en datetime
+        df['dh_utc'] = pd.to_datetime(df['dh_utc'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
+        
+        print(f"    Colonne dh_utc créée à partir de Time (date de référence: {reference_date})")
+    
+    return df
+
+
 def prepare_for_mongodb(df: pd.DataFrame, source_file: str = None, station_mapping: dict = None) -> pd.DataFrame:
     """
     Prépare le DataFrame pour l'intégration dans MongoDB.
@@ -207,12 +237,14 @@ def prepare_for_mongodb(df: pd.DataFrame, source_file: str = None, station_mappi
     - Remplace NaN/None par None (null en JSON)
     - Assure que les champs numériques sont bien typés
     - Ajoute source_file et nom_station pour la traçabilité
+    - Génère une clé unique avec id_station + timestamp + random 10 digits
     
     Args:
         df: DataFrame à préparer
         source_file: Nom du fichier source (pour traçabilité)
         station_mapping: Dictionnaire {id_station: nom_station}
     """
+    import random
     df = df.copy()
     
     # Convertir dh_utc en datetime puis en ISO format string
@@ -238,21 +270,38 @@ def prepare_for_mongodb(df: pd.DataFrame, source_file: str = None, station_mappi
     
     # Ajouter le nom de la station si le mapping est disponible
     if station_mapping and 'id_station' in df.columns:
-        df['nom_station'] = df['id_station'].map(station_mapping)
-        print(f"   📍 {df['nom_station'].nunique()} station(s) identifiée(s)")
+        # Fusionner le mapping avec les noms existants (ne pas écraser les noms Excel)
+        if 'nom_station' in df.columns:
+            # Compléter les None avec le mapping
+            df['nom_station'] = df.apply(
+                lambda row: row['nom_station'] if pd.notna(row['nom_station']) else station_mapping.get(row['id_station']), 
+                axis=1
+            )
+        else:
+            df['nom_station'] = df['id_station'].map(station_mapping)
+        print(f"    {df['nom_station'].nunique()} station(s) identifiée(s)")
     
-    # Ajouter le fichier source pour la traçabilité
-    if source_file:
+    # Renommer _source_file en source_file pour la traçabilité
+    if '_source_file' in df.columns:
+        df['source_file'] = df['_source_file']
+        df = df.drop(columns=['_source_file'])
+        unique_files = df['source_file'].nunique()
+        print(f"    Traçabilité: {unique_files} fichier(s) source(s) individuel(s)")
+    elif source_file:
+        # Fallback si _source_file n'existe pas
         df['source_file'] = source_file
-        print(f"   📎 Traçabilité: {source_file}")
+        print(f"    Traçabilité: {source_file}")
     
     # Ajouter un timestamp de traitement
     df['processed_at'] = datetime.now().strftime('%Y-%m-%dT%H:%M:%S.000Z')
     
-    # Ajouter un identifiant unique si nécessaire (pour MongoDB _id)
-    # MongoDB générera automatiquement _id lors de l'insertion, mais on peut créer une clé composite
+    # Générer une clé unique: id_station + timestamp + random 10 digits
     if 'id_station' in df.columns and 'dh_utc' in df.columns:
-        df['unique_key'] = df['id_station'].astype(str) + '_' + df['dh_utc'].astype(str)
+        # Générer un ID aléatoire à 10 chiffres pour chaque ligne
+        df['unique_key'] = df.apply(
+            lambda row: f"{row['id_station']}_{row['dh_utc']}_{random.randint(1000000000, 9999999999)}", 
+            axis=1
+        )
     
     return df
 
@@ -271,10 +320,10 @@ def main():
     
     # Vérifier que les informations essentielles sont présentes
     if not all([aws_access_key_id, aws_secret_access_key, s3_bucket]):
-        print("❌ Erreur: Veuillez configurer les variables AWS dans le fichier .env")
+        print(" Erreur: Veuillez configurer les variables AWS dans le fichier .env")
         return
     
-    print(f"📦 Configuration de la connexion S3...")
+    print(f" Configuration de la connexion S3...")
     print(f"   Bucket: {s3_bucket}")
     print(f"   Région: {aws_region}")
     if s3_prefix:
@@ -292,12 +341,12 @@ def main():
         s3_client = session.client('s3')
         
         # Vérifier la connexion en listant les objets
-        print("\n🔍 Vérification de la connexion...")
+        print("\n Vérification de la connexion...")
         s3_client.head_bucket(Bucket=s3_bucket)
-        print("✅ Connexion réussie!")
+        print(" Connexion réussie!")
         
         # Lister TOUS les fichiers et dossiers dans le bucket
-        print(f"\n📋 Listing de tous les fichiers et dossiers dans '{s3_bucket}/{s3_prefix}'...")
+        print(f"\n Listing de tous les fichiers et dossiers dans '{s3_bucket}/{s3_prefix}'...")
         
         paginator = s3_client.get_paginator('list_objects_v2')
         pages = paginator.paginate(Bucket=s3_bucket, Prefix=s3_prefix)
@@ -333,13 +382,13 @@ def main():
         
         # Afficher les dossiers
         if folders:
-            print(f"\n📁 Dossiers trouvés ({len(folders)}):")
+            print(f"\n Dossiers trouvés ({len(folders)}):")
             for folder in sorted(folders):
-                print(f"   📂 {folder}")
+                print(f"    {folder}")
         
         # Afficher les fichiers groupés par extension
         if not files:
-            print(f"\n⚠️  Aucun fichier trouvé dans '{s3_bucket}/{s3_prefix}'")
+            print(f"\n️  Aucun fichier trouvé dans '{s3_bucket}/{s3_prefix}'")
             return
         
         # Grouper par extension
@@ -350,9 +399,9 @@ def main():
                 files_by_ext[ext] = []
             files_by_ext[ext].append(file)
         
-        print(f"\n📄 Fichiers trouvés (total: {len(files)}):")
+        print(f"\n Fichiers trouvés (total: {len(files)}):")
         for ext, ext_files in sorted(files_by_ext.items()):
-            print(f"\n   📌 Type: .{ext} ({len(ext_files)} fichier(s))")
+            print(f"\n    Type: .{ext} ({len(ext_files)} fichier(s))")
             for file in ext_files[:10]:  # Afficher max 10 fichiers par type
                 size_mb = file['size'] / (1024 * 1024)
                 if size_mb < 1:
@@ -368,19 +417,19 @@ def main():
         supported_files = [f for f in files if any(f['key'].endswith(ext) for ext in supported_extensions)]
         
         if not supported_files:
-            print(f"\n⚠️  Aucun fichier supporté trouvé pour le traitement")
+            print(f"\n️  Aucun fichier supporté trouvé pour le traitement")
             print(f"   Extensions supportées: {', '.join(supported_extensions)}")
             
             # Proposer de lire d'autres types de fichiers
             available_exts = list(files_by_ext.keys())
             if available_exts:
-                print(f"\n💡 Types de fichiers disponibles: {', '.join(available_exts)}")
+                print(f"\n Types de fichiers disponibles: {', '.join(available_exts)}")
             return
         
         files = supported_files
         
         # Traiter les fichiers en fonction de leur extension
-        print(f"\n✅ {len(files)} fichier(s) trouvé(s) pour traitement:")
+        print(f"\n {len(files)} fichier(s) trouvé(s) pour traitement:")
         for i, file in enumerate(files, 1):
             size_mb = file['size'] / (1024 * 1024)
             print(f"   {i}. {file['key']} ({size_mb:.2f} MB) - {file['last_modified']}")
@@ -389,7 +438,7 @@ def main():
         file_extension = files[0]['key'].split('.')[-1].lower()
         
         # Lire le premier fichier
-        print(f"\n📥 Lecture du premier fichier: {files[0]['key']}...")
+        print(f"\n Lecture du premier fichier: {files[0]['key']}...")
         
         response = s3_client.get_object(Bucket=s3_bucket, Key=files[0]['key'])
         content = response['Body'].read().decode('utf-8')
@@ -408,7 +457,7 @@ def main():
             
             # Si c'est un format Airbyte, extraire les données réelles
             if '_airbyte_data' in df.columns:
-                print("\n   🔍 Détection du format Airbyte - extraction des données...")
+                print("\n    Détection du format Airbyte - extraction des données...")
                 # Extraire et parser la colonne _airbyte_data
                 data_records = []
                 station_mapping = {}  # Mapping id_station -> nom_station
@@ -448,45 +497,54 @@ def main():
                 
                 if data_records:
                     df = pd.DataFrame(data_records)
-                    print(f"   ✅ {len(data_records)} enregistrements météo extraits")
+                    print(f"    {len(data_records)} enregistrements météo extraits")
                     if station_mapping:
-                        print(f"   🗺️  {len(station_mapping)} station(s) dans le mapping")
+                        print(f"   ️  {len(station_mapping)} station(s) dans le mapping")
                 else:
-                    print(f"   ⚠️  Aucune donnée météo trouvée dans ce fichier")
+                    print(f"   ️  Aucune donnée météo trouvée dans ce fichier")
         else:
-            print(f"⚠️  Type de fichier non supporté: .{file_extension}")
+            print(f"️  Type de fichier non supporté: .{file_extension}")
             return
         
         # Appliquer le nettoyage des données
-        print("\n🧹 Application du nettoyage des données...")
+        print("\n Application du nettoyage des données...")
         df = apply_data_cleaning(df)
-        print("   ✅ Nettoyage terminé!")
+        print("    Nettoyage terminé!")
         
-        print(f"\n📊 Données chargées avec succès!")
+        print(f"\n Données chargées avec succès!")
         print(f"   Shape: {df.shape} (lignes, colonnes)")
         print(f"   Colonnes: {list(df.columns)}")
         print(f"   Mémoire utilisée: {df.memory_usage(deep=True).sum() / 1024 / 1024:.2f} MB")
         
-        print(f"\n📈 Aperçu des données (5 premières lignes):")
+        print(f"\n Aperçu des données (5 premières lignes):")
         print(df.head())
         
-        print(f"\n📉 Statistiques descriptives:")
+        print(f"\n Statistiques descriptives:")
         print(df.describe())
         
-        print(f"\n🔍 Informations sur les colonnes:")
+        print(f"\n Informations sur les colonnes:")
         print(df.info())
         
-        # Lire tous les fichiers automatiquement
+        # Lire tous les fichiers automatiquement et les fusionner
         if len(files) >= 1:
-            print(f"\n📚 Lecture de tous les {len(files)} fichier(s)...")
+            print(f"\n Lecture de tous les {len(files)} fichier(s)...")
             if True:
                 all_dataframes = []
                 global_station_mapping = {}  # Mapping global pour toutes les stations
                 
                 for file in files:
-                    print(f"   📖 Lecture de {file['key']}...")
+                    print(f"    Lecture de {file['key']}...")
                     response = s3_client.get_object(Bucket=s3_bucket, Key=file['key'])
                     content = response['Body'].read().decode('utf-8')
+                    
+                    # Extraire le nom du fichier source pour la traçabilité
+                    source_filename = file['key'].split('/')[-1]
+                    
+                    # Extraire le nom de la station depuis le chemin du fichier
+                    # Format: 01_raw/weather_files_StationName/...
+                    file_path_parts = file['key'].split('/')
+                    folder_name = file_path_parts[-2] if len(file_path_parts) >= 2 else ''
+                    station_name_from_folder = folder_name.replace('weather_files_', '').split('_')[0] if folder_name.startswith('weather_files_') else None
                     
                     # Lire selon le type de fichier
                     if file_extension == 'csv':
@@ -517,47 +575,68 @@ def main():
                                 if isinstance(airbyte_data, dict):
                                     # Cas 1: données dans 'data'
                                     if 'data' in airbyte_data and isinstance(airbyte_data['data'], list) and len(airbyte_data['data']) > 0:
-                                        data_records.extend(airbyte_data['data'])
+                                        for record in airbyte_data['data']:
+                                            record['_source_file'] = source_filename
+                                            data_records.append(record)
                                     # Cas 2: données horaires dans 'hourly'
                                     elif 'hourly' in airbyte_data and isinstance(airbyte_data['hourly'], dict):
                                         for station_id, station_records in airbyte_data['hourly'].items():
                                             if station_id != '_params' and isinstance(station_records, list):
-                                                data_records.extend(station_records)
-                                    # Cas 3: données directes
+                                                for record in station_records:
+                                                    record['_source_file'] = source_filename
+                                                    data_records.append(record)
+                                    # Cas 3: données directes (fichiers Excel convertis)
                                     elif any(key in airbyte_data for key in ['Temperature', 'Humidity', 'Pressure', 'Time']):
+                                        # Ajouter le nom de la station si extrait du dossier
+                                        if station_name_from_folder:
+                                            airbyte_data['nom_station'] = station_name_from_folder
+                                            # Créer un id_station basé sur le nom
+                                            airbyte_data['id_station'] = f"EXCEL_{station_name_from_folder.upper()}"
+                                            # Ajouter au mapping
+                                            global_station_mapping[airbyte_data['id_station']] = station_name_from_folder
+                                        # Ajouter le source file
+                                        airbyte_data['_source_file'] = source_filename
                                         data_records.append(airbyte_data)
                                     else:
+                                        airbyte_data['_source_file'] = source_filename
                                         data_records.append(airbyte_data)
                                 else:
-                                    data_records.append({})
+                                    data_records.append({'_source_file': source_filename})
                             
                             if data_records:
                                 df_temp = pd.DataFrame(data_records)
+                                print(f"       {len(data_records)} enregistrements extraits")
+                                if station_name_from_folder:
+                                    print(f"       Station détectée: {station_name_from_folder}")
                     
                     all_dataframes.append(df_temp)
                 
                 # Concaténer tous les DataFrames
+                print(f"\n Fusion de tous les DataFrames...")
                 combined_df = pd.concat(all_dataframes, ignore_index=True)
+                print(f"    {len(combined_df)} enregistrements fusionnés")
                 
                 # Appliquer le nettoyage sur le DataFrame combiné
-                print("\n🧹 Application du nettoyage sur le DataFrame combiné...")
+                print("\n Application du nettoyage sur le DataFrame combiné...")
                 combined_df = apply_data_cleaning(combined_df)
-                print("   ✅ Nettoyage terminé!")
+                print("    Nettoyage terminé!")
+                
+                # Créer dh_utc pour les fichiers Excel (si Time existe mais pas dh_utc)
+                combined_df = create_dh_utc_from_time(combined_df)
                 
                 # Préparer les données pour MongoDB
-                print("\n🔧 Préparation des données pour MongoDB...")
-                # Utiliser le nom du premier fichier comme source_file
-                first_file_name = file_keys[0].split('/')[-1] if file_keys else 'unknown'
-                combined_df = prepare_for_mongodb(combined_df, source_file=first_file_name, station_mapping=global_station_mapping if global_station_mapping else None)
-                print("   ✅ Données prêtes pour MongoDB!")
+                print("\n Préparation des données pour MongoDB...")
+                # Le source_file est déjà dans chaque enregistrement via _source_file
+                combined_df = prepare_for_mongodb(combined_df, source_file=None, station_mapping=global_station_mapping if global_station_mapping else None)
+                print("    Données prêtes pour MongoDB!")
                 
-                print(f"\n✅ Tous les fichiers combinés!")
+                print(f"\n Tous les fichiers combinés!")
                 print(f"   Shape finale: {combined_df.shape}")
                 print(f"   Aperçu:")
                 print(combined_df.head())
                 
                 # Sauvegarder automatiquement dans S3
-                print(f"\n💾 Sauvegarde du résultat dans S3...")
+                print(f"\n Sauvegarde du résultat dans S3...")
                 if True:
                     
                     # Récupérer le préfixe de destination
@@ -565,36 +644,36 @@ def main():
                     
                     # Générer le nom du fichier avec horodatage
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    filename = f"{timestamp}_weather_data.json"
+                    filename = f"{timestamp}_weather_allFiles.json"
                     s3_key = f"{s3_prefix_dest}{filename}"
                     
                     # Convertir le DataFrame en JSON (format MongoDB-ready)
                     json_data = combined_df.to_json(orient='records', date_format='iso', force_ascii=False)
                     
                     # Upload vers S3
-                    print(f"\n📤 Upload vers S3: s3://{s3_bucket}/{s3_key}...")
+                    print(f"\n Upload vers S3: s3://{s3_bucket}/{s3_key}...")
                     s3_client.put_object(
                         Bucket=s3_bucket,
                         Key=s3_key,
                         Body=json_data.encode('utf-8'),
                         ContentType='application/json'
                     )
-                    print(f"   ✅ Fichier sauvegardé dans S3: {filename}")
-                    print(f"   📍 Chemin complet: s3://{s3_bucket}/{s3_key}")
-                    print(f"   📋 Format: JSON compatible MongoDB (orient='records')")
+                    print(f"    Fichier sauvegardé dans S3: {filename}")
+                    print(f"    Chemin complet: s3://{s3_bucket}/{s3_key}")
+                    print(f"    Format: JSON compatible MongoDB (orient='records')")
         
     except NoCredentialsError:
-        print("\n❌ Erreur: Credentials AWS non trouvés ou invalides")
+        print("\n Erreur: Credentials AWS non trouvés ou invalides")
     except ClientError as e:
         error_code = e.response['Error']['Code']
         if error_code == '403':
-            print("\n❌ Erreur: Accès refusé - Vérifiez vos permissions IAM")
+            print("\n Erreur: Accès refusé - Vérifiez vos permissions IAM")
         elif error_code == '404':
-            print(f"\n❌ Erreur: Bucket '{s3_bucket}' non trouvé")
+            print(f"\n Erreur: Bucket '{s3_bucket}' non trouvé")
         else:
-            print(f"\n❌ Erreur AWS: {e}")
+            print(f"\n Erreur AWS: {e}")
     except Exception as e:
-        print(f"\n❌ Erreur lors de la lecture du bucket S3: {e}")
+        print(f"\n Erreur lors de la lecture du bucket S3: {e}")
         print("\nAssurez-vous que:")
         print("  - Les credentials AWS sont corrects")
         print("  - Le bucket existe et est accessible")

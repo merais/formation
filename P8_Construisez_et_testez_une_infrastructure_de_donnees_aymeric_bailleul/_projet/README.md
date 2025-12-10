@@ -6,7 +6,7 @@ Pipeline ETL dockerisé pour lire, nettoyer et intégrer automatiquement les don
 
 Ce projet extrait des données météorologiques au format JSONL depuis un bucket S3, applique des transformations de nettoyage et de conversion d'unités, puis les importe automatiquement dans MongoDB.
 
-## 🏗️ Architecture
+## ️ Architecture
 
 J'utilise une architecture microservices avec Docker Compose :
 
@@ -18,24 +18,29 @@ J'utilise une architecture microservices avec Docker Compose :
 
 ### Fonctionnalités principales
 
-- ✅ **Lecture S3** : Extraction de fichiers JSONL depuis AWS S3
-- ✅ **Parsing Airbyte** : Décodage du format Airbyte avec support des structures imbriquées
-- ✅ **Nettoyage des données** :
+-  **Lecture S3** : Extraction de fichiers JSONL depuis AWS S3
+-  **Parsing Airbyte** : Décodage du format Airbyte avec support des structures imbriquées
+-  **Support multi-sources** :
+  - Fichiers JSON API avec stations multiples
+  - Fichiers Excel convertis (une station par dossier)
+  - Extraction automatique du nom de station depuis le chemin S3
+-  **Fusion de données** : Tous les fichiers sont fusionnés en un seul DataFrame unifié
+-  **Nettoyage des données** :
   - Conversion températures (°F → °C)
   - Conversion vitesses (mph → km/h)
   - Conversion pression (inHg → hPa)
   - Conversion précipitations (in → mm)
   - Conversion direction du vent (texte → degrés)
-- ✅ **Préparation MongoDB** :
+-  **Préparation MongoDB** :
   - Dates au format ISO 8601
   - Types numériques corrects
-  - Clé unique composite (id_station + timestamp)
+  - Clé unique : id_station + timestamp + **random 10 digits**
   - Timestamp de traitement
   - **Traçabilité complète** : nom_station et source_file
-- ✅ **Export S3** : Sauvegarde du résultat dans un dossier de destination
-- ✅ **Import MongoDB automatique** : Surveillance du bucket S3 et import automatique des nouveaux fichiers
-- ✅ **Docker Compose** : Orchestration complète avec MongoDB, Mongo Express et services ETL
-- ✅ **Sécurité** : Aucun credential en clair dans les fichiers Docker
+-  **Export S3** : Sauvegarde du résultat fusionné dans un dossier de destination
+-  **Import MongoDB automatique** : Surveillance du bucket S3 et import automatique des nouveaux fichiers
+-  **Docker Compose** : Orchestration complète avec MongoDB, Mongo Express et services ETL
+-  **Sécurité** : Aucun credential en clair dans les fichiers Docker
 
 ## Installation
 
@@ -129,12 +134,12 @@ docker-compose down
 ### Tests de connexion MongoDB
 
 Avant chaque import, le système exécute automatiquement une suite de tests pour vérifier :
-- ✅ Disponibilité de MongoDB
-- ✅ Existence de la base de données et de la collection
-- ✅ Permissions CRUD (Create, Read, Update, Delete)
-- ✅ Fonctionnement des index (unique_key)
-- ✅ Opérations d'upsert
-- ✅ Collection de métadonnées
+-  Disponibilité de MongoDB
+-  Existence de la base de données et de la collection
+-  Permissions CRUD (Create, Read, Update, Delete)
+-  Fonctionnement des index (unique_key)
+-  Opérations d'upsert
+-  Collection de métadonnées
 
 Pour exécuter manuellement les tests :
 
@@ -179,14 +184,32 @@ poetry run python ABAI_P8_script_01_clean_data.py
 docker-compose run --rm etl-pipeline
 ```
 
-Le script propose plusieurs options interactives :
-1. Sauvegarder le premier fichier localement (CSV)
-2. Lire et combiner tous les fichiers du bucket
-3. Sauvegarder le résultat dans S3 (format MongoDB)
+Le script exécute automatiquement les étapes suivantes :
+1. **Lecture** de tous les fichiers JSONL du bucket S3 (01_raw/)
+2. **Extraction** des données selon leur structure :
+   - Format API avec stations multiples (Bergues, Lille-Lesquin, etc.)
+   - Format Excel converti avec station unique par dossier (Ichtegem, LaMadeleine)
+3. **Fusion** de tous les fichiers en un seul DataFrame unifié
+4. **Nettoyage** : conversions d'unités et standardisation des colonnes
+5. **Sauvegarde** du fichier fusionné dans S3 (02_cleaned/)
+
+**Exemple de sortie** : `20251210_095134_df_weather_allFiles.json` (4 950 enregistrements, 6 stations)
 
 ### Structure des données en sortie
 
-Le script génère un fichier JSON avec **21 colonnes** par enregistrement (incluant traçabilité) :
+Le script génère un **fichier JSON unique fusionné** avec **24 colonnes** par enregistrement :
+
+#### Exemple d'exécution
+
+```
+ Résultat de traitement
+- Fichiers sources : 3 fichiers JSONL
+- Stations détectées : 6 (Bergues, Lille-Lesquin, Hazebrouck, Armentières, Ichtegem, LaMadeleine)
+- Enregistrements fusionnés : 4 950
+- Fichier de sortie : 20251210_095134_df_weather_allFiles.json
+```
+
+#### Format des documents
 
 ```json
 {
@@ -208,9 +231,9 @@ Le script génère un fichier JSON avec **21 colonnes** par enregistrement (incl
   "solar": null,
   "precip_rate": null,
   "uv": null,
-  "source_file": "20251209_160500_weather_data.json",
-  "processed_at": "2025-12-09T16:05:18.000Z",
-  "unique_key": "07015_2024-10-05T00:00:00.000Z"
+  "source_file": "2025_12_10_1765356670402_0.jsonl",
+  "processed_at": "2025-12-10T09:51:34.000Z",
+  "unique_key": "07015_2024-10-05T00:00:00.000Z_6686150138"
 }
 ```
 
@@ -253,7 +276,7 @@ db.measurements.find({ id_station: "07015" }).limit(5)
 db.measurements.find({ dh_utc: { $gte: ISODate("2024-10-01") } }).count()
 ```
 
-## 📁 Architecture du projet
+##  Architecture du projet
 
 ```
 _projet/
@@ -272,7 +295,7 @@ _projet/
 └── ABAI_P8_script_04_cleanup_s3.py         # Nettoyage et archivage S3
 ```
 
-## 🛠️ Technologies
+## ️ Technologies
 
 - **Python 3.10+** : Langage principal
 - **Docker & Docker Compose** : Conteneurisation et orchestration
@@ -314,32 +337,36 @@ _projet/
 - **pymongo** ^4.10.0 : Driver MongoDB pour Python
 - **pytest** ^8.0.0 : Framework de tests (dev)
 
-## 🎯 Traçabilité des données
+##  Traçabilité des données
 
 Chaque document MongoDB contient des métadonnées de traçabilité :
 
-- **`nom_station`** : Nom de la ville/station météo (extrait du mapping Airbyte)
-  - Exemple : `"Lille-Lesquin"` pour l'ID station `"07015"`
+- **`nom_station`** : Nom de la ville/station météo
+  - **Sources API** : Extrait du mapping Airbyte (ex: `"Lille-Lesquin"` pour ID `"07015"`)
+  - **Sources Excel** : Extrait du nom du dossier S3 (ex: `"Ichtegem"` pour `weather_files_Ichtegem/`)
   - Permet d'identifier rapidement la localisation géographique
 
-- **`source_file`** : Nom du fichier JSONL source
-  - Exemple : `"20251209_160500_weather_data.json"`
+- **`source_file`** : Nom du fichier JSONL source individuel
+  - Exemple : `"2025_12_10_1765356670402_0.jsonl"`
+  - **Traçabilité individuelle** : chaque enregistrement garde le nom de SON fichier source
   - Permet de tracer l'origine exacte de chaque mesure
-  - Utile pour le débogage et l'audit des données
+  - Utile pour le débogage, retraitement sélectif et audit des données
 
 - **`processed_at`** : Timestamp du traitement ETL
   - Format ISO 8601 : `"2025-12-09T16:05:18.000Z"`
   - Permet de suivre le délai entre extraction et traitement
 
-- **`unique_key`** : Clé composite unique
-  - Format : `"id_station_dh_utc"`
-  - Garantit l'unicité et facilite les upserts
+- **`unique_key`** : Clé composite unique avec random
+  - Format : `"id_station_dh_utc_random10digits"`
+  - Exemple : `"07015_2024-10-05T00:00:00.000Z_6686150138"`
+  - Les 10 chiffres aléatoires garantissent l'unicité absolue
+  - Facilite les upserts et évite les collisions
 
 **Avantages :**
-- ✅ Audit complet : fichier → extraction → traitement → base de données
-- ✅ Retraitement sélectif : possibilité de supprimer et retraiter un fichier source spécifique
-- ✅ Analyse qualité : suivi de la qualité par lot d'extraction
-- ✅ Débogage facilité : identification rapide des problèmes par fichier source
+-  Audit complet : fichier → extraction → traitement → base de données
+-  Retraitement sélectif : possibilité de supprimer et retraiter un fichier source spécifique
+-  Analyse qualité : suivi de la qualité par lot d'extraction
+-  Débogage facilité : identification rapide des problèmes par fichier source
 
 ## Transformations appliquées
 
