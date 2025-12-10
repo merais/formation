@@ -20,6 +20,7 @@ COPY ABAI_P8_script_01_clean_data.py .
 COPY ABAI_P8_script_02_import_to_mongodb.py .
 COPY ABAI_P8_script_03_test_mongodb.py .
 COPY ABAI_P8_script_04_cleanup_s3.py .
+COPY ABAI_P8_script_05_benchmark_mongodb.py .
 COPY .env* ./
 
 # Commande par défaut
