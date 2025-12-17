@@ -102,7 +102,7 @@
       "height": 6,
       "properties": {
         "metrics": [
-          ["AWS/ECS", "RunningTasksCount", "ServiceName", "mongodb", "ClusterName", "weather-pipeline-cluster", {"label": "MongoDB"}],
+          ["ECS/ContainerInsights", "RunningTaskCount", "ServiceName", "mongodb", "ClusterName", "weather-pipeline-cluster", {"label": "MongoDB", "stat": "Average"}],
           ["...", "mongo-express", ".", ".", {"label": "Mongo Express"}],
           ["...", "weather-etl", ".", ".", {"label": "ETL Pipeline"}],
           ["...", "mongodb-importer", ".", ".", {"label": "Importer"}],
@@ -111,12 +111,20 @@
         "period": 300,
         "stat": "Average",
         "region": "eu-west-1",
-        "title": "Running Tasks Count",
+        "title": "Running Tasks Count (Container Insights)",
         "yAxis": {
           "left": {
             "min": 0,
             "max": 5
           }
+        },
+        "annotations": {
+          "horizontal": [
+            {
+              "label": "Expected: 1 task per service",
+              "value": 1
+            }
+          ]
         }
       }
     },
@@ -133,12 +141,21 @@
         "period": 86400,
         "stat": "Average",
         "region": "eu-west-1",
-        "title": "S3 Bucket Size (MB)",
+        "title": "S3 Bucket Size (Bytes) - Daily",
         "yAxis": {
           "left": {
             "min": 0,
             "label": "Bytes"
           }
+        },
+        "annotations": {
+          "horizontal": [
+            {
+              "label": "Note: Metrics updated once per day",
+              "value": 0,
+              "fill": "above"
+            }
+          ]
         }
       }
     },
@@ -155,12 +172,21 @@
         "period": 86400,
         "stat": "Average",
         "region": "eu-west-1",
-        "title": "S3 Object Count",
+        "title": "S3 Object Count - Daily",
         "yAxis": {
           "left": {
             "min": 0,
             "max": 20
           }
+        },
+        "annotations": {
+          "horizontal": [
+            {
+              "label": "Note: Metrics updated once per day",
+              "value": 0,
+              "fill": "above"
+            }
+          ]
         }
       }
     },
