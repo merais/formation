@@ -29,8 +29,8 @@ Ce repo est destiné à mes scripts pour ma formation de Data Engineer de la pla
 - P5_Maintenez_et_documentez_un_systeme_de_stockage_des_donnees_securise_et_performant_aymeric_bailleul
 - P6_Anticipez_les_besoins_en_consommation_de_batiments_aymeric_bailleul
 - P7_Concevez_et_analysez_une_base_de_donnees_nosql_aymeric_bailleul
-- **P8_Construisez_et_testez_une_infrastructure_de_donnees_aymeric_bailleul**
-- P9_Modelisez_une_infrastructure_dans_le_cloud_aymeric_bailleul
+- P8_Construisez_et_testez_une_infrastructure_de_donnees_aymeric_bailleul
+- **P9_Modelisez_une_infrastructure_dans_le_cloud_aymeric_bailleul**
 - P10_Mettez_en_place_le_pipeline_d_orchestration_des_flux_aymeric_bailleul.
 - P11_Categorisez_automatiquement_des_questions_aymeric_bailleul
 - P12_Gerez_un_projet_d_infrastructure_aymeric_bailleul
@@ -58,11 +58,12 @@ Chaque projet dispose de son propre environnement virtuel Python. Voici comment 
 | **P6** | Python 3.14 | `G:\Mon Drive\_formation_over_git\P6_Anticipez_les_besoins_en_consommation_de_batiments_bailleul_aymeric\.venv\Scripts\python.exe` |
 | **P7** | Python 3.14 | `G:\Mon Drive\_formation_over_git\P7_Concevez_et_analysez_une_base_de_donnees_nosql_aymeric_bailleul\.venv\Scripts\python.exe` |
 | **P8** | Python 3.10 | `G:\Mon Drive\_formation_over_git\P8_Construisez_et_testez_une_infrastructure_de_donnees_aymeric_bailleul\.venv\Scripts\python.exe` |
+| **P9** | Python 3.14 | `G:\Mon Drive\_formation_over_git\P9_Modelisez_une_infrastructure_dans_le_cloud_aymeric_bailleul\.venv\Scripts\python.exe` |
 
 ### ✅ Vérification
 
 Après sélection, vous devriez voir en bas à droite de VS Code :
-- **Python 3.14.0 ('.venv': venv)** pour P2, P5, P6, P7
+- **Python 3.14.0 ('.venv': venv)** pour P2, P5, P6, P7, P9
 - **Python 3.10.11 ('.venv': venv)** pour P8
 
 ### 🔄 En cas de problème
@@ -78,5 +79,6 @@ Si l'environnement n'apparaît pas dans la liste :
 - **P6** : pandas, numpy, scikit-learn, bentoml, pydantic, jupyter
 - **P7** : pymongo, polars, python-dotenv
 - **P8** : airbyte, duckdb, pandas, sqlalchemy
+- **P9** : python-dotenv, pytest, black, flake8
 
 ---

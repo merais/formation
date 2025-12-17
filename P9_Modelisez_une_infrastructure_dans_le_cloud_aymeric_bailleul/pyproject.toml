@@ -1,0 +1,31 @@
+[project]
+name = "p9-modelisez-infrastructure-cloud"
+version = "0.1.0"
+description = "Projet P9 - Modélisez une infrastructure dans le cloud"
+authors = [
+    {name = "Aymeric Bailleul", email = "aymeric.bailleul@example.com"}
+]
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "black>=23.7.0",
+    "flake8>=6.1.0",
+]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 100
+target-version = ['py314']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
