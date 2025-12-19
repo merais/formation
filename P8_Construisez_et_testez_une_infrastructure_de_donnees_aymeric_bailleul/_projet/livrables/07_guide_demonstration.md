@@ -5,9 +5,9 @@
 ### Checklist pré-démo
 
 - [ ] Services AWS démarrés (mongodb + mongo-express)
-- [ ] URL Mongo Express accessible : http://34.244.220.245:8081
+- [ ] URL Mongo Express accessible : http://108.130.173.131:8081
 - [ ] Dashboard CloudWatch ouvert dans un onglet
-- [ ] Terminal PowerShell prêt dans le dossier projet
+- [ ] Terminal PowerShell prêt avec AWS CLI configuré
 - [ ] Fichier de données de test dans S3 (01_raw/)
 
 ### Outils nécessaires
@@ -50,7 +50,7 @@ On voit que :
 
 ### Partie 2 : Consultation des données dans MongoDB (45 secondes)
 
-**Action 1** : Ouvrir Mongo Express (http://34.244.220.245:8081)
+**Action 1** : Ouvrir Mongo Express (http://108.130.173.131:8081)
 
 ```
 "J'accède à Mongo Express, notre interface web pour MongoDB.
@@ -138,16 +138,21 @@ aws s3 ls s3://p8-weather-data/01_raw/
 "Dans notre bucket S3, dossier 01_raw/, on a les fichiers bruts venant d'Airbyte."
 ```
 
-**Action 2** : Exécuter l'ETL manuellement (si temps)
+**Action 2** : Exécuter manuellement le service ETL sur AWS ECS
 
 ```powershell
-# Exécuter le script ETL
-poetry run python ABAI_P8_script_01_clean_data.py
+# Lancer une tâche ETL manuellement
+aws ecs run-task `
+  --cluster weather-pipeline-cluster `
+  --task-definition weather-etl `
+  --launch-type FARGATE `
+  --network-configuration "awsvpcConfiguration={subnets=[subnet-0e6a9fe23a00c0f64],securityGroups=[sg-0fb2ff3c9bb0bdc63],assignPublicIp=ENABLED}" `
+  --region eu-west-1
 ```
 
 ```
-"Le script ETL :
-1. Lit les fichiers JSONL depuis S3
+"Je lance manuellement une tâche ETL qui :
+1. Lit les fichiers JSONL depuis S3 (01_raw/)
 2. Parse le format Airbyte
 3. Fusionne les données de toutes les sources
 4. Convertit les unités (°F → °C, mph → km/h, etc.)
@@ -155,7 +160,14 @@ poetry run python ABAI_P8_script_01_clean_data.py
 6. Sauvegarde le résultat transformé dans 02_cleaned/"
 ```
 
-**Action 3** : Montrer le résultat
+**Action 2b** : Suivre l'exécution en temps réel
+
+```powershell
+# Voir les logs en temps réel
+aws logs tail /ecs/weather-etl --region eu-west-1 --follow
+```
+
+**Action 3** : Montrer le résultat et lancer l'import
 
 ```powershell
 # Lister les fichiers transformés
@@ -164,8 +176,27 @@ aws s3 ls s3://p8-weather-data/02_cleaned/
 
 ```
 "Voici le fichier JSON transformé, prêt à être importé dans MongoDB.
-Le service d'import surveille ce dossier toutes les 5 minutes
-et importe automatiquement les nouveaux fichiers."
+Je vais maintenant lancer manuellement le service d'import."
+```
+
+**Action 3b** : Lancer l'importer manuellement (optionnel)
+
+```powershell
+# Lancer une tâche d'import manuellement
+aws ecs run-task `
+  --cluster weather-pipeline-cluster `
+  --task-definition mongodb-importer `
+  --launch-type FARGATE `
+  --network-configuration "awsvpcConfiguration={subnets=[subnet-0e6a9fe23a00c0f64],securityGroups=[sg-0fb2ff3c9bb0bdc63],assignPublicIp=ENABLED}" `
+  --region eu-west-1
+
+# Suivre les logs de l'import
+aws logs tail /ecs/weather-importer --region eu-west-1 --follow
+```
+
+```
+"L'importer lit le fichier depuis 02_cleaned/, valide les données,
+et les insère dans MongoDB en évitant les doublons grâce à l'index unique."
 ```
 
 **Transition** : "Enfin, voyons les métriques de qualité."
@@ -244,18 +275,18 @@ db.measurements.findOne()
 
 ### Si services AWS sont arrêtés
 
-**Plan B** : Démonstration avec environnement local
+**Plan B** : Redémarrer les services avec le script Python
 
 ```powershell
-# Démarrer docker-compose local
-cd local
-docker-compose up -d
+# Redémarrer tous les services
+cd "G:\Mon Drive\_formation_over_git\P8_Construisez_et_testez_une_infrastructure_de_donnees_aymeric_bailleul\_projet\conf_ecs"
+& "G:\Mon Drive\_formation_over_git\P8_Construisez_et_testez_une_infrastructure_de_donnees_aymeric_bailleul\.venv\Scripts\python.exe" restart_services.py resume
 
-# Attendre 30 secondes
-Start-Sleep -Seconds 30
+# Attendre 60 secondes pour le démarrage
+Start-Sleep -Seconds 60
 
-# Accéder à Mongo Express local
-# http://localhost:8081
+# Récupérer les URLs
+& "G:\Mon Drive\_formation_over_git\P8_Construisez_et_testez_une_infrastructure_de_donnees_aymeric_bailleul\.venv\Scripts\python.exe" restart_services.py urls
 ```
 
 ---
@@ -279,8 +310,10 @@ On voit :
 
 | Ressource | URL | Login | Notes |
 |-----------|-----|-------|-------|
-| **Mongo Express** | http://34.244.220.245:8081 | admin/pass | Interface web MongoDB |
-| **CloudWatch Dashboard** | [Lien Console AWS](https://eu-west-1.console.aws.amazon.com/cloudwatch/home?region=eu-west-1#dashboards/dashboard/weather-pipeline-monitoring) | AWS Console | Métriques temps réel |
+| **Mongo Express** | http://108.130.173.131:8081 | admin/pass | Interface web MongoDB |
+| **CloudWatch Dashboard** | [Lien Console AWS](https://eu-west-1.console.aws.amazon.com/cloudwatch/home?region=eu-west-1#dashboards:name=weather-pipeline) | AWS Console | Métriques temps réel |
+| **CloudWatch Logs - MongoDB** | [Logs MongoDB](https://eu-west-1.console.aws.amazon.com/cloudwatch/home?region=eu-west-1#logsV2:log-groups/log-group/$252Fecs$252Fweather-mongodb) | AWS Console | Logs MongoDB |
+| **CloudWatch Logs - ETL** | [Logs ETL](https://eu-west-1.console.aws.amazon.com/cloudwatch/home?region=eu-west-1#logsV2:log-groups/log-group/$252Fecs$252Fweather-etl) | AWS Console | Logs ETL |
 | **ECS Console** | [Lien ECS](https://eu-west-1.console.aws.amazon.com/ecs/v2/clusters/weather-pipeline-cluster/services) | AWS Console | Statut services |
 | **S3 Bucket** | s3://p8-weather-data | AWS CLI | Fichiers bruts/transformés |
 
@@ -334,21 +367,48 @@ aws s3 ls s3://p8-weather-data/02_cleaned/
 aws s3 ls s3://p8-weather-data/03_archived/
 ```
 
-### Terminal 2 : Statut services
+### Terminal 2 : Exécution manuelle des services
 
 ```powershell
-# Statut des services ECS
-aws ecs describe-services --cluster weather-pipeline-cluster --services mongodb mongo-express --region eu-west-1 --query 'services[].{Service:serviceName,Status:status,Desired:desiredCount,Running:runningCount}' --output table
+# Exécuter le service ETL manuellement
+aws ecs run-task `
+  --cluster weather-pipeline-cluster `
+  --task-definition weather-etl `
+  --launch-type FARGATE `
+  --network-configuration "awsvpcConfiguration={subnets=[subnet-049259970f2c35931,subnet-04c1a2b410d817931],securityGroups=[sg-063333d3a7aab7f71],assignPublicIp=DISABLED}" `
+  --region eu-west-1
+
+# Exécuter l'importer manuellement
+aws ecs run-task `
+  --cluster weather-pipeline-cluster `
+  --task-definition mongodb-importer `
+  --launch-type FARGATE `
+  --network-configuration "awsvpcConfiguration={subnets=[subnet-049259970f2c35931,subnet-04c1a2b410d817931],securityGroups=[sg-063333d3a7aab7f71],assignPublicIp=DISABLED}" `
+  --region eu-west-1
+
+# Exécuter le cleanup S3 manuellement
+aws ecs run-task `
+  --cluster weather-pipeline-cluster `
+  --task-definition s3-cleanup `
+  --launch-type FARGATE `
+  --network-configuration "awsvpcConfiguration={subnets=[subnet-049259970f2c35931,subnet-04c1a2b410d817931],securityGroups=[sg-063333d3a7aab7f71],assignPublicIp=DISABLED}" `
+  --region eu-west-1
 ```
 
-### Terminal 3 : Exécution scripts (optionnel)
+### Terminal 3 : Logs CloudWatch en temps réel
 
 ```powershell
-# ETL
-poetry run python ABAI_P8_script_01_clean_data.py
+# Voir les logs ETL en temps réel
+aws logs tail /ecs/weather-etl --region eu-west-1 --follow
 
-# Benchmark
-poetry run python ABAI_P8_script_05_benchmark_mongodb.py
+# Voir les logs MongoDB
+aws logs tail /ecs/weather-mongodb --region eu-west-1 --follow
+
+# Voir les logs de l'importer
+aws logs tail /ecs/weather-importer --region eu-west-1 --follow
+
+# Voir les logs du cleanup
+aws logs tail /ecs/weather-s3-cleanup --region eu-west-1 --follow
 ```
 
 ---
