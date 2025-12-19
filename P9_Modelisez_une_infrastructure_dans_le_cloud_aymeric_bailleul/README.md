@@ -28,13 +28,32 @@ P9_Modelisez_une_infrastructure_dans_le_cloud_aymeric_bailleul/
 
 ### Activer l'environnement virtuel
 
-```powershell
-# Windows
-.\.venv\Scripts\Activate.ps1
+#### Windows (PowerShell)
 
-# Linux/Mac
-source .venv/bin/activate
+```powershell
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
 ```
+
+#### WSL Ubuntu (Python 3.14) - Recommandé
+
+```bash
+# Option 1: Utiliser le script d'activation
+wsl bash wsl_activate.sh
+
+# Option 2: Commandes manuelles
+wsl -e bash -c "cd ~/projet_p9 && source venv/bin/activate && cd projet_source && bash"
+
+# Option 3: Exécuter directement un script
+wsl -e bash -c "cd ~/projet_p9 && source venv/bin/activate && cd projet_source/_projet && python votre_script.py"
+```
+
+### Structure WSL
+
+- Environnement virtuel: `/home/meraisfix/projet_p9/venv/`
+- Lien vers projet: `/home/meraisfix/projet_p9/projet_source/` -> Lecteur G
+- Python: 3.14.2
+- Packages: pandas, python-dotenv, pytest, black, flake8
 
 ### Installer les dépendances
 
@@ -44,10 +63,12 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-## 📝 Notes
+## Notes
 
-- Environnement virtuel Python 3.14
-- Chemin de l'interpréteur : `G:\Mon Drive\_formation_over_git\P9_Modelisez_une_infrastructure_dans_le_cloud_aymeric_bailleul\.venv\Scripts\python.exe`
+- **Windows**: Environnement virtuel Python 3.14 dans `.venv/`
+- **WSL**: Environnement virtuel Python 3.14 dans `~/projet_p9/venv/`
+- Chemin Windows : `G:\Mon Drive\_formation_over_git\P9_Modelisez_une_infrastructure_dans_le_cloud_aymeric_bailleul\.venv\Scripts\python.exe`
+- Les fichiers sont toujours synchronisés sur le lecteur G (Google Drive)
 
 ---
 

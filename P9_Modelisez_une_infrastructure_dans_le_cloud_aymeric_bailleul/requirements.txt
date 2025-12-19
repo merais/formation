@@ -1,5 +1,7 @@
 # Core dependencies
 python-dotenv>=1.0.0
+pandas>=2.3.3
+pyspark==3.5.1
 
 # Development tools
 pytest>=7.4.0
