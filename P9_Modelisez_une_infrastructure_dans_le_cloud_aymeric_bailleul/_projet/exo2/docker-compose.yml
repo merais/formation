@@ -1,0 +1,149 @@
+services:
+  # ========================================
+  # Redpanda - Broker Kafka compatible
+  # ========================================
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.2.4
+    container_name: redpanda
+    command:
+      - redpanda
+      - start
+      - --smp
+      - '1'
+      - --reserve-memory
+      - 0M
+      - --overprovisioned
+      - --node-id
+      - '0'
+      - --kafka-addr
+      - PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr
+      - PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+      - "9644:9644"
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - ticket-network
+
+  # ========================================
+  # Redpanda Console - Interface Web
+  # ========================================
+  redpanda-console:
+    image: docker.redpanda.com/redpandadata/console:v2.7.2
+    container_name: redpanda-console
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKERS: redpanda:29092
+    ports:
+      - "8080:8080"
+    networks:
+      - ticket-network
+
+  # ========================================
+  # MySQL - Base de données
+  # ========================================
+  mysql:
+    build:
+      context: ./mysql
+      dockerfile: Dockerfile
+    container_name: ticket-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: ticket_system
+      MYSQL_USER: ticket_user
+      MYSQL_PASSWORD: ticket_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ticket-network
+
+  # ========================================
+  # Initialisation du topic
+  # ========================================
+  topic-creator:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.2.4
+    container_name: topic-creator
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "rpk topic create client_tickets --brokers=redpanda:29092 --partitions=3 --replicas=1 && 
+       echo 'Topic client_tickets créé avec succès'"
+    networks:
+      - ticket-network
+
+  # ========================================
+  # Producteur de tickets
+  # ========================================
+  producer:
+    build:
+      context: ./producer
+      dockerfile: Dockerfile
+    container_name: ticket-producer
+    depends_on:
+      - topic-creator
+    environment:
+      KAFKA_BROKER: redpanda:29092
+    networks:
+      - ticket-network
+    restart: unless-stopped
+
+  # ========================================
+  # Consommateur PySpark
+  # ========================================
+  pyspark-consumer:
+    build:
+      context: ./consumer_pyspark
+      dockerfile: Dockerfile
+    container_name: pyspark-consumer
+    depends_on:
+      producer:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER: redpanda:29092
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ticket_system
+      MYSQL_USER: ticket_user
+      MYSQL_PASSWORD: ticket_password
+    networks:
+      - ticket-network
+    restart: unless-stopped
+
+# ========================================
+# Volumes
+# ========================================
+volumes:
+  redpanda-data:
+    driver: local
+  mysql-data:
+    driver: local
+
+# ========================================
+# Réseaux
+# ========================================
+networks:
+  ticket-network:
+    driver: bridge
