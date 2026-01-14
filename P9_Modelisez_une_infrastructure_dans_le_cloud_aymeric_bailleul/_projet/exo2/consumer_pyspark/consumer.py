@@ -62,25 +62,59 @@ def create_spark_session():
     return spark
 
 
-def write_to_mysql(df, table_name, mode="append"):
-    """Écrit un DataFrame dans une table MySQL"""
-    df.write \
-        .format("jdbc") \
-        .option("url", MYSQL_URL) \
-        .option("dbtable", table_name) \
-        .option("user", MYSQL_USER) \
-        .option("password", MYSQL_PASSWORD) \
-        .option("driver", "com.mysql.cj.jdbc.Driver") \
-        .mode(mode) \
-        .save()
+def write_to_mysql(df, table_name, mode="append", max_retries=3):
+    """Écrit un DataFrame dans une table MySQL avec gestion des erreurs et retry"""
+    retry_count = 0
+    retry_delay = 2  # secondes
+    
+    while retry_count < max_retries:
+        try:
+            df.write \
+                .format("jdbc") \
+                .option("url", MYSQL_URL) \
+                .option("dbtable", table_name) \
+                .option("user", MYSQL_USER) \
+                .option("password", MYSQL_PASSWORD) \
+                .option("driver", "com.mysql.cj.jdbc.Driver") \
+                .mode(mode) \
+                .save()
+            
+            # Log de succès avec mention du retry si nécessaire
+            if retry_count > 0:
+                print(f"[RETRY SUCCESS] Ecriture dans {table_name} reussie apres {retry_count} tentative(s)")
+            return True  # Succès
+            
+        except Exception as e:
+            retry_count += 1
+            if retry_count < max_retries:
+                print("=" * 70)
+                print(f"[RETRY] TENTATIVE {retry_count}/{max_retries} ECHOUEE")
+                print(f"[RETRY] Table: {table_name}")
+                print(f"[RETRY] Erreur: {str(e)}")
+                print(f"[RETRY] Prochaine tentative dans {retry_delay} secondes...")
+                print("=" * 70)
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Backoff exponentiel
+            else:
+                print("=" * 70)
+                print(f"[RETRY FAILED] ECHEC DEFINITIF apres {max_retries} tentatives")
+                print(f"[RETRY FAILED] Table: {table_name}")
+                print(f"[RETRY FAILED] Erreur: {str(e)}")
+                print("=" * 70)
+                raise  # Relance l'exception après épuisement des tentatives
 
 
 def process_batch_tickets(batch_df, batch_id):
     """Traite un batch de tickets et l'écrit dans MySQL"""
     if batch_df.count() > 0:
+        print(f"Début du traitement du batch {batch_id}")
         print(f"Traitement du batch {batch_id} avec {batch_df.count()} tickets...")
-        write_to_mysql(batch_df, "tickets_enrichis", mode="append")
-        print(f"Batch {batch_id} sauvegardé dans MySQL (tickets_enrichis)")
+        try:
+            write_to_mysql(batch_df, "tickets_enrichis", mode="append")
+            print(f"Batch {batch_id} sauvegarde dans MySQL (tickets_enrichis)")
+        except Exception as e:
+            print(f"Erreur critique lors de la sauvegarde du batch {batch_id}: {str(e)}")
+        print()  # Saut de ligne pour meilleure lisibilité
 
 
 def process_batch_stats_type(batch_df, batch_id):
@@ -88,26 +122,35 @@ def process_batch_stats_type(batch_df, batch_id):
     if batch_df.count() > 0:
         df_with_timestamp = batch_df.withColumn("timestamp_calcul", current_timestamp())
         print(f"Traitement des stats par type (batch {batch_id})...")
-        write_to_mysql(df_with_timestamp, "stats_par_type", mode="append")
-        print(f"Stats par type sauvegardées (batch {batch_id})")
+        try:
+            write_to_mysql(df_with_timestamp, "stats_par_type", mode="append")
+            print(f"Stats par type sauvegardees (batch {batch_id})")
+        except Exception as e:
+            print(f"Erreur lors de la sauvegarde des stats par type (batch {batch_id}): {str(e)}")
 
 
 def process_batch_stats_priorite(batch_df, batch_id):
     """Traite les statistiques par priorité et les écrit dans MySQL"""
     if batch_df.count() > 0:
         df_with_timestamp = batch_df.withColumn("timestamp_calcul", current_timestamp())
-        print(f"Traitement des stats par priorité (batch {batch_id})...")
-        write_to_mysql(df_with_timestamp, "stats_par_priorite", mode="append")
-        print(f"Stats par priorité sauvegardées (batch {batch_id})")
+        print(f"Traitement des stats par priorite (batch {batch_id})...")
+        try:
+            write_to_mysql(df_with_timestamp, "stats_par_priorite", mode="append")
+            print(f"Stats par priorite sauvegardees (batch {batch_id})")
+        except Exception as e:
+            print(f"Erreur lors de la sauvegarde des stats par priorite (batch {batch_id}): {str(e)}")
 
 
 def process_batch_stats_equipe(batch_df, batch_id):
     """Traite les statistiques par équipe et les écrit dans MySQL"""
     if batch_df.count() > 0:
         df_with_timestamp = batch_df.withColumn("timestamp_calcul", current_timestamp())
-        print(f"Traitement des stats par équipe (batch {batch_id})...")
-        write_to_mysql(df_with_timestamp, "stats_par_equipe", mode="append")
-        print(f"Stats par équipe sauvegardées (batch {batch_id})")
+        print(f"Traitement des stats par equipe (batch {batch_id})...")
+        try:
+            write_to_mysql(df_with_timestamp, "stats_par_equipe", mode="append")
+            print(f"Stats par equipe sauvegardees (batch {batch_id})")
+        except Exception as e:
+            print(f"Erreur lors de la sauvegarde des stats par equipe (batch {batch_id}): {str(e)}")
 
 
 
@@ -137,6 +180,7 @@ def main():
             .option("kafka.bootstrap.servers", KAFKA_BROKER) \
             .option("subscribe", TOPIC_NAME) \
             .option("startingOffsets", "earliest") \
+            .option("failOnDataLoss", "false") \
             .load()
         
         # Parser les données JSON
@@ -167,6 +211,8 @@ def main():
             .writeStream \
             .foreachBatch(process_batch_tickets) \
             .outputMode("append") \
+            .option("checkpointLocation", "/tmp/checkpoint_tickets") \
+            .trigger(processingTime='5 seconds') \
             .start()
         
         # ========================================
@@ -182,7 +228,8 @@ def main():
             .writeStream \
             .foreachBatch(process_batch_stats_type) \
             .outputMode("complete") \
-            .trigger(processingTime='30 seconds') \
+            .option("checkpointLocation", "/tmp/checkpoint_stats_type") \
+            .trigger(processingTime='5 seconds') \
             .start()
         
         # ========================================
@@ -197,8 +244,9 @@ def main():
         query3 = df_by_priority \
             .writeStream \
             .foreachBatch(process_batch_stats_priorite) \
+            .option("checkpointLocation", "/tmp/checkpoint_stats_priorite") \
             .outputMode("complete") \
-            .trigger(processingTime='30 seconds') \
+            .trigger(processingTime='5 seconds') \
             .start()
         
         # ========================================
@@ -217,8 +265,9 @@ def main():
         query4 = df_by_team \
             .writeStream \
             .foreachBatch(process_batch_stats_equipe) \
+            .option("checkpointLocation", "/tmp/checkpoint_stats_equipe") \
             .outputMode("complete") \
-            .trigger(processingTime='30 seconds') \
+            .trigger(processingTime='5 seconds') \
             .start()
         
         print("\n" + "=" * 60)

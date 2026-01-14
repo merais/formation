@@ -1,5 +1,63 @@
 services:
   # ========================================
+  # MySQL - Base de données
+  # ========================================
+  mysql:
+    build:
+      context: ./mysql
+      dockerfile: Dockerfile
+    container_name: ticket-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: ticket_system
+      MYSQL_USER: ticket_user
+      MYSQL_PASSWORD: ticket_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ticket-network
+
+  # ========================================
+  # Consommateur PySpark
+  # ========================================
+  pyspark-consumer:
+    build:
+      context: ./consumer_pyspark
+      dockerfile: Dockerfile
+    container_name: pyspark-consumer
+    depends_on:
+      topic-creator:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER: redpanda:29092
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ticket_system
+      MYSQL_USER: ticket_user
+      MYSQL_PASSWORD: ticket_password
+    ports:
+      - "4040:4040"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:4040 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - ticket-network
+    restart: unless-stopped
+
+  # ========================================
   # Redpanda - Broker Kafka compatible
   # ========================================
   redpanda:
@@ -35,6 +93,22 @@ services:
       - ticket-network
 
   # ========================================
+  # Initialisation du topic
+  # ========================================
+  topic-creator:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.2.4
+    container_name: topic-creator
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command: >-
+      rpk topic create client_tickets --brokers=redpanda:29092 --partitions=3 --replicas=1 || 
+      echo 'Topic client_tickets existe déjà'
+    networks:
+      - ticket-network
+
+  # ========================================
   # Redpanda Console - Interface Web
   # ========================================
   redpanda-console:
@@ -51,48 +125,6 @@ services:
       - ticket-network
 
   # ========================================
-  # MySQL - Base de données
-  # ========================================
-  mysql:
-    build:
-      context: ./mysql
-      dockerfile: Dockerfile
-    container_name: ticket-mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: ticket_system
-      MYSQL_USER: ticket_user
-      MYSQL_PASSWORD: ticket_password
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    networks:
-      - ticket-network
-
-  # ========================================
-  # Initialisation du topic
-  # ========================================
-  topic-creator:
-    image: docker.redpanda.com/redpandadata/redpanda:v24.2.4
-    container_name: topic-creator
-    depends_on:
-      redpanda:
-        condition: service_healthy
-    entrypoint: ["/bin/sh", "-c"]
-    command: >
-      "rpk topic create client_tickets --brokers=redpanda:29092 --partitions=3 --replicas=1 && 
-       echo 'Topic client_tickets créé avec succès'"
-    networks:
-      - ticket-network
-
-  # ========================================
   # Producteur de tickets
   # ========================================
   producer:
@@ -101,33 +133,10 @@ services:
       dockerfile: Dockerfile
     container_name: ticket-producer
     depends_on:
-      - topic-creator
-    environment:
-      KAFKA_BROKER: redpanda:29092
-    networks:
-      - ticket-network
-    restart: unless-stopped
-
-  # ========================================
-  # Consommateur PySpark
-  # ========================================
-  pyspark-consumer:
-    build:
-      context: ./consumer_pyspark
-      dockerfile: Dockerfile
-    container_name: pyspark-consumer
-    depends_on:
-      producer:
-        condition: service_started
-      mysql:
+      pyspark-consumer:
         condition: service_healthy
     environment:
       KAFKA_BROKER: redpanda:29092
-      MYSQL_HOST: mysql
-      MYSQL_PORT: 3306
-      MYSQL_DATABASE: ticket_system
-      MYSQL_USER: ticket_user
-      MYSQL_PASSWORD: ticket_password
     networks:
       - ticket-network
     restart: unless-stopped

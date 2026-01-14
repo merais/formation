@@ -311,9 +311,9 @@ docker exec -it ticket-mysql mysql -u ticket_user -pticket_password ticket_syste
 
 ### Modifier la fréquence de génération des tickets
 
-Dans `producer/producer.py`, ligne 122 :
+Dans `producer/producer.py`, ligne 119 :
 ```python
-time.sleep(random.uniform(1, 5))  # Entre 1 et 5 secondes
+time.sleep(10)  # 1 ticket toutes les 10 secondes
 ```
 
 ### Ajuster les partitions Redpanda
@@ -323,9 +323,9 @@ Dans `docker-compose.yml`, section `topic-creator` :
 topic-creator:
   image: docker.redpanda.com/redpandadata/redpanda:v24.2.4
   entrypoint: ["/bin/sh", "-c"]
-  command: >
-    "rpk topic create client_tickets --brokers=redpanda:29092 --partitions=3 --replicas=1 && 
-     echo 'Topic client_tickets créé avec succès'"
+  command: >-
+    rpk topic create client_tickets --brokers=redpanda:29092 --partitions=3 --replicas=1 || 
+    echo 'Topic client_tickets existe déjà'
 ```
 
 ### Configurer la mémoire Spark
@@ -405,7 +405,8 @@ Le producer et le consumer utilisent `redpanda:29092` pour se connecter au broke
 ### Performance
 - **Partitions** : Le topic est configuré avec 3 partitions pour le parallélisme
 - **Shuffle Partitions** : Spark utilise 2 partitions pour réduire l'overhead
-- **Trigger Interval** : Les agrégations sont déclenchées toutes les 30 secondes
+- **Trigger Interval** : Les agrégations sont déclenchées toutes les 5 secondes
+- **Producer** : Génère 1 ticket toutes les 10 secondes
 - **Index MySQL** : Les tables sont indexées sur les colonnes fréquemment requêtées
 
 ### Sécurité

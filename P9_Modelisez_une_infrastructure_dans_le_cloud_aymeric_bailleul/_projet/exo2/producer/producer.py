@@ -116,8 +116,8 @@ def main():
             ticket_count += 1
             print(f"Ticket #{ticket_count} envoyé: {ticket['type_demande']} - {ticket['priorite']} - Client: {ticket['client_id']}")
             
-            # Attendre entre 1 et 5 secondes avant le prochain ticket
-            time.sleep(random.uniform(1, 5))
+            # Génération continue toutes les 10 secondes
+            time.sleep(10)  
             
     except KeyboardInterrupt:
         print("\nArrêt du producteur...")

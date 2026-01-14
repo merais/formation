@@ -17,5 +17,8 @@ COPY consumer.py .
 # Créer le dossier de sortie
 RUN mkdir -p /output
 
-# Commande pour lancer le consommateur
-CMD ["python3", "consumer.py"]
+# Désactiver le buffering Python pour les logs en temps réel
+ENV PYTHONUNBUFFERED=1
+
+# Commande pour lancer le consommateur avec -u (unbuffered)
+CMD ["python3", "-u", "consumer.py"]
