@@ -140,18 +140,17 @@ docker-compose down -v
 docker-compose up -d
 
 # 2. Vérifier
-#    Affichage du nombre de lignes créer dans mysql
-docker exec -it ticket-mysql mysql -u ticket_user -pticket_password -D ticket_system -e "SELECT COUNT(*) FROM tickets_enrichis; SELECT * FROM v_charge_equipes;"
-
-#    Affichage du nombre de lignes créer dans mysql (actualisation toutes les secondes)
-while ($true) { Clear-Host; docker exec -it ticket-mysql mysql -u ticket_user -pticket_password -D ticket_system -e "SELECT COUNT(*) FROM tickets_enrichis; SELECT * FROM v_charge_equipes;"; Start-Sleep -Seconds 1 }
-
 # Affichage des logs en temps réel du producteur
 docker logs -f ticket-producer
 
 #    Affichage des logs en temps réel de spark
 docker logs -f pyspark-consumer
 
+#    Affichage du nombre de lignes créer dans mysql
+docker exec -it ticket-mysql mysql -u ticket_user -pticket_password -D ticket_system -e "SELECT COUNT(*) FROM tickets_enrichis; SELECT * FROM v_charge_equipes;"
+
+#    Affichage du nombre de lignes créer dans mysql (actualisation toutes les secondes)
+while ($true) { Clear-Host; docker exec -it ticket-mysql mysql -u ticket_user -pticket_password -D ticket_system -e "SELECT COUNT(*) FROM tickets_enrichis; SELECT * FROM v_charge_equipes;"; Start-Sleep -Seconds 1 }
 
 # 3. Voir Redpanda Console
 start http://localhost:8080
