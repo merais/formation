@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.7">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.3.0">
   <diagram name="Page-1" id="oefZvMYVhP61T5wlGTQf">
     <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
@@ -19,7 +19,7 @@
         <mxCell id="OrJ1hSGV2T04-aHdw1Xb-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#CCE5FF;strokeColor=#000066;" value="SAN Storage&lt;div&gt;10 To&lt;/div&gt;&lt;div&gt;Logs, Fichiers, IoT&lt;/div&gt;" vertex="1">
           <mxGeometry height="60" width="120" x="484" y="400" as="geometry" />
         </mxCell>
-        <mxCell id="OrJ1hSGV2T04-aHdw1Xb-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#CCE5FF;strokeColor=#000066;" value="SQL Server Cluster&lt;div&gt;40 To&lt;/div&gt;&lt;div&gt;ERP¨/ CRM Data&lt;/div&gt;" vertex="1">
+        <mxCell id="OrJ1hSGV2T04-aHdw1Xb-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#CCE5FF;strokeColor=#000066;" value="SQL Server Cluster&lt;div&gt;40 To&lt;/div&gt;&lt;div&gt;ERP / CRM Data&lt;/div&gt;" vertex="1">
           <mxGeometry height="60" width="120" x="664" y="400" as="geometry" />
         </mxCell>
         <mxCell id="OrJ1hSGV2T04-aHdw1Xb-9" edge="1" parent="1" source="OrJ1hSGV2T04-aHdw1Xb-7" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;" target="OrJ1hSGV2T04-aHdw1Xb-6">
@@ -63,7 +63,7 @@
         <mxCell id="zhLvX4kxYwIk8Bn9d32V-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFCCFF;strokeColor=#4C0099;" value="Amazone S3&lt;div&gt;Stockage illimité&lt;/div&gt;" vertex="1">
           <mxGeometry height="60" width="120" x="510" y="845" as="geometry" />
         </mxCell>
-        <mxCell id="zhLvX4kxYwIk8Bn9d32V-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFCCFF;strokeColor=#4C0099;" value="Amazone S3&lt;div&gt;Stockage illimité&lt;/div&gt;" vertex="1">
+        <mxCell id="zhLvX4kxYwIk8Bn9d32V-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFCCFF;strokeColor=#4C0099;" value="Amazone Redshift&lt;div&gt;&lt;div&gt;Stockage illimité&lt;/div&gt;&lt;/div&gt;" vertex="1">
           <mxGeometry height="60" width="120" x="510" y="935" as="geometry" />
         </mxCell>
         <mxCell id="zhLvX4kxYwIk8Bn9d32V-7" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;gradientColor=none;fillColor=light-dark(#fdf3e7, #36210a);" value="Migration &amp;amp; Monitoring" vertex="1">
