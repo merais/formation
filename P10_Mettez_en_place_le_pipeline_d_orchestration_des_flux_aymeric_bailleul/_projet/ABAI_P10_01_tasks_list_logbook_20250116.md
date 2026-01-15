@@ -25,35 +25,50 @@
 - [X] Définir les critères de qualité des données : **ABAI_P10_03_processus_metier.md**
 
 #### 1.3 Configuration de l'environnement de développement
-- [ ] Installer Docker Desktop
-- [ ] Installer Kestra via Docker
-- [ ] Vérifier le bon fonctionnement de Kestra (accès interface web)
-- [ ] Prendre des captures d'écran de l'installation
-- [ ] Configurer l'environnement Python Poetry avec les dépendances nécessaires
-- [ ] Installer DuckDB et tester son fonctionnement
+- [X] Installer Docker Desktop
+    --> Déjà installé
+- [X] Installer Kestra via Docker
+    --> `cd tools/kestra && docker-compose up -d`
+    --> Conteneurs: kestra-kestra-1 + kestra-postgres-1
+- [X] Vérifier le bon fonctionnement de Kestra (accès interface web)
+    --> Accessible sur `http://localhost:8080`
+- [X] Prendre des captures d'écran de l'installation de Kestra
+- [X] Configurer l'environnement Python Poetry avec les dépendances nécessaires
+    --> Poetry 2.2.1 - Python 3.14.0 - pandas, openpyxl, black, ruff, pytest installés
+- [X] Installer DuckDB et tester son fonctionnement
+    --> Ajout de `duckdb = "^1.1.0"` dans le **pyproject.toml** puis `poetry install`
+    --> `poetry run duckdb`
+    --> DuckDB 1.4.3 installé et testé avec succès
+- [X] Prendre des captures d'écran de l'installation de DuckDB
 
 ---
 
 ### PHASE 2 : CONCEPTION DE L'ARCHITECTURE
 
 #### 2.1 Conception du diagramme de flux (Data lineage)
-- [ ] Identifier toutes les tâches de transformation nécessaires
-- [ ] Lister les tâches de nettoyage (suppression valeurs manquantes, dédoublonnage)
-- [ ] Lister les tâches de fusion (jointures via fichier liaison)
-- [ ] Lister les tâches d'agrégation (calcul CA par produit et total)
-- [ ] Lister les tâches d'extraction (rapports Excel, CSV premium/ordinaires)
-- [ ] Identifier les points de test après chaque étape de transformation
+- [X] Identifier toutes les tâches de transformation nécessaires
+    --> 21 tâches identifiées et lister dans **ABAI_P10_04_conception_data_lineage.md**
+- [X] Lister les tâches de nettoyage (suppression valeurs manquantes, dédoublonnage)
+    --> 9 tâches de nettoyage (3 par fichier source)
+- [X] Lister les tâches de fusion (jointures via fichier liaison)
+    --> 2 jointures : ERP-LIAISON puis avec WEB
+- [X] Lister les tâches d'agrégation (calcul CA par produit et total)
+    --> 2 tâches d'agrégation identifiées
+- [X] Lister les tâches d'extraction (rapports Excel, CSV premium/ordinaires)
+    --> 5 tâches d'extraction (3 branches)
+- [X] Identifier les points de test après chaque étape de transformation
+    --> 10 tests définis avec valeurs attendues
 
 #### 2.2 Création du logigramme sur Draw.io
-- [ ] Créer le diagramme avec les 3 fichiers sources en entrée
-- [ ] Représenter les tâches de nettoyage pour chaque source
-- [ ] Représenter les jointures entre les fichiers
-- [ ] Représenter les calculs d'agrégation
-- [ ] Représenter la classification des vins (z-score)
-- [ ] Représenter les extractions finales (3 fichiers)
-- [ ] Ajouter les tâches de tests après chaque transformation
-- [ ] Ajouter les liaisons et flux de données entre les tâches
-- [ ] Exporter le diagramme au format PNG et .drawio
+- [X] Créer le diagramme avec les 3 fichiers sources en entrée
+- [X] Représenter les tâches de nettoyage pour chaque source
+- [X] Représenter les jointures entre les fichiers
+- [X] Représenter les calculs d'agrégation
+- [X] Représenter la classification des vins (z-score)
+- [X] Représenter les extractions finales (3 fichiers)
+- [X] Ajouter les tâches de tests après chaque transformation
+- [X] Ajouter les liaisons et flux de données entre les tâches
+- [X] Exporter le diagramme au format PNG et .drawio dans `/_livrables`
 
 ---
 
