@@ -10,6 +10,7 @@ Resultat     : 3 fichiers - rapport_ca.xlsx (2 feuilles), vins_premium.csv, vins
 import duckdb
 from pathlib import Path
 import pandas as pd
+from datetime import datetime
 
 
 def main():
@@ -21,10 +22,13 @@ def main():
     exports_path = project_path / "_exports"
     exports_path.mkdir(exist_ok=True)
     
-    # Fichiers de sortie
-    excel_output_path = exports_path / "rapport_ca.xlsx"
-    premium_csv_path = exports_path / "vins_premium.csv"
-    ordinary_csv_path = exports_path / "vins_ordinaires.csv"
+    # Timestamp pour les noms de fichiers (format YYYYmmDD_)
+    timestamp = datetime.now().strftime("%Y%m%d_")
+    
+    # Fichiers de sortie avec timestamp
+    excel_output_path = exports_path / f"{timestamp}rapport_ca.xlsx"
+    premium_csv_path = exports_path / f"{timestamp}vins_premium.csv"
+    ordinary_csv_path = exports_path / f"{timestamp}vins_ordinaires.csv"
     
     # Connexion DuckDB (lecture seule)
     conn = duckdb.connect(str(db_path), read_only=False)
