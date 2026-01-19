@@ -1,12 +1,10 @@
 """
-Script : 05_calculate_ca.py
-Description : Calcul du chiffre d'affaires (CA)
-Auteur : Aymeric Bailleul
-Date : 19/01/2026
-
-Objectif : Calculer le CA par produit et le CA total
-Résultat attendu : CA total de 70 568,60 €
-Formule : CA = erp_price × total_sales
+Script       : 05_calculate_ca.py
+Description  : Calcul du chiffre d'affaires (CA)
+Auteur       : Aymeric BAILLEUL
+Date         : 2025-01-16
+Objectif     : Calculer le CA par produit et le CA total
+Résultat     : CA total de 70 568,60 euros
 """
 
 from pathlib import Path

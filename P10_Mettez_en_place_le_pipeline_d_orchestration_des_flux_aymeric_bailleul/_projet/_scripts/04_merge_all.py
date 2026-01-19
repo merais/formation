@@ -1,27 +1,26 @@
 """
-Script : 04_merge_all.py
-Description : Fusion complète des données ERP, LIAISON et WEB
-Auteur : Aymeric Bailleul
-Date : 19/01/2026
-
-Objectif : Réaliser les jointures entre les 3 tables nettoyées
-Résultat attendu : 714 lignes complètes avec price et total_sales
-Flux : ERP + LIAISON (825) -> Filtrage NULL (734) -> + WEB (714)
+Script       : 04_merge_all.py
+Description  : Fusion complète des données ERP, LIAISON et WEB
+Auteur       : Aymeric BAILLEUL
+Date         : 2025-01-16
+Objectif     : Réaliser les jointures entre les 3 tables nettoyées
+Résultat     : 714 lignes complètes avec price et total_sales
 """
 
 from pathlib import Path
 import duckdb
 
-# Path vers la base de données
-path_db = Path("..") / "_bdd" / "bottleneck.db"
+# Chemins
+project_path = Path(__file__).resolve().parents[1]
+db_path = project_path / "_bdd" / "bottleneck.db"
 
 print("=" * 80)
 print("FUSION DES DONNÉES ERP + LIAISON + WEB")
 print("=" * 80)
 
 # Connexion à DuckDB persistante
-print(f"Base de données : {path_db}")
-conn = duckdb.connect(database=str(path_db))
+print(f"Base de données : {db_path}")
+conn = duckdb.connect(str(db_path))
 
 # Étape 1 : Jointure ERP + LIAISON
 print("\nÉtape 1 : Jointure ERP + LIAISON...")

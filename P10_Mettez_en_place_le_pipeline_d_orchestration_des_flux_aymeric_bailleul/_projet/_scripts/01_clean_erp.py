@@ -1,29 +1,29 @@
 """
-Script : 01_clean_erp.py
-Description : Nettoyage des données du fichier ERP
-Auteur : Aymeric Bailleul
-Date : 19/01/2026
-
-Objectif : Charger, nettoyer et dédoublonner les données ERP
-Résultat attendu : 825 lignes propres
+Script       : 01_clean_erp.py
+Description  : Nettoyage des données du fichier ERP
+Auteur       : Aymeric BAILLEUL
+Date         : 2025-01-16
+Objectif     : Charger, nettoyer et dédoublonner les données ERP
+Résultat     : 825 lignes propres
 """
 
 import pandas as pd
 import duckdb
 from pathlib import Path
 
-# Path vers les fichiers sources
-path_sources = Path("..") / "sources"
-fichier_erp = path_sources / "fichier_erp.xlsx"
+# Chemins
+project_path = Path(__file__).resolve().parents[1]
+sources_path = project_path / "sources"
+db_path = project_path / "_bdd" / "bottleneck.db"
+fichier_erp = sources_path / "fichier_erp.xlsx"
 
 print("=" * 80)
 print("NETTOYAGE DES DONNÉES ERP")
 print("=" * 80)
 
 # Connexion à DuckDB persistante
-path_db = Path("..") / "_bdd" / "bottleneck.db"
-conn = duckdb.connect(database=str(path_db))
-print(f"Base de données : {path_db}")
+print(f"Base de données : {db_path}")
+conn = duckdb.connect(str(db_path))
 
 # Étape 1 : Chargement du fichier Excel ERP avec pandas
 print("\nÉtape 1 : Chargement du fichier ERP...")

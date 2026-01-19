@@ -41,15 +41,15 @@ def main():
         
         # Vérifier ca_par_produit
         count_ca = conn.execute("SELECT COUNT(*) FROM ca_par_produit").fetchone()[0]
-        print(f"  ✓ Table ca_par_produit trouvée : {count_ca} lignes")
+        print(f"  [OK] Table ca_par_produit trouvee : {count_ca} lignes")
         
         # Vérifier ca_total
         count_total = conn.execute("SELECT COUNT(*) FROM ca_total").fetchone()[0]
-        print(f"  ✓ Table ca_total trouvée : {count_total} ligne(s)")
+        print(f"  [OK] Table ca_total trouvee : {count_total} ligne(s)")
         
         # Vérifier wines_classified
         count_classified = conn.execute("SELECT COUNT(*) FROM wines_classified").fetchone()[0]
-        print(f"  ✓ Table wines_classified trouvée : {count_classified} lignes")
+        print(f"  [OK] Table wines_classified trouvee : {count_classified} lignes")
         
         # ============================================================
         # Étape 2 : Export Excel (rapport CA complet)
@@ -84,9 +84,9 @@ def main():
             df_ca_produit.to_excel(writer, sheet_name='CA_par_produit', index=False)
             df_ca_total.to_excel(writer, sheet_name='CA_total', index=False)
         
-        print(f"  ✓ Fichier Excel créé : {excel_output_path.name}")
+        print(f"  [OK] Fichier Excel cree : {excel_output_path.name}")
         print(f"    - Feuille 1 : CA_par_produit ({len(df_ca_produit)} produits)")
-        print(f"    - Feuille 2 : CA_total (CA total : {df_ca_total['ca_total'].iloc[0]:.2f}€)")
+        print(f"    - Feuille 2 : CA_total (CA total : {df_ca_total['ca_total'].iloc[0]:.2f} euros)")
         
         # ============================================================
         # Étape 3 : Export CSV vins premium
@@ -114,12 +114,12 @@ def main():
         # Export CSV
         df_premium.to_csv(premium_csv_path, index=False, sep=';', encoding='utf-8-sig')
         
-        print(f"  ✓ Fichier CSV créé : {premium_csv_path.name}")
+        print(f"  [OK] Fichier CSV cree : {premium_csv_path.name}")
         print(f"    - Nombre de vins premium : {len(df_premium)}")
         if len(df_premium) > 0:
             print(f"    - Z-score moyen : {df_premium['z_score'].mean():.2f}")
-            print(f"    - Prix moyen : {df_premium['erp_price'].mean():.2f}€")
-            print(f"    - CA total premium : {df_premium['chiffre_affaires'].sum():.2f}€")
+            print(f"    - Prix moyen : {df_premium['erp_price'].mean():.2f} euros")
+            print(f"    - CA total premium : {df_premium['chiffre_affaires'].sum():.2f} euros")
         
         # ============================================================
         # Étape 4 : Export CSV vins ordinaires
@@ -147,21 +147,21 @@ def main():
         # Export CSV
         df_ordinary.to_csv(ordinary_csv_path, index=False, sep=';', encoding='utf-8-sig')
         
-        print(f"  ✓ Fichier CSV créé : {ordinary_csv_path.name}")
+        print(f"  [OK] Fichier CSV cree : {ordinary_csv_path.name}")
         print(f"    - Nombre de vins ordinaires : {len(df_ordinary)}")
         if len(df_ordinary) > 0:
             print(f"    - Z-score moyen : {df_ordinary['z_score'].mean():.2f}")
-            print(f"    - Prix moyen : {df_ordinary['erp_price'].mean():.2f}€")
-            print(f"    - CA total ordinaire : {df_ordinary['chiffre_affaires'].sum():.2f}€")
+            print(f"    - Prix moyen : {df_ordinary['erp_price'].mean():.2f} euros")
+            print(f"    - CA total ordinaire : {df_ordinary['chiffre_affaires'].sum():.2f} euros")
         
         # ============================================================
         # RÉSULTAT FINAL
         # ============================================================
         print("\n" + "="*70)
-        print("RÉSULTAT FINAL")
+        print("RESULTAT FINAL")
         print("="*70)
-        print(f"\n✓ Export terminé avec succès")
-        print(f"\nFichiers créés dans : {exports_path}")
+        print(f"\n[OK] Export termine avec succes")
+        print(f"\nFichiers crees dans : {exports_path}")
         print(f"  1. {excel_output_path.name} (2 feuilles)")
         print(f"  2. {premium_csv_path.name} ({len(df_premium)} vins premium)")
         print(f"  3. {ordinary_csv_path.name} ({len(df_ordinary)} vins ordinaires)")

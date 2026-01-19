@@ -137,7 +137,7 @@
     - Fichiers créés dans _exports/
 
 #### 3.4 Script de validation globale (1 script)
-- [x] **08_validate_all.py** : Validation complète de toute la chaîne ✓ **TERMINÉ le 2025-01-19**
+- [x] **08_validate_all.py** : Validation complète de toute la chaîne
     - Commande : `cd _projet && poetry run python _scripts/08_validate_all.py`
     - **BLOC 1 - Nettoyage** : 4 tests (ERP 825, LIAISON 825, WEB 714, doublons)
     - **BLOC 2 - Jointures** : 2 tests (cohérence ERP-LIAISON, cohérence finale 714)

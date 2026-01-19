@@ -1,30 +1,29 @@
 """
-Script : 03_clean_web.py
-Description : Nettoyage des données du fichier WEB (CMS)
-Auteur : Aymeric Bailleul
-Date : 19/01/2026
-
-Objectif : Charger, filtrer, nettoyer et dédoublonner les données WEB
-Résultat attendu : 714 lignes propres
-Étapes : Filtrer products -> Supprimer NULL sku -> Dédoublonner
+Script       : 03_clean_web.py
+Description  : Nettoyage des données du fichier WEB (CMS)
+Auteur       : Aymeric BAILLEUL
+Date         : 2025-01-16
+Objectif     : Charger, filtrer, nettoyer et dédoublonner les données WEB
+Résultat     : 714 lignes propres (post_type='product', sans NULL sku)
 """
 
 import pandas as pd
 import duckdb
 from pathlib import Path
 
-# Path vers les fichiers sources
-path_sources = Path("..") / "sources"
-fichier_web = path_sources / "fichier_web.xlsx"
+# Chemins
+project_path = Path(__file__).resolve().parents[1]
+sources_path = project_path / "sources"
+db_path = project_path / "_bdd" / "bottleneck.db"
+fichier_web = sources_path / "fichier_web.xlsx"
 
 print("=" * 80)
 print("NETTOYAGE DES DONNÉES WEB (CMS)")
 print("=" * 80)
 
 # Connexion à DuckDB persistante
-path_db = Path("..") / "_bdd" / "bottleneck.db"
-conn = duckdb.connect(database=str(path_db))
-print(f"Base de données : {path_db}")
+print(f"Base de données : {db_path}")
+conn = duckdb.connect(str(db_path))
 
 # Étape 1 : Chargement du fichier Excel WEB avec pandas
 print("\nÉtape 1 : Chargement du fichier WEB...")

@@ -1,30 +1,29 @@
 """
-Script : 02_clean_liaison.py
-Description : Nettoyage des données du fichier LIAISON
-Auteur : Aymeric Bailleul
-Date : 19/01/2026
-
-Objectif : Charger, nettoyer et dédoublonner les données LIAISON
-Résultat attendu : 825 lignes propres
-ATTENTION : NE PAS supprimer les NULL sur id_web à cette étape
+Script       : 02_clean_liaison.py
+Description  : Nettoyage des données du fichier LIAISON
+Auteur       : Aymeric BAILLEUL
+Date         : 2025-01-16
+Objectif     : Charger, nettoyer et dédoublonner les données LIAISON
+Résultat     : 825 lignes propres (NULL sur id_web conservés)
 """
 
 import pandas as pd
 import duckdb
 from pathlib import Path
 
-# Path vers les fichiers sources
-path_sources = Path("..") / "sources"
-fichier_liaison = path_sources / "fichier_liaison.xlsx"
+# Chemins
+project_path = Path(__file__).resolve().parents[1]
+sources_path = project_path / "sources"
+db_path = project_path / "_bdd" / "bottleneck.db"
+fichier_liaison = sources_path / "fichier_liaison.xlsx"
 
 print("=" * 80)
 print("NETTOYAGE DES DONNÉES LIAISON")
 print("=" * 80)
 
 # Connexion à DuckDB persistante
-path_db = Path("..") / "_bdd" / "bottleneck.db"
-conn = duckdb.connect(database=str(path_db))
-print(f"Base de données : {path_db}")
+print(f"Base de données : {db_path}")
+conn = duckdb.connect(str(db_path))
 
 # Étape 1 : Chargement du fichier Excel LIAISON avec pandas
 print("\nÉtape 1 : Chargement du fichier LIAISON...")

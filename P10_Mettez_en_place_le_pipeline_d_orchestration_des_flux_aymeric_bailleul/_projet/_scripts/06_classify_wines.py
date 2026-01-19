@@ -1,12 +1,10 @@
 """
-Script : 06_classify_wines.py
-Description : Classification des vins selon le z-score des prix
-Auteur : Aymeric Bailleul
-Date : 19/01/2026
-
-Objectif : Classifier les vins en premium (z-score > 2) ou ordinaire
-Résultat attendu : 30 vins premium
-Formule z-score : (prix - moyenne) / écart-type
+Script       : 06_classify_wines.py
+Description  : Classification des vins selon le z-score des prix
+Auteur       : Aymeric BAILLEUL
+Date         : 2025-01-16
+Objectif     : Classifier les vins en premium (z-score > 2) ou ordinaire
+Résultat     : 30 vins premium
 """
 
 from pathlib import Path
