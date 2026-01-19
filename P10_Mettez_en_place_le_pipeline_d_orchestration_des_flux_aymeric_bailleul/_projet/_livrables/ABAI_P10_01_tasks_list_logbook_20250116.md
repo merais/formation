@@ -82,18 +82,21 @@
 
 #### 3.1 Scripts Python de nettoyage (TERMINES)
 - [X] **01_clean_erp.py** : Chargement + suppression NULL + dédoublonnage ERP
+    - Commande : `poetry run python 01_clean_erp.py`
     - Chargement du fichier erp.xlsx avec pandas
     - Suppression des valeurs manquantes (si présentes)
     - Dédoublonnage complet (drop_duplicates)
     - Résultat obtenu : 825 lignes (OK)
     - Stockage : Table erp_clean_final dans bottleneck.db
 - [X] **02_clean_liaison.py** : Chargement + suppression NULL + dédoublonnage LIAISON
+    - Commande : `poetry run python 02_clean_liaison.py`
     - Chargement du fichier liaison.xlsx avec pandas
     - /!\ NULL conservés sur id_web (91 lignes) - *Produits sans référence web, conservés pour cohérence, filtrés après jointure*
     - Dédoublonnage uniquement
     - Résultat obtenu : 825 lignes (OK)
     - Stockage : Table liaison_clean_final dans bottleneck.db
 - [X] **03_clean_web.py** : Chargement + filtrage + suppression NULL + dédoublonnage WEB
+    - Commande : `poetry run python 03_clean_web.py`
     - Chargement du fichier web.xlsx avec pandas
     - Filtrage sur post_type = 'product'
     - Suppression des valeurs NULL sur sku
@@ -102,25 +105,32 @@
     - Stockage : Table web_clean_final dans _bdd/bottleneck.db
 
 #### 3.2 Scripts Python/SQL de transformation (2 scripts)
-- [ ] **04_merge_all.py** : Jointures complètes ERP + LIAISON + WEB
+- [X] **04_merge_all.py** : Jointures complètes ERP + LIAISON + WEB
+    - Commande : `poetry run python 04_merge_all.py`
     - Lecture des tables depuis _bdd/bottleneck.db
     - Jointure ERP + LIAISON sur product_id (825 lignes)
     - Suppression des NULL sur id_web (734 lignes)
     - Jointure avec WEB sur id_web = sku (714 lignes)
-    - Résultat attendu : 714 lignes avec price et total_sales
-- [ ] **05_calculate_ca.py** : Agrégations CA (par produit + total)
-    - Calcul CA par produit : price × total_sales
+    - Résultat obtenu : 714 lignes avec erp_price et total_sales
+    - Stockage : Table merged_data_final dans _bdd/bottleneck.db
+- [X] **05_calculate_ca.py** : Agrégations CA (par produit + total)
+    - Commande : `poetry run python 05_calculate_ca.py`
+    - Calcul CA par produit : erp_price × total_sales
     - Calcul CA total : SUM(CA par produit)
-    - Valeur attendue CA total : 70 568,60 €
+    - Valeur obtenue CA total : 70 568,60 € ✓ (conforme attendu)
+    - TOP 10 : Champagne Gosset Grand Blanc de Blancs (4704€)
+    - Stockage : Tables ca_par_produit et ca_total dans _bdd/bottleneck.db
 
 #### 3.3 Scripts Python de classification et extraction (2 scripts)
 - [ ] **06_classify_wines.py** : Classification complète des vins
+    - Commande : `poetry run python 06_classify_wines.py`
     - Calcul de la moyenne des prix (mu)
     - Calcul de l'écart-type des prix (sigma)
     - Calcul du z-score : (price - mu) / sigma
     - Classification : premium si z-score > 2, sinon ordinaire
     - Valeur attendue : 30 vins premium
 - [ ] **07_export_results.py** : Extractions des 3 fichiers de sortie
+    - Commande : `poetry run python 07_export_results.py`
     - Export rapport_ca.xlsx (2 feuilles : CA par produit + CA total)
     - Export vins_premium.csv (filtrage categorie='premium')
     - Export vins_ordinaires.csv (filtrage categorie='ordinaire')
