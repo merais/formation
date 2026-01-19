@@ -148,52 +148,71 @@
 
 ---
 
-### PHASE 4 : IMPLEMENTATION KESTRA
+### PHASE 4 : INTEGRATION KESTRA
 
-#### 4.1 Création du workflow Kestra de base
-- [ ] Créer le fichier .yaml du workflow
-- [ ] Configurer les métadonnées du flow (id, namespace, description)
-- [ ] Définir les inputs pour les fichiers sources
-- [ ] Créer la tâche de chargement des fichiers Excel
+#### 4.1 Structure de base du workflow
+- [ ] Creer le fichier bottleneck_pipeline.yaml dans _projet/_kestra/
+- [ ] Configurer les metadonnees (id: bottleneck-pipeline, namespace: com.bottleneck)
+- [ ] Definir les variables d'environnement (chemins BDD, sources, exports)
+- [ ] Configurer l'environnement Python (Poetry + venv)
 
-#### 4.2 Implémentation des tâches de nettoyage
-- [ ] Implémenter la tâche de nettoyage erp avec DuckDB
-- [ ] Implémenter le test après nettoyage erp
-- [ ] Implémenter la tâche de nettoyage liaison avec DuckDB
-- [ ] Implémenter le test après nettoyage liaison
-- [ ] Implémenter la tâche de nettoyage web avec DuckDB
-- [ ] Implémenter le test après nettoyage web
+#### 4.2 Integration des scripts de nettoyage (Scripts 01-03)
+- [ ] Creer la tache task_01_clean_erp (io.kestra.plugin.scripts.python.Commands)
+    - Commande : poetry run python _scripts/01_clean_erp.py
+    - Output attendu : 825 lignes dans erp_clean_final
+- [ ] Creer la tache task_02_clean_liaison (io.kestra.plugin.scripts.python.Commands)
+    - Commande : poetry run python _scripts/02_clean_liaison.py
+    - Output attendu : 825 lignes dans liaison_clean_final
+- [ ] Creer la tache task_03_clean_web (io.kestra.plugin.scripts.python.Commands)
+    - Commande : poetry run python _scripts/03_clean_web.py
+    - Output attendu : 714 lignes dans web_clean_final
+- [ ] Configurer les dependances : task_02 et task_03 apres task_01
 
-#### 4.3 Implémentation des tâches de fusion
-- [ ] Implémenter la jointure erp-liaison avec DuckDB
-- [ ] Implémenter le test de cohérence de la jointure
-- [ ] Implémenter la jointure finale avec web
-- [ ] Implémenter le test de cohérence de la jointure finale
+#### 4.3 Integration des scripts de transformation (Scripts 04-07)
+- [ ] Creer la tache task_04_merge_all (io.kestra.plugin.scripts.python.Commands)
+    - Commande : poetry run python _scripts/04_merge_all.py
+    - Output attendu : 714 lignes dans merged_data_final
+    - Depends on : [task_01, task_02, task_03]
+- [ ] Creer la tache task_05_calculate_ca (io.kestra.plugin.scripts.python.Commands)
+    - Commande : poetry run python _scripts/05_calculate_ca.py
+    - Output attendu : CA total 70568.60 euros
+    - Depends on : task_04
+- [ ] Creer la tache task_06_classify_wines (io.kestra.plugin.scripts.python.Commands)
+    - Commande : poetry run python _scripts/06_classify_wines.py
+    - Output attendu : 30 vins premium
+    - Depends on : task_05
+- [ ] Creer la tache task_07_export_results (io.kestra.plugin.scripts.python.Commands)
+    - Commande : poetry run python _scripts/07_export_results.py
+    - Output attendu : 3 fichiers (rapport_ca.xlsx, vins_premium.csv, vins_ordinaires.csv)
+    - Depends on : task_06
 
-#### 4.4 Implémentation des tâches d'agrégation
-- [ ] Implémenter le calcul du CA par produit
-- [ ] Implémenter le calcul du CA total
-- [ ] Implémenter le test du CA total
+#### 4.4 Integration du script de validation globale (Script 08)
+- [ ] Creer la tache task_08_validate_all (io.kestra.plugin.scripts.python.Commands)
+    - Commande : poetry run python _scripts/08_validate_all.py
+    - Output attendu : exit code 0 (10/10 tests passes)
+    - Depends on : task_07
+- [ ] Configurer allowFailure: false pour arreter le workflow en cas d'echec
+- [ ] Capturer les outputs du script de validation (tests_ok, tests_ko)
 
-#### 4.5 Implémentation de la classification des vins
-- [ ] Implémenter la tâche Python de calcul du z-score
-- [ ] Implémenter le test du z-score
-- [ ] Implémenter la classification premium/ordinaire
-- [ ] Implémenter le test du nombre de vins premium
+#### 4.5 Configuration de la planification et triggers
+- [ ] Creer le trigger schedule avec cron : "0 9 15 * *" (15 du mois a 9h)
+- [ ] Tester la syntaxe cron sur https://crontab.guru
+- [ ] Ajouter un trigger manuel pour tests (type: io.kestra.plugin.core.trigger.Flow)
+- [ ] Documenter les conditions d'execution
 
-#### 4.6 Implémentation des extractions (avec branches Kestra)
-- [ ] Créer la branche pour l'extraction du rapport CA en Excel
-- [ ] Créer la branche pour l'extraction des vins premium en CSV
-- [ ] Créer la branche pour l'extraction des vins ordinaires en CSV
+#### 4.6 Gestion des erreurs et resilience
+- [ ] Configurer retry sur chaque tache (maxAttempt: 3, warningOnRetry: true)
+- [ ] Configurer timeout global du workflow (1 heure maximum)
+- [ ] Ajouter des logs detailles avec {{ task.id }} et {{ taskrun.startDate }}
+- [ ] Creer une tache d'alerte en cas d'echec (io.kestra.plugin.notifications.mail.MailSend)
+- [ ] Tester les scenarios d'erreur (fichier manquant, BDD indisponible)
 
-#### 4.7 Configuration de la planification
-- [ ] Configurer le trigger avec cron pour exécution le 15 de chaque mois à 9h
-- [ ] Tester la syntaxe cron sur Crontab.guru
-
-#### 4.8 Gestion des erreurs
-- [ ] Implémenter la gestion des erreurs pour l'indisponibilité de DuckDB
-- [ ] Implémenter les mécanismes de retry
-- [ ] Implémenter les notifications en cas d'échec
+#### 4.7 Optimisations et finalisation
+- [ ] Ajouter des labels pour le monitoring (env: production, project: bottleneck)
+- [ ] Documenter le workflow avec description detaillee
+- [ ] Creer un README.md pour le workflow Kestra
+- [ ] Valider la structure YAML (syntaxe, indentation)
+- [ ] Tester l'execution complete du workflow end-to-end
 
 ---
 
