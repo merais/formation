@@ -121,32 +121,30 @@
     - Stockage : Tables ca_par_produit et ca_total dans _bdd/bottleneck.db
 
 #### 3.3 Scripts Python de classification et extraction (2 scripts)
-- [x] **06_classify_wines.py** : Classification complète des vins ✓ **TERMINÉ le 2025-01-16**
+- [x] **06_classify_wines.py** : Classification complète des vins
     - Commande : `cd _projet && poetry run python _scripts/06_classify_wines.py`
     - Calcul de la moyenne des prix (mu = 32.49€)
     - Calcul de l'écart-type des prix (sigma = 27.81€)
     - Calcul du z-score : (price - mu) / sigma
     - Classification : premium si z-score > 2, sinon ordinaire
-    - Valeur attendue : 30 vins premium ✓
+    - Valeur attendue : 30 vins premium
     - Table créée : wines_classified (714 lignes, 8 colonnes dont z_score et categorie)
-- [x] **07_export_results.py** : Extractions des 3 fichiers de sortie ✓ **TERMINÉ le 2025-01-16**
+- [x] **07_export_results.py** : Extractions des 3 fichiers de sortie
     - Commande : `cd _projet && poetry run python _scripts/07_export_results.py`
-    - Export rapport_ca.xlsx (2 feuilles : CA par produit 714 lignes + CA total 70,568.60€) ✓
-    - Export vins_premium.csv (30 vins premium, CA 6,884.40€) ✓
-    - Export vins_ordinaires.csv (684 vins ordinaires, CA 63,684.20€) ✓
+    - Export rapport_ca.xlsx (2 feuilles : CA par produit 714 lignes + CA total 70,568.60€) 
+    - Export vins_premium.csv (30 vins premium, CA 6,884.40€) 
+    - Export vins_ordinaires.csv (684 vins ordinaires, CA 63,684.20€) 
     - Fichiers créés dans _exports/
 
-#### 3.4 Scripts de tests
-- [ ] **Test 1** : Vérification nettoyage ERP (825 lignes, aucun doublon)
-- [ ] **Test 2** : Vérification nettoyage LIAISON (825 lignes, aucun doublon)
-- [ ] **Test 3** : Vérification nettoyage WEB - valeurs manquantes (après filtrage products)
-- [ ] **Test 4** : Vérification nettoyage WEB - dédoublonnage (714 lignes, aucun doublon sur sku)
-- [ ] **Test 5** : Vérification cohérence jointure ERP-LIAISON (825 lignes)
-- [ ] **Test 6** : Vérification cohérence jointure finale (714 lignes)
-- [ ] **Test 7** : Vérification CA positifs (tous CA >= 0)
-- [ ] **Test 8** : Vérification CA total (70 568,60 €)
-- [ ] **Test 9** : Vérification validité z-score (pas de NaN/Inf, formule correcte)
-- [ ] **Test 10** : Vérification nombre vins premium (30 vins)
+#### 3.4 Script de validation globale (1 script)
+- [x] **08_validate_all.py** : Validation complète de toute la chaîne ✓ **TERMINÉ le 2025-01-19**
+    - Commande : `cd _projet && poetry run python _scripts/08_validate_all.py`
+    - **BLOC 1 - Nettoyage** : 4 tests (ERP 825, LIAISON 825, WEB 714, doublons)
+    - **BLOC 2 - Jointures** : 2 tests (cohérence ERP-LIAISON, cohérence finale 714)
+    - **BLOC 3 - CA** : 2 tests (CA positifs, CA total 70,568.60€)
+    - **BLOC 4 - Classification** : 2 tests (z-score valides, 30 vins premium)
+    - **Résultat** : 10/10 tests OK (100%) ✓
+    - Exit code 0 si OK, 1 si erreur (utilisable dans Kestra)
 
 
 ---
