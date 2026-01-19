@@ -1,10 +1,10 @@
 """
 Script       : 07_export_results.py
-Description  : Export des résultats finaux vers fichiers Excel et CSV
+Description  : Export des resultats finaux vers fichiers Excel et CSV
 Auteur       : Aymeric BAILLEUL
 Date         : 2025-01-16
-Objectif     : Exporter les données finales (CA + classification) dans des formats exploitables
-Résultat     : 3 fichiers - rapport_ca.xlsx (2 feuilles), vins_premium.csv, vins_ordinaires.csv
+Objectif     : Exporter les donnees finales (CA + classification) dans des formats exploitables
+Resultat     : 3 fichiers - rapport_ca.xlsx (2 feuilles), vins_premium.csv, vins_ordinaires.csv
 """
 
 import duckdb
@@ -13,9 +13,9 @@ import pandas as pd
 
 
 def main():
-    """Export des résultats finaux (CA + vins classifiés)"""
+    """Export des resultats finaux (CA + vins classifies)"""
     
-    # Chemins
+    # Paths
     project_path = Path(__file__).resolve().parents[1]
     db_path = project_path / "_bdd" / "bottleneck.db"
     exports_path = project_path / "_exports"
@@ -31,32 +31,32 @@ def main():
     
     try:
         print("\n" + "="*70)
-        print("EXPORT DES RÉSULTATS FINAUX")
+        print("EXPORT DES RESULTATS FINAUX")
         print("="*70)
         
         # ============================================================
-        # Étape 1 : Vérification des tables sources
+        # Etape 1 : verification des tables sources
         # ============================================================
-        print("\nÉtape 1 : Vérification des tables sources")
+        print("\nEtape 1 : verification des tables sources")
         
-        # Vérifier ca_par_produit
+        # Verifier ca_par_produit
         count_ca = conn.execute("SELECT COUNT(*) FROM ca_par_produit").fetchone()[0]
         print(f"  [OK] Table ca_par_produit trouvee : {count_ca} lignes")
         
-        # Vérifier ca_total
+        # Verifier ca_total
         count_total = conn.execute("SELECT COUNT(*) FROM ca_total").fetchone()[0]
         print(f"  [OK] Table ca_total trouvee : {count_total} ligne(s)")
         
-        # Vérifier wines_classified
+        # Verifier wines_classified
         count_classified = conn.execute("SELECT COUNT(*) FROM wines_classified").fetchone()[0]
         print(f"  [OK] Table wines_classified trouvee : {count_classified} lignes")
         
         # ============================================================
-        # Étape 2 : Export Excel (rapport CA complet)
+        # Etape 2 : export Excel (rapport CA complet)
         # ============================================================
-        print("\nÉtape 2 : Export du rapport CA vers Excel")
+        print("\nEtape 2 : export du rapport CA vers Excel")
         
-        # Récupérer CA par produit
+        # Recuperer CA par produit
         df_ca_produit = conn.execute("""
             SELECT 
                 product_id,
@@ -70,7 +70,7 @@ def main():
             ORDER BY chiffre_affaires DESC
         """).df()
         
-        # Récupérer CA total
+        # Recuperer CA total
         df_ca_total = conn.execute("""
             SELECT 
                 ca_total,
@@ -79,7 +79,7 @@ def main():
             FROM ca_total
         """).df()
         
-        # Créer le fichier Excel avec 2 feuilles
+        # Creer le fichier Excel avec 2 feuilles
         with pd.ExcelWriter(excel_output_path, engine='openpyxl') as writer:
             df_ca_produit.to_excel(writer, sheet_name='CA_par_produit', index=False)
             df_ca_total.to_excel(writer, sheet_name='CA_total', index=False)
@@ -89,11 +89,11 @@ def main():
         print(f"    - Feuille 2 : CA_total (CA total : {df_ca_total['ca_total'].iloc[0]:.2f} euros)")
         
         # ============================================================
-        # Étape 3 : Export CSV vins premium
+        # Etape 3 : export CSV vins premium
         # ============================================================
-        print("\nÉtape 3 : Export des vins premium vers CSV")
+        print("\nEtape 3 : export des vins premium vers CSV")
         
-        # Récupérer vins premium avec détails CA
+        # Recuperer vins premium avec details CA
         df_premium = conn.execute("""
             SELECT 
                 w.product_id,
@@ -122,11 +122,11 @@ def main():
             print(f"    - CA total premium : {df_premium['chiffre_affaires'].sum():.2f} euros")
         
         # ============================================================
-        # Étape 4 : Export CSV vins ordinaires
+        # Etape 4 : export CSV vins ordinaires
         # ============================================================
-        print("\nÉtape 4 : Export des vins ordinaires vers CSV")
+        print("\nEtape 4 : export des vins ordinaires vers CSV")
         
-        # Récupérer vins ordinaires avec détails CA
+        # Recuperer vins ordinaires avec details CA
         df_ordinary = conn.execute("""
             SELECT 
                 w.product_id,
@@ -155,7 +155,7 @@ def main():
             print(f"    - CA total ordinaire : {df_ordinary['chiffre_affaires'].sum():.2f} euros")
         
         # ============================================================
-        # RÉSULTAT FINAL
+        # RESULTAT FINAL
         # ============================================================
         print("\n" + "="*70)
         print("RESULTAT FINAL")

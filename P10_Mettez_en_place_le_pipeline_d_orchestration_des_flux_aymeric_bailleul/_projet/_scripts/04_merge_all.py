@@ -1,32 +1,32 @@
 """
 Script       : 04_merge_all.py
-Description  : Fusion complète des données ERP, LIAISON et WEB
+Description  : Fusion complete des donnees ERP, LIAISON et WEB
 Auteur       : Aymeric BAILLEUL
 Date         : 2025-01-16
-Objectif     : Réaliser les jointures entre les 3 tables nettoyées
-Résultat     : 714 lignes complètes avec price et total_sales
+Objectif     : Realiser les jointures entre les 3 tables nettoyees
+Resultat     : 714 lignes completes avec price et total_sales
 """
 
 from pathlib import Path
 import duckdb
 
-# Chemins
+# Paths
 project_path = Path(__file__).resolve().parents[1]
 db_path = project_path / "_bdd" / "bottleneck.db"
 
 print("=" * 80)
-print("FUSION DES DONNÉES ERP + LIAISON + WEB")
+print("FUSION DES DONNEES ERP + LIAISON + WEB")
 print("=" * 80)
 
-# Connexion à DuckDB persistante
-print(f"Base de données : {db_path}")
+# Connexion a DuckDB persistante
+print(f"Base de donnees : {db_path}")
 conn = duckdb.connect(str(db_path))
 
-# Étape 1 : Jointure ERP + LIAISON
-print("\nÉtape 1 : Jointure ERP + LIAISON...")
+# Etape 1 : jointure ERP + LIAISON
+print("\nEtape 1 : jointure ERP + LIAISON...")
 print("  Jointure sur erp.product_id = liaison.product_id")
 
-# Vérification des tables source
+# Verification des tables source
 nb_erp = conn.execute("SELECT COUNT(*) FROM erp_clean_final").fetchone()[0]
 nb_liaison = conn.execute("SELECT COUNT(*) FROM liaison_clean_final").fetchone()[0]
 print(f"  Tables source : erp_clean_final ({nb_erp} lignes), liaison_clean_final ({nb_liaison} lignes)")
@@ -46,10 +46,10 @@ conn.execute("""
 """)
 
 nb_erp_liaison = conn.execute("SELECT COUNT(*) FROM erp_liaison_merged").fetchone()[0]
-print(f"  Résultat jointure ERP + LIAISON : {nb_erp_liaison} lignes")
+print(f"  Resultat jointure ERP + LIAISON : {nb_erp_liaison} lignes")
 
-# Étape 2 : Filtrage des produits avec id_web NULL
-print("\nÉtape 2 : Filtrage des produits sans référence web (id_web NULL)...")
+# Etape 2 : filtrage des produits avec id_web NULL
+print("\nEtape 2 : filtrage des produits sans reference web (id_web NULL)...")
 
 nb_null = conn.execute("SELECT COUNT(*) FROM erp_liaison_merged WHERE id_web IS NULL").fetchone()[0]
 print(f"  Nombre de lignes avec id_web NULL : {nb_null}")
@@ -62,10 +62,10 @@ conn.execute("""
 """)
 
 nb_filtered = conn.execute("SELECT COUNT(*) FROM erp_liaison_filtered").fetchone()[0]
-print(f"  Résultat après filtrage : {nb_filtered} lignes")
+print(f"  Resultat apres filtrage : {nb_filtered} lignes")
 
-# Étape 3 : Jointure avec WEB
-print("\nÉtape 3 : Jointure avec WEB...")
+# Etape 3 : jointure avec WEB
+print("\nEtape 3 : jointure avec WEB...")
 
 nb_web = conn.execute("SELECT COUNT(*) FROM web_clean_final").fetchone()[0]
 print(f"  Table web_clean_final : {nb_web} lignes")
@@ -91,12 +91,12 @@ conn.execute("""
 """)
 
 nb_merged = conn.execute("SELECT COUNT(*) FROM merged_data_final").fetchone()[0]
-print(f"  Résultat jointure finale : {nb_merged} lignes")
+print(f"  Resultat jointure finale : {nb_merged} lignes")
 
-# Étape 4 : Vérifications finales
-print("\nÉtape 4 : Vérifications finales...")
+# Etape 4 : verifications finales
+print("\nEtape 4 : verifications finales...")
 
-# Vérification valeurs NULL sur colonnes critiques
+# Verification valeurs NULL sur colonnes critiques
 null_checks = conn.execute("""
     SELECT 
         SUM(CASE WHEN product_id IS NULL THEN 1 ELSE 0 END) AS null_product_id,
@@ -110,8 +110,8 @@ print(f"    - product_id : {null_checks[0]}")
 print(f"    - erp_price : {null_checks[1]}")
 print(f"    - total_sales : {null_checks[2]}")
 
-# Aperçu des données
-print("\n  Aperçu des données fusionnées (5 premières lignes) :")
+# Apercu des donnees
+print("\n  Apercu des donnees fusionnees (5 premieres lignes) :")
 sample = conn.execute("""
     SELECT product_id, post_title, erp_price, total_sales
     FROM merged_data_final
@@ -119,19 +119,19 @@ sample = conn.execute("""
 """).df()
 print(sample.to_string(index=False))
 
-# Résumé final
+# Resume final
 print("\n" + "=" * 80)
-print("RÉSULTAT FINAL")
+print("RESULTAT FINAL")
 print("=" * 80)
 print(f"\nERP + LIAISON         : {nb_erp_liaison} lignes")
-print(f"Après filtrage NULL   : {nb_filtered} lignes")
-print(f"Après jointure WEB    : {nb_merged} lignes")
-print(f"Résultat attendu      : 714 lignes")
-print(f"Statut                : {'OK' if nb_merged == 714 else 'ATTENTION - Écart détecté'}")
+print(f"Apres filtrage NULL   : {nb_filtered} lignes")
+print(f"Apres jointure WEB    : {nb_merged} lignes")
+print(f"Resultat attendu      : 714 lignes")
+print(f"Statut                : {'OK' if nb_merged == 714 else 'ATTENTION - ecart detecte'}")
 
 # Fermeture de la connexion
 conn.close()
-print("\nDonnées fusionnées disponibles dans la table 'merged_data_final' de bottleneck.db")
+print("\nDonnees fusionnees disponibles dans la table 'merged_data_final' de bottleneck.db")
 print("\n" + "=" * 80)
-print("FUSION TERMINÉE")
+print("FUSION TERMINEE")
 print("=" * 80)

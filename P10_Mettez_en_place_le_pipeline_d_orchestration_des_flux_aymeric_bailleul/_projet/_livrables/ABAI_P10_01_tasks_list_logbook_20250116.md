@@ -140,12 +140,11 @@
 - [x] **08_validate_all.py** : Validation complète de toute la chaîne
     - Commande : `cd _projet && poetry run python _scripts/08_validate_all.py`
     - **BLOC 1 - Nettoyage** : 4 tests (ERP 825, LIAISON 825, WEB 714, doublons)
-    - **BLOC 2 - Jointures** : 2 tests (cohérence ERP-LIAISON, cohérence finale 714)
-    - **BLOC 3 - CA** : 2 tests (CA positifs, CA total 70,568.60€)
+    - **BLOC 2 - Jointures** : 2 tests (coherence ERP-LIAISON, coherence finale 714)
+    - **BLOC 3 - CA** : 2 tests (CA positifs, CA total 70,568.60 euros)
     - **BLOC 4 - Classification** : 2 tests (z-score valides, 30 vins premium)
-    - **Résultat** : 10/10 tests OK (100%) ✓
+    - **Resultat** : 10/10 tests OK (100%)
     - Exit code 0 si OK, 1 si erreur (utilisable dans Kestra)
-
 
 ---
 

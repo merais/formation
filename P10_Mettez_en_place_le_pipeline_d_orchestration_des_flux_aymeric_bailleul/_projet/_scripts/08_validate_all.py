@@ -1,9 +1,9 @@
 """
 Script       : 08_validate_all.py
-Description  : Validation globale de toute la chaîne de traitement
+Description  : Validation globale de toute la chaine de traitement
 Auteur       : Aymeric BAILLEUL
 Date         : 2025-01-19
-Objectif     : Valider l'integrite des donnees à chaque etape (nettoyage, jointures, calculs, classification)
+Objectif     : Valider l'integrite des donnees a chaque etape (nettoyage, jointures, calculs, classification)
 Resultat     : Rapport de validation avec statut OK/ERREUR pour chaque test
 """
 
@@ -15,7 +15,7 @@ import sys
 def main():
     """Validation complete de toutes les etapes du pipeline"""
     
-    # Chemins
+    # Paths
     project_path = Path(__file__).resolve().parents[1]
     db_path = project_path / "_bdd" / "bottleneck.db"
     
@@ -34,10 +34,10 @@ def main():
     
     try:
         # ================================================================
-        # BLOC 1 : VALIDATION NETTOYAGE DES DONNeES
+        # BLOC 1 : VALIDATION NETTOYAGE des donnees
         # ================================================================
         print("\n" + "-"*80)
-        print("BLOC 1 : VALIDATION NETTOYAGE DES DONNeES")
+        print("BLOC 1 : VALIDATION NETTOYAGE des donnees")
         print("-"*80)
         
         # Test 1 : ERP nettoye
@@ -136,7 +136,7 @@ def main():
         print("BLOC 2 : VALIDATION JOINTURES")
         print("-"*80)
         
-        # Test 5 : Coherence jointure ERP-LIAISON
+        # Test 5 : coherence jointure ERP-LIAISON
         print("\n[Test 5] Verification coherence jointure ERP-LIAISON")
         total_tests += 1
         try:
@@ -163,7 +163,7 @@ def main():
             print(f"  [ERREUR] ERREUR : {e}")
             tests_ko += 1
         
-        # Test 6 : Coherence jointure finale
+        # Test 6 : coherence jointure finale
         print("\n[Test 6] Verification coherence jointure finale (merged_data_final)")
         total_tests += 1
         try:
@@ -240,7 +240,7 @@ def main():
         print("BLOC 4 : VALIDATION CLASSIFICATION")
         print("-"*80)
         
-        # Test 9 : Validite z-score
+        # Test 9 : validite z-score
         print("\n[Test 9] Verification validite z-score")
         total_tests += 1
         try:
@@ -274,7 +274,7 @@ def main():
             print(f"  [ERREUR] ERREUR : {e}")
             tests_ko += 1
         
-        # Test 10 : Nombre vins premium
+        # Test 10 : nombre vins premium
         print("\n[Test 10] Verification nombre vins premium")
         total_tests += 1
         try:
@@ -302,10 +302,10 @@ def main():
             tests_ko += 1
         
         # ================================================================
-        # ReSULTAT FINAL
+        # RESULTAT FINAL
         # ================================================================
         print("\n" + "="*80)
-        print("ReSULTAT FINAL")
+        print("RESULTAT FINAL")
         print("="*80)
         
         success_rate = (tests_ok / total_tests * 100) if total_tests > 0 else 0
@@ -315,12 +315,10 @@ def main():
         print(f"Tests echoues  : {tests_ko}")
         
         if tests_ko == 0:
-            print("\n[OK][OK][OK] VALIDATION COMPLeTE : TOUS LES TESTS PASSeS [OK][OK][OK]")
-            print("\nLe pipeline est pret pour l'orchestration Kestra.")
+            print("\n[OK][OK][OK] VALIDATION COMPLETE : TOUS LES TESTS PASSES [OK][OK][OK]")
             exit_code = 0
         else:
-            print("\n[ERREUR][ERREUR][ERREUR] VALIDATION eCHOUeE : DES ERREURS ONT eTe DeTECTeES [ERREUR][ERREUR][ERREUR]")
-            print("\nVeuillez corriger les erreurs avant de passer à Kestra.")
+            print("\n[ERREUR][ERREUR][ERREUR] VALIDATION ECHOUEE : DES ERREURS ONT ETE DETECTEES [ERREUR][ERREUR][ERREUR]")
             exit_code = 1
         
         print("\n" + "="*80)

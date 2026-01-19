@@ -1,37 +1,37 @@
 """
 Script       : 01_clean_erp.py
-Description  : Nettoyage des données du fichier ERP
+Description  : Nettoyage des donnees du fichier ERP
 Auteur       : Aymeric BAILLEUL
 Date         : 2025-01-16
-Objectif     : Charger, nettoyer et dédoublonner les données ERP
-Résultat     : 825 lignes propres
+Objectif     : Charger, nettoyer et dedoublonner les donnees ERP
+Resultat     : 825 lignes propres
 """
 
 import pandas as pd
 import duckdb
 from pathlib import Path
 
-# Chemins
+# Paths
 project_path = Path(__file__).resolve().parents[1]
 sources_path = project_path / "sources"
 db_path = project_path / "_bdd" / "bottleneck.db"
 fichier_erp = sources_path / "fichier_erp.xlsx"
 
 print("=" * 80)
-print("NETTOYAGE DES DONNÉES ERP")
+print("NETTOYAGE DES DONNEES ERP")
 print("=" * 80)
 
-# Connexion à DuckDB persistante
-print(f"Base de données : {db_path}")
+# Connexion a DuckDB persistante
+print(f"Base de donnees : {db_path}")
 conn = duckdb.connect(str(db_path))
 
-# Étape 1 : Chargement du fichier Excel ERP avec pandas
-print("\nÉtape 1 : Chargement du fichier ERP...")
+# Etape 1 : Chargement du fichier Excel ERP avec pandas
+print("\nEtape 1 : Chargement du fichier ERP...")
 erp_raw = pd.read_excel(fichier_erp)
-print(f"  Nombre de lignes chargées : {len(erp_raw)}")
+print(f"  Nombre de lignes chargees : {len(erp_raw)}")
 print(f"  Colonnes : {list(erp_raw.columns)}")
 
-# Affichage de quelques statistiques sur les données brutes
+# Affichage de quelques statistiques sur les donnees brutes
 print("\n  Valeurs manquantes par colonne :")
 for col in erp_raw.columns:
     nb_null = erp_raw[col].isna().sum()
@@ -39,39 +39,39 @@ for col in erp_raw.columns:
         print(f"    - {col} : {nb_null}")
 print(f"  Nombre de doublons complets : {erp_raw.duplicated().sum()}")
 
-# Étape 2 : Suppression des valeurs manquantes
-print("\nÉtape 2 : Suppression des valeurs manquantes...")
+# Etape 2 : suppression des valeurs manquantes
+print("\nEtape 2 : suppression des valeurs manquantes...")
 erp_sans_null = erp_raw.dropna()
-print(f"  Nombre de lignes après suppression : {len(erp_sans_null)}")
+print(f"  Nombre de lignes apres suppression : {len(erp_sans_null)}")
 
-# Étape 3 : Dédoublonnage complet
-print("\nÉtape 3 : Dédoublonnage des données...")
+# Etape 3 : dedoublonnage complet
+print("\nEtape 3 : dedoublonnage des donnees...")
 erp_clean = erp_sans_null.drop_duplicates()
-print(f"  Nombre de lignes après dédoublonnage : {len(erp_clean)}")
+print(f"  Nombre de lignes apres dedoublonnage : {len(erp_clean)}")
 print(f"  Nombre de product_id uniques : {erp_clean['product_id'].nunique()}")
 
-# Vérification que product_id est bien une clé primaire
+# Verification que product_id est bien une cle primaire
 doublons_product_id = erp_clean['product_id'].duplicated().sum()
 if doublons_product_id > 0:
-    print(f"  ATTENTION : {doublons_product_id} doublons sur product_id détectés !")
+    print(f"  ATTENTION : {doublons_product_id} doublons sur product_id detectes !")
 else:
-    print("  Vérification OK : product_id est une clé primaire unique")
+    print("  Verification OK : product_id est une cle primaire unique")
 
-# Étape 4 : Insertion dans DuckDB pour utilisation ultérieure
-print("\nÉtape 4 : Création de la table dans DuckDB...")
+# Etape 4 : insertion dans DuckDB pour utilisation ulterieure
+print("\nEtape 4 : creation de la table dans DuckDB...")
 conn.register('erp_clean', erp_clean)
 conn.execute("CREATE OR REPLACE TABLE erp_clean_final AS SELECT * FROM erp_clean")
-print("  Table erp_clean_final créée avec succès")
+print("  Table erp_clean_final creee avec succes")
 
-# Affichage des premières lignes
+# Affichage des premieres lignes
 print("\n" + "=" * 80)
-print("RÉSULTAT FINAL")
+print("RESULTAT FINAL")
 print("=" * 80)
 print(f"\nNombre final de lignes : {len(erp_clean)}")
-print(f"Résultat attendu : 825 lignes")
-print(f"Statut : {'OK' if len(erp_clean) == 825 else 'ATTENTION - Écart détecté'}")
+print(f"Resultat attendu : 825 lignes")
+print(f"Statut : {'OK' if len(erp_clean) == 825 else 'ATTENTION - Ecart detecte'}")
 
-print("\nPremières lignes du fichier nettoyé :")
+print("\nPremieres lignes du fichier nettoye :")
 print(erp_clean.head())
 
 print("\nStatistiques sur les prix :")
@@ -79,7 +79,7 @@ print(erp_clean['price'].describe())
 
 # Fermeture de la connexion
 conn.close()
-print("\nDonnées ERP disponibles dans la table 'erp_clean_final' de bottleneck.db")
+print("\nDonnees ERP disponibles dans la table 'erp_clean_final' de bottleneck.db")
 print("\n" + "=" * 80)
-print("NETTOYAGE ERP TERMINÉ")
+print("NETTOYAGE ERP TERMINE")
 print("=" * 80)
