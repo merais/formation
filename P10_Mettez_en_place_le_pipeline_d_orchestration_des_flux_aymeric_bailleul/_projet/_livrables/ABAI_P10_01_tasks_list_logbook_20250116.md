@@ -117,23 +117,24 @@
     - Commande : `poetry run python 05_calculate_ca.py`
     - Calcul CA par produit : erp_price × total_sales
     - Calcul CA total : SUM(CA par produit)
-    - Valeur obtenue CA total : 70 568,60 € ✓ (conforme attendu)
-    - TOP 10 : Champagne Gosset Grand Blanc de Blancs (4704€)
+    - Valeur obtenue CA total : 70 568,60 € (OK)
     - Stockage : Tables ca_par_produit et ca_total dans _bdd/bottleneck.db
 
 #### 3.3 Scripts Python de classification et extraction (2 scripts)
-- [ ] **06_classify_wines.py** : Classification complète des vins
-    - Commande : `poetry run python 06_classify_wines.py`
-    - Calcul de la moyenne des prix (mu)
-    - Calcul de l'écart-type des prix (sigma)
+- [x] **06_classify_wines.py** : Classification complète des vins ✓ **TERMINÉ le 2025-01-16**
+    - Commande : `cd _projet && poetry run python _scripts/06_classify_wines.py`
+    - Calcul de la moyenne des prix (mu = 32.49€)
+    - Calcul de l'écart-type des prix (sigma = 27.81€)
     - Calcul du z-score : (price - mu) / sigma
     - Classification : premium si z-score > 2, sinon ordinaire
-    - Valeur attendue : 30 vins premium
-- [ ] **07_export_results.py** : Extractions des 3 fichiers de sortie
-    - Commande : `poetry run python 07_export_results.py`
-    - Export rapport_ca.xlsx (2 feuilles : CA par produit + CA total)
-    - Export vins_premium.csv (filtrage categorie='premium')
-    - Export vins_ordinaires.csv (filtrage categorie='ordinaire')
+    - Valeur attendue : 30 vins premium ✓
+    - Table créée : wines_classified (714 lignes, 8 colonnes dont z_score et categorie)
+- [x] **07_export_results.py** : Extractions des 3 fichiers de sortie ✓ **TERMINÉ le 2025-01-16**
+    - Commande : `cd _projet && poetry run python _scripts/07_export_results.py`
+    - Export rapport_ca.xlsx (2 feuilles : CA par produit 714 lignes + CA total 70,568.60€) ✓
+    - Export vins_premium.csv (30 vins premium, CA 6,884.40€) ✓
+    - Export vins_ordinaires.csv (684 vins ordinaires, CA 63,684.20€) ✓
+    - Fichiers créés dans _exports/
 
 #### 3.4 Scripts de tests
 - [ ] **Test 1** : Vérification nettoyage ERP (825 lignes, aucun doublon)

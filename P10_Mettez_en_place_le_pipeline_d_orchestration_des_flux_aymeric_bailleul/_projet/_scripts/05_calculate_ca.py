@@ -12,16 +12,17 @@ Formule : CA = erp_price × total_sales
 from pathlib import Path
 import duckdb
 
-# Path vers la base de données
-path_db = Path("..") / "_bdd" / "bottleneck.db"
+# Chemins
+project_path = Path(__file__).resolve().parents[1]
+db_path = project_path / "_bdd" / "bottleneck.db"
 
 print("=" * 80)
 print("CALCUL DU CHIFFRE D'AFFAIRES (CA)")
 print("=" * 80)
 
 # Connexion à DuckDB persistante
-print(f"Base de données : {path_db}")
-conn = duckdb.connect(database=str(path_db))
+print(f"Base de données : {db_path}")
+conn = duckdb.connect(str(db_path))
 
 # Étape 1 : Vérification de la table source
 print("\nÉtape 1 : Vérification de la table source...")
@@ -45,6 +46,7 @@ conn.execute("""
     CREATE OR REPLACE TABLE ca_par_produit AS
     SELECT 
         product_id,
+        sku,
         post_title,
         onsale_web,
         stock_status,
