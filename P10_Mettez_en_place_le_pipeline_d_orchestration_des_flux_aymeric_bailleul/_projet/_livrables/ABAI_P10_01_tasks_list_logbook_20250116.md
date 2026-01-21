@@ -7,12 +7,6 @@
 
 ---
 
-## QUESTIONS POUR JEREMY
-
-- Quel comportement les scripts de nettoyage/insertion dans DuckDB doivent avoir : remplacement des données en fonction des fichiers sources donnés ou prendre en compte la possibilité d'une insertion incrémentielle dans la base de données ?
-
----
-
 ## Liste complète des tâches à effectuer
 
 ### PHASE 1 : PREPARATION ET ANALYSE
@@ -34,18 +28,13 @@
 - [X] Installer Docker Desktop
     --> Déjà installé
 - [X] Installer Kestra via Docker
-    --> `cd tools/kestra && docker-compose up -d`
+    --> `cd _projet/_kestra && docker-compose up -d`
     --> Conteneurs: kestra-kestra-1 + kestra-postgres-1
 - [X] Vérifier le bon fonctionnement de Kestra (accès interface web)
     --> Accessible sur `http://localhost:8080`
 - [X] Prendre des captures d'écran de l'installation de Kestra
 - [X] Configurer l'environnement Python Poetry avec les dépendances nécessaires
-    --> Poetry 2.2.1 - Python 3.14.0 - pandas, openpyxl, black, ruff, pytest installés
-- [X] Installer DuckDB et tester son fonctionnement
-    --> Ajout de `duckdb = "^1.1.0"` dans le **pyproject.toml** puis `poetry install`
-    --> `poetry run duckdb`
-    --> DuckDB 1.4.3 installé et testé avec succès
-- [X] Prendre des captures d'écran de l'installation de DuckDB
+    --> Poetry 2.2.1 - Python 3.14.0 - pandas, openpyxl, pyarrow, boto3, black, ruff, pytest installés
 
 ---
 
@@ -53,17 +42,18 @@
 
 #### 2.1 Conception du diagramme de flux (Data lineage)
 - [X] Identifier toutes les tâches de transformation nécessaires
-    --> 21 tâches identifiées et lister dans **ABAI_P10_04_conception_data_lineage.md**
+    --> **12 tâches Kestra** implémentées dans bottleneck_pipeline_s3.yaml
+    --> Plan initial : 21 tâches détaillées dans **ABAI_P10_03_conception_data_lineage.md**
 - [X] Lister les tâches de nettoyage (suppression valeurs manquantes, dédoublonnage)
-    --> 9 tâches de nettoyage (3 par fichier source)
+    --> **3 tâches parallèles** : clean_erp, clean_liaison, clean_web (tasks 2-4)
 - [X] Lister les tâches de fusion (jointures via fichier liaison)
-    --> 2 jointures : ERP-LIAISON puis avec WEB
+    --> **2 jointures** dans task_05 : ERP-LIAISON puis avec WEB
 - [X] Lister les tâches d'agrégation (calcul CA par produit et total)
-    --> 2 tâches d'agrégation identifiées
+    --> **1 tâche** : task_06_calculate_ca
 - [X] Lister les tâches d'extraction (rapports Excel, CSV premium/ordinaires)
-    --> 5 tâches d'extraction (3 branches)
+    --> **3 tâches parallèles** : rapport_ca, premium, ordinaires (tasks 9-11)
 - [X] Identifier les points de test après chaque étape de transformation
-    --> 10 tests définis avec valeurs attendues
+    --> **9 validations automatisées** : 4 intermédiaires (825, 825, 1428, 714) + 5 globales
 
 #### 2.2 Création du logigramme sur Draw.io
 - [X] Créer le diagramme avec les 3 fichiers sources en entrée
@@ -80,7 +70,7 @@
 
 ### PHASE 3 : DEVELOPPEMENT DES SCRIPTS
 
-#### 3.1 Script de nettoyage et fusion des donnees (TERMINE)
+#### 3.1 Script de nettoyage et fusion des donnees
 - [X] **01_clean_and_merge.py** : Nettoyage complet et fusion des 3 sources (100% local)
     - Commande : `cd _projet && poetry run python _scripts/01_clean_and_merge.py`
     - **Etape 1 - Verification** : Verification presence des 3 fichiers dans sources/
@@ -91,52 +81,55 @@
         - Chargement fichier_erp.xlsx
         - Suppression valeurs manquantes + dedoublonnage
         - Resultat : 825 lignes
-        - Stockage : Table erp_clean_final dans DuckDB
+        - Stockage : Fichier Parquet erp_clean.parquet
     - **Etape 3 - Nettoyage LIAISON** :
         - Chargement fichier_liaison.xlsx
         - /!\ NULL conserves sur id_web (91 lignes) - Filtres apres jointure
         - Dedoublonnage uniquement
         - Resultat : 825 lignes
-        - Stockage : Table liaison_clean_final dans DuckDB
+        - Stockage : Fichier Parquet liaison_clean.parquet
     - **Etape 4 - Nettoyage WEB** :
-        - Chargement fichier_web.xlsx
-        - Filtrage sur post_type = 'product'
-        - Suppression NULL sur sku + dedoublonnage
-        - Resultat : 714 lignes
-        - Stockage : Table web_clean_final dans DuckDB
+        - Chargement fichier_web.xlsx (1513 lignes)
+        - Suppression NULL sur sku (85 NULL)
+        - Resultat intermediaire : 1428 lignes (products + attachments)
+        - Tri descendant sur post_type pour prioriser 'product'
+        - Dedoublonnage sur sku (garde first = product en priorite)
+        - Resultat final : 714 lignes (que des products)
+        - Stockage : Fichier Parquet web_clean.parquet
     - **Etape 5 - Jointure ERP + LIAISON** :
         - Jointure sur product_id (825 lignes)
         - Suppression NULL sur id_web (734 lignes)
     - **Etape 6 - Jointure finale avec WEB** :
         - Jointure INNER sur id_web = sku
         - Resultat : 714 lignes avec erp_price et total_sales
-        - Stockage : Table merged_data_final dans DuckDB
-    - **Resultat global** : Table merged_data_final (714 lignes) prete pour traitement
+        - Stockage : Fichier Parquet merged_data.parquet
+    - **Resultat global** : Fichier merged_data.parquet (714 lignes) pret pour traitement
     - **Architecture** : 3 etapes (Verification -> Nettoyage -> Fusion)
 
-#### 3.2 Script de traitement, classification et export (TERMINE)
+#### 3.2 Script de traitement, classification et export
 - [X] **02_process_and_export.py** : Calcul CA, classification et exports (100% local)
     - Commande : `cd _projet && poetry run python _scripts/02_process_and_export.py`
     - **Etape 1 - Calcul CA** :
         - Calcul CA par produit : erp_price x total_sales
         - Calcul CA total : SUM(CA par produit)
         - Valeur obtenue : 70 568,60 € (OK)
-        - Stockage : Tables ca_par_produit et ca_total dans DuckDB
+        - Stockage : Fichier Parquet data_with_ca.parquet
     - **Etape 2 - Classification des vins** :
         - Calcul moyenne (mu = 32.49€) et ecart-type (sigma = 27.81€)
         - Calcul z-score : (price - mu) / sigma
         - Classification : premium si z-score > 2, sinon ordinaire
         - Resultat : 30 vins premium, 684 vins ordinaires
-        - Stockage : Table wines_classified dans DuckDB
+        - Stockage : Fichier Parquet data_classified.parquet
     - **Etape 3 - Export local** :
         - Creation rapport_ca.xlsx (2 feuilles)
         - Creation vins_premium.csv (30 vins, CA 6 884,40€)
         - Creation vins_ordinaires.csv (684 vins, CA 63 684,20€)
+        - **Note** : CA total = 70 568,60€ (6 884,40 + 63 684,20)
         - Destination : _exports/ (local)
     - **Resultat global** : 3 fichiers exportes localement dans _exports/
     - **Architecture** : 3 etapes (CA -> Classification -> Export)
 
-#### 3.3 Script de validation globale (TERMINE)
+#### 3.3 Script de validation globale
 - [X] **03_validate_all.py** : Validation complete de toute la chaine
     - Commande : `cd _projet && poetry run python _scripts/03_validate_all.py`
     - **BLOC 1 - Nettoyage (4 tests)** :
@@ -156,100 +149,162 @@
     - **Resultat** : 10/10 tests OK (100%)
     - Exit code 0 si OK, 1 si erreur (utilisable dans Kestra)
 
+#### 3.4 Scripts utilitaires AWS S3
+- [X] **04_upload_sources_to_s3.py** : Upload des fichiers sources vers S3/RAW/
+    - Commande : `cd _projet && poetry run python _scripts/04_upload_sources_to_s3.py`
+    - Upload les 3 fichiers sources (erp, liaison, web) vers S3/RAW/
+    - Gestion des credentials AWS (variables d'environnement ou ~/.aws/)
+    - Verification de connexion au bucket avant upload
+    - Exit code 0 si OK, 1 si erreur
+    
+- [X] **05_download_exports_from_s3.py** : Download des exports depuis S3/EXPORTS/
+    - Commande : `cd _projet && poetry run python _scripts/05_download_exports_from_s3.py`
+    - Detecte automatiquement le dossier d'export le plus recent
+    - Telecharge les 3 fichiers (rapport_ca.xlsx, vins_premium.csv, vins_ordinaires.csv)
+    - Mise a jour automatique si execute plusieurs fois (remplace les anciens fichiers)
+    - Destination : _exports/ (local)
+    - Exit code 0 si OK, 1 si erreur
+
 ---
 
 ### PHASE 4 : INTEGRATION KESTRA
 
 #### 4.1 Structure de base du workflow
-- [ ] Creer le fichier bottleneck_pipeline.yaml dans _projet/_kestra/
-- [ ] Configurer les metadonnees (id: bottleneck-pipeline-local, namespace: com.bottleneck)
-- [ ] Definir les variables d'environnement (chemins BDD, sources, exports)
-- [ ] Configurer l'environnement Python (Poetry + venv)
+- [X] Creer le fichier bottleneck_pipeline_s3.yaml dans _projet/_kestra/
+- [X] Configurer les metadonnees (id: bottleneck_pipeline_s3, namespace: company.bottleneck)
+- [X] Definir les variables globales (bucket S3, region, prefixes)
+- [X] Creer fichier .env avec secrets AWS (BASE64) et PostgreSQL
+- [X] Configurer docker-compose.yml pour utiliser variables d'environnement ${VARIABLE}
+- [X] Deployer Kestra avec PostgreSQL backend
 
-#### 4.2 Integration des 3 scripts Python dans Kestra
-- [ ] **Tache 1 : Nettoyage et fusion** (io.kestra.plugin.scripts.python.Commands)
-    - Script : `poetry run python _scripts/01_clean_and_merge.py`
-    - Actions : Lecture locale -> Nettoyage ERP/LIAISON/WEB -> Jointures -> Stockage DuckDB
-    - Output attendu : Table merged_data_final (714 lignes) dans DuckDB
-    - Duree estimee : ~2 minutes
+#### 4.2 Integration AWS S3
+- [X] Creer le bucket S3 bottleneck-pipeline-p10 dans eu-west-3
+- [X] Creer la structure RAW/ et EXPORTS/
+- [X] Configurer un utilisateur IAM avec droits limites
+- [X] Encoder les credentials AWS en BASE64 et stocker dans .env
+- [X] Configurer docker-compose.yml pour lire .env via ${SECRET_AWS_ACCESS_KEY_ID}
+- [X] Tester la connexion S3 depuis Kestra
+- [X] Uploader les fichiers sources dans S3/RAW/
+
+#### 4.3 Implementation des taches Kestra
+- [X] **Tache 1 : Download S3** (io.kestra.plugin.aws.s3.Downloads)
+    - Action: NONE (download sans suppression)
+    - Output: 3 fichiers Excel
     
-- [ ] **Tache 2 : Traitement et export** (io.kestra.plugin.scripts.python.Commands)
-    - Script : `poetry run python _scripts/02_process_and_export.py`
-    - Actions : Calcul CA -> Classification z-score -> Exports Excel/CSV locaux
-    - Output attendu : 3 fichiers dans _exports/ (rapport_ca.xlsx, vins_premium.csv, vins_ordinaires.csv)
-    - Depends on : task_01_clean_and_merge
-    - Duree estimee : ~2 minutes
+- [X] **Groupe parallele 1 : Nettoyage** (io.kestra.plugin.core.flow.Parallel)
+    - [X] task_02_clean_erp: 825 lignes (validation OK) → erp_clean.parquet
+    - [X] task_03_clean_liaison: 825 lignes (validation OK) → liaison_clean.parquet
+    - [X] task_04_clean_web: 1428 → 714 lignes (validations OK) → web_clean.parquet
+        - **Validations intermediaires** : 825, 825, 1428, 714 avec sys.exit(1) si echec
+    - Execution simultanee des 3 taches
     
-- [ ] **Tache 3 : Validation globale** (io.kestra.plugin.scripts.python.Commands)
-    - Script : `poetry run python _scripts/03_validate_all.py`
-    - Actions : 10 tests automatises (nettoyage, jointures, CA, classification)
-    - Output attendu : Exit code 0 (100% tests OK)
-    - Depends on : task_02_process_and_export
-    - Duree estimee : ~30 secondes
+- [X] **Tache 5 : Fusion** (io.kestra.plugin.scripts.python.Commands)
+    - Jointure ERP + LIAISON sur product_id
+    - Jointure avec WEB sur id_web = sku
+    - Output: merged_data.parquet (714 lignes)
     
-- [ ] Configurer allowFailure: false sur la tache 3 pour arreter le workflow en cas d'echec
-- [ ] Capturer les outputs des scripts (logs de validation)
+- [X] **Tache 6 : Calcul CA** (io.kestra.plugin.scripts.python.Commands)
+    - Calcul CA par produit: price x total_sales
+    - CA total: 70 568,60 €
+    - Output: data_with_ca.parquet
+    
+- [X] **Tache 7 : Classification** (io.kestra.plugin.scripts.python.Commands)
+    - Calcul z-score: (price - mu) / sigma
+    - Classification: premium si z-score > 2
+    - Output: data_classified.parquet (30 premium, 684 ordinaires)
+    
+- [X] **Tache 8 : Validation** (io.kestra.plugin.scripts.python.Commands)
+    - 5 tests automatises globaux (allowFailure: false)
+    - Test 1 : 714 lignes fusionnees
+    - Test 2 : CA total 70568.60€ (tolerance 0.01€)
+    - Test 3 : 30 vins premium
+    - Test 4 : 684 vins ordinaires
+    - Test 5 : 0 valeurs NULL dans CA
+    - Bloque les exports et upload si echec (sys.exit(1))
+    - **IMPORTANT** : Validations intermediaires (825, 825, 1428, 714) dans tasks 2-4
+    
+- [X] **Groupe parallele 2 : Exports** (io.kestra.plugin.core.flow.Parallel)
+    - [X] task_09_export_rapport_ca: Excel 2 feuilles
+    - [X] task_10_export_vins_premium: CSV 30 vins
+    - [X] task_11_export_vins_ordinaires: CSV 684 vins
+    - Execution simultanee des 3 taches
+    
+- [X] **Tache 12 : Upload S3** (io.kestra.plugin.scripts.python.Commands + boto3)
+    - Upload vers S3/EXPORTS/YYYYMMDD_HHMMSS/
+    - 3 fichiers: rapport_ca.xlsx, vins_premium.csv, vins_ordinaires.csv
+    - Ne s'execute que si validation OK (task_08)
 
-#### 4.3 Configuration de la planification et triggers
-- [ ] Creer le trigger schedule avec cron : "0 9 15 * *" (15 du mois a 9h)
-- [ ] Tester la syntaxe cron sur https://crontab.guru
-- [ ] Ajouter un trigger manuel pour tests (type: io.kestra.plugin.core.trigger.Flow)
-- [ ] Documenter les conditions d'execution
+#### 4.5 Configuration de la planification et triggers
+- [X] Creer le trigger schedule avec cron: "0 9 15 * *" (15 du mois a 9h)
+- [X] Configurer timezone: "Europe/Paris"
+- [X] Tester la syntaxe cron
+- [X] Documenter les conditions d'execution
 
-#### 4.4 Gestion des erreurs et resilience
-- [ ] Configurer retry sur chaque tache (maxAttempt: 3, warningOnRetry: true)
-- [ ] Configurer timeout global du workflow (1 heure maximum)
-- [ ] Ajouter des logs detailles avec {{ task.id }} et {{ taskrun.startDate }}
-- [ ] Creer une tache d'alerte en cas d'echec (io.kestra.plugin.notifications.mail.MailSend)
-- [ ] Tester les scenarios d'erreur (fichier manquant, BDD indisponible)
+#### 4.6 Gestion des erreurs et resilience
+- [X] Configurer retry sur chaque tache (maxAttempt: 3, backoff exponentiel)
+- [X] Configurer timeout 10 minutes par tache
+- [X] Configurer allowFailure: false sur task_08 (validation bloquante)
+- [X] Ajouter une tache d'alerte email (SMTP non configure)
+- [X] Tester les scenarios d'erreur (corrections multiples)
 
-#### 4.5 Optimisations et finalisation
-- [ ] Ajouter des labels pour le monitoring (env: production, project: bottleneck)
-- [ ] Documenter le workflow avec description detaillee
-- [ ] Creer un README.md pour le workflow Kestra
-- [ ] Valider la structure YAML (syntaxe, indentation)
-- [ ] Tester l'execution complete du workflow end-to-end
+#### 4.8 Validation finale
+- [X] Execution complete reussie
+- [X] Verification parallelisme (Gantt Chart)
+- [X] Verification temps execution (~2 minutes)
+- [X] Verification uploads S3 (EXPORTS/YYYYMMDD_HHMMSS/)
+- [X] Validation 5 tests automatises (100%)
+- [X] Verification logs detailles de chaque tache
 
 ---
 
 ### PHASE 5 : TESTS ET VALIDATION
 
-#### 5.1 Tests unitaires
-- [ ] Tester individuellement chaque tâche de nettoyage
-- [ ] Tester individuellement chaque tâche de jointure
-- [ ] Tester individuellement chaque tâche d'agrégation
-- [ ] Tester individuellement la classification des vins
-- [ ] Vérifier que tous les tests passent avec les valeurs attendues
+#### 5.1 Tests unitaires Kestra
+- [X] Tester individuellement task_01 (download S3)
+- [X] Tester individuellement task_02 (nettoyage ERP)
+- [X] Tester individuellement task_03 (nettoyage LIAISON)
+- [X] Tester individuellement task_04 (nettoyage WEB)
+- [X] Tester individuellement task_05 (fusion)
+- [X] Tester individuellement task_06 (calcul CA)
+- [X] Tester individuellement task_07 (classification)
+- [X] Tester individuellement task_08 (validation globale)
+- [X] Tester individuellement task_09 (export rapport CA)
+- [X] Tester individuellement task_10 (export premium)
+- [X] Tester individuellement task_11 (export ordinaires)
+- [X] Tester individuellement task_12 (upload S3)
 
-#### 5.2 Tests d'intégration
-- [ ] Exécuter le workflow complet de bout en bout
-- [ ] Vérifier que tous les fichiers de sortie sont générés
-- [ ] Valider le contenu du rapport CA Excel
-- [ ] Valider le contenu du fichier vins premium CSV
-- [ ] Valider le contenu du fichier vins ordinaires CSV
-- [ ] Vérifier les valeurs de référence (825, 714, 70568.60, 30)
+#### 5.2 Tests d'integration
+- [X] Executer le workflow complet de bout en bout
+- [X] Verifier que tous les fichiers de sortie sont generes
+- [X] Valider le contenu du rapport CA Excel (2 feuilles, 714 produits)
+- [X] Valider le contenu du fichier vins premium CSV (30 vins)
+- [X] Valider le contenu du fichier vins ordinaires CSV (684 vins)
+- [X] Verifier les valeurs de reference (825, 825, 1428, 714, 70568.60€, 30, 684)
+- [X] Verifier la structure S3/EXPORTS/YYYYMMDD_HHMMSS/
 
 #### 5.3 Tests de robustesse
-- [ ] Tester le workflow avec des données incomplètes
-- [ ] Tester le comportement en cas d'erreur de connexion DuckDB
-- [ ] Tester le mécanisme de retry
-- [ ] Valider les notifications d'erreur
+- [X] Tester le workflow avec corrections iteratives (12 phases)
+- [X] Tester le comportement en cas d'erreur de validation
+- [X] Tester le mecanisme de retry (backoff exponentiel)
+- [X] Valider le blocage upload si validation echoue (allowFailure: false)
+- [X] Verifier les logs detailles de chaque tache
 
 #### 5.4 Tests de planification
-- [ ] Vérifier que le trigger cron est correctement configuré
-- [ ] Simuler une exécution planifiée
+- [X] Verifier que le trigger cron est correctement configure (0 9 15 * *)
+- [X] Verifier timezone Europe/Paris
+- [X] Documenter le calendrier d'execution 2026
 
 ---
 
 ### PHASE 6 : DOCUMENTATION ET PRESENTATION
 
 #### 6.1 Documentation technique
-- [ ] Documenter l'architecture du workflow
-- [ ] Documenter chaque tâche du workflow Kestra
-- [ ] Documenter les scripts SQL et Python
-- [ ] Documenter les tests implémentés
-- [ ] Documenter la procédure de déploiement
-- [ ] Rédiger le README avec les instructions d'installation et d'utilisation
+- [X] Documenter l'architecture du workflow
+- [X] Documenter chaque tâche du workflow Kestra
+- [X] Documenter les scripts Python
+- [X] Documenter les tests implémentés (9 validations)
+- [X] Documenter la procédure de déploiement (Docker + S3)
+- [X] Rédiger le README avec les instructions d'installation et d'utilisation
 
 #### 6.2 Création du support de présentation
 - [ ] Slide 1 : Contexte de la mission BottleNeck

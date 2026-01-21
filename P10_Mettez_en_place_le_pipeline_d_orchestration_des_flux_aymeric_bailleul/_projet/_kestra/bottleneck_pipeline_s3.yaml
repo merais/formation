@@ -1,0 +1,935 @@
+id: bottleneck_pipeline_s3
+namespace: company.bottleneck
+
+# Variables globales pour AWS S3
+variables:
+  bucket_name: "bottleneck-pipeline-p10"
+  raw_prefix: "RAW"
+  exports_prefix: "EXPORTS"
+  aws_region: "eu-west-3"
+
+tasks:
+  # ==========================================================================
+  # TACHE 1 : TELECHARGEMENT DES SOURCES DEPUIS S3
+  # ==========================================================================
+  - id: task_01_download_sources
+    type: io.kestra.plugin.aws.s3.Downloads
+    description: |
+      Telechargement des 3 fichiers sources depuis S3/RAW/
+      - fichier_erp.xlsx
+      - fichier_liaison.xlsx
+      - fichier_web.xlsx
+    
+    accessKeyId: "{{ secret('AWS_ACCESS_KEY_ID') }}"
+    secretKeyId: "{{ secret('AWS_SECRET_ACCESS_KEY') }}"
+    region: "{{ vars.aws_region }}"
+    
+    bucket: "{{ vars.bucket_name }}"
+    prefix: "{{ vars.raw_prefix }}/"
+    
+    action: NONE
+
+  # ==========================================================================
+  # GROUPE PARALLELE 1 : NETTOYAGE DES 3 SOURCES (ERP, LIAISON, WEB)
+  # ==========================================================================
+  - id: parallel_cleaning
+    type: io.kestra.plugin.core.flow.Parallel
+    description: "Nettoyage parallele des 3 sources de donnees"
+    
+    tasks:
+      # ========================================================================
+      # TACHE 2 : NETTOYAGE DES DONNEES ERP
+      # ========================================================================
+      - id: task_02_clean_erp
+        type: io.kestra.plugin.scripts.python.Commands
+        description: |
+          Nettoyage des donnees ERP :
+          - Suppression des valeurs manquantes
+          - Dedoublonnage sur product_id
+          - Resultat attendu : 825 lignes
+        
+        warningOnStdErr: false
+        
+        inputFiles:
+          sources/fichier_erp.xlsx: "{{ outputs.task_01_download_sources.outputFiles['RAW/fichier_erp.xlsx'] }}"
+        
+        taskRunner:
+          type: io.kestra.plugin.scripts.runner.docker.Docker
+          image: python:3.14-slim
+        
+        beforeCommands:
+          - pip install --no-cache-dir pandas openpyxl pyarrow
+        
+        commands:
+          - |
+            python << 'EOF'
+            import pandas as pd
+            from datetime import datetime
+            import sys
+            
+            print("="*80)
+            print("NETTOYAGE ERP")
+            print("="*80)
+            
+            # Chargement du fichier ERP
+            df_erp = pd.read_excel("sources/fichier_erp.xlsx")
+            print(f"Lignes brutes ERP : {len(df_erp)}")
+            
+            # Suppression des valeurs manquantes
+            df_erp_clean = df_erp.dropna()
+            print(f"Apres suppression NULL : {len(df_erp_clean)}")
+            
+            # Dedoublonnage sur product_id
+            df_erp_clean = df_erp_clean.drop_duplicates(subset=["product_id"])
+            print(f"Apres dedoublonnage : {len(df_erp_clean)}")
+            
+            # VALIDATION : Verification nombre de lignes
+            expected_lines = 825
+            actual_lines = len(df_erp_clean)
+            if actual_lines != expected_lines:
+                print(f"\n[ERREUR] Nombre de lignes incorrect")
+                print(f"  Attendu : {expected_lines}")
+                print(f"  Obtenu  : {actual_lines}")
+                sys.exit(1)
+            
+            # Sauvegarde
+            df_erp_clean.to_parquet("erp_clean.parquet", index=False)
+            print(f"[OK] ERP nettoye : {len(df_erp_clean)} lignes - VALIDATION OK")
+            EOF
+        
+        outputFiles:
+          - "erp_clean.parquet"
+        
+        retry:
+          type: exponential
+          maxAttempt: 3
+          interval: PT10S
+          maxInterval: PT60S
+        
+        timeout: PT10M
+
+      # ========================================================================
+      # TACHE 3 : NETTOYAGE DES DONNEES LIAISON
+      # ========================================================================
+      - id: task_03_clean_liaison
+        type: io.kestra.plugin.scripts.python.Commands
+        description: |
+          Nettoyage des donnees LIAISON :
+          - Conservation des NULL sur id_web (filtre apres jointure)
+          - Dedoublonnage sur product_id
+          - Resultat attendu : 825 lignes
+        
+        warningOnStdErr: false
+        
+        inputFiles:
+          sources/fichier_liaison.xlsx: "{{ outputs.task_01_download_sources.outputFiles['RAW/fichier_liaison.xlsx'] }}"
+        
+        taskRunner:
+          type: io.kestra.plugin.scripts.runner.docker.Docker
+          image: python:3.14-slim
+        
+        beforeCommands:
+          - pip install --no-cache-dir pandas openpyxl pyarrow
+        
+        commands:
+          - |
+            python << 'EOF'
+            import pandas as pd
+            import sys
+            
+            print("="*80)
+            print("NETTOYAGE LIAISON")
+            print("="*80)
+            
+            # Chargement du fichier LIAISON
+            df_liaison = pd.read_excel("sources/fichier_liaison.xlsx")
+            print(f"Lignes brutes LIAISON : {len(df_liaison)}")
+            
+            # Pas de suppression des NULL sur id_web (91 lignes avec NULL)
+            # On les garde pour la jointure, le filtre se fera apres
+            
+            # Dedoublonnage sur product_id
+            df_liaison_clean = df_liaison.drop_duplicates(subset=["product_id"])
+            print(f"Apres dedoublonnage : {len(df_liaison_clean)}")
+            
+            # VALIDATION : Verification nombre de lignes
+            expected_lines = 825
+            actual_lines = len(df_liaison_clean)
+            if actual_lines != expected_lines:
+                print(f"\n[ERREUR] Nombre de lignes incorrect")
+                print(f"  Attendu : {expected_lines}")
+                print(f"  Obtenu  : {actual_lines}")
+                sys.exit(1)
+            
+            # Conversion id_web en string pour eviter les erreurs de type mixte
+            df_liaison_clean["id_web"] = df_liaison_clean["id_web"].astype(str)
+            
+            # Sauvegarde
+            df_liaison_clean.to_parquet("liaison_clean.parquet", index=False)
+            print(f"[OK] LIAISON nettoye : {len(df_liaison_clean)} lignes - VALIDATION OK")
+            EOF
+        
+        outputFiles:
+          - "liaison_clean.parquet"
+        
+        retry:
+          type: exponential
+          maxAttempt: 3
+          interval: PT10S
+          maxInterval: PT60S
+        
+        timeout: PT10M
+
+      # ========================================================================
+      # TACHE 4 : NETTOYAGE DES DONNEES WEB
+      # ========================================================================
+      - id: task_04_clean_web
+        type: io.kestra.plugin.scripts.python.Commands
+        description: |
+          Nettoyage des donnees WEB :
+          - Filtrage sur post_type = 'product'
+          - Suppression des NULL sur sku
+          - Dedoublonnage sur sku
+          - Resultat attendu : 714 lignes
+        
+        warningOnStdErr: false
+        
+        inputFiles:
+          sources/fichier_web.xlsx: "{{ outputs.task_01_download_sources.outputFiles['RAW/fichier_web.xlsx'] }}"
+        
+        taskRunner:
+          type: io.kestra.plugin.scripts.runner.docker.Docker
+          image: python:3.14-slim
+        
+        beforeCommands:
+          - pip install --no-cache-dir pandas openpyxl pyarrow
+        
+        commands:
+          - |
+            python << 'EOF'
+            import pandas as pd
+            import sys
+            
+            print("="*80)
+            print("NETTOYAGE WEB")
+            print("="*80)
+            
+            # Chargement du fichier WEB
+            df_web = pd.read_excel("sources/fichier_web.xlsx")
+            print(f"Lignes brutes WEB : {len(df_web)}")
+            
+            # Suppression des NULL sur sku (sans filtre post_type)
+            df_web_clean = df_web.dropna(subset=["sku"])
+            print(f"Apres suppression NULL sur sku : {len(df_web_clean)}")
+            
+            # VALIDATION 1 : Verification nombre de lignes apres suppression NULL
+            expected_after_cleaning = 1428
+            actual_after_cleaning = len(df_web_clean)
+            if actual_after_cleaning != expected_after_cleaning:
+                print(f"\n[ERREUR] Nombre de lignes incorrect apres nettoyage")
+                print(f"  Attendu : {expected_after_cleaning}")
+                print(f"  Obtenu  : {actual_after_cleaning}")
+                sys.exit(1)
+            print(f"[OK] Validation nettoyage : {actual_after_cleaning} lignes")
+            
+            # Tri pour prioriser les products lors du dedoublonnage
+            # post_type='product' sera garde en priorite sur 'attachment'
+            df_web_clean = df_web_clean.sort_values("post_type", ascending=False)
+            
+            # Dedoublonnage sur sku (garde la premiere occurrence = product)
+            df_web_clean = df_web_clean.drop_duplicates(subset=["sku"], keep="first")
+            print(f"Apres dedoublonnage : {len(df_web_clean)}")
+            
+            # VALIDATION 2 : Verification nombre de lignes apres dedoublonnage
+            expected_after_dedup = 714
+            actual_after_dedup = len(df_web_clean)
+            if actual_after_dedup != expected_after_dedup:
+                print(f"\n[ERREUR] Nombre de lignes incorrect apres dedoublonnage")
+                print(f"  Attendu : {expected_after_dedup}")
+                print(f"  Obtenu  : {actual_after_dedup}")
+                sys.exit(1)
+            print(f"[OK] Validation dedoublonnage : {actual_after_dedup} lignes")
+            
+            # Conversion sku en string pour eviter les erreurs de type mixte
+            df_web_clean["sku"] = df_web_clean["sku"].astype(str)
+            
+            # Sauvegarde
+            df_web_clean.to_parquet("web_clean.parquet", index=False)
+            print(f"[OK] WEB nettoye : {len(df_web_clean)} lignes - VALIDATIONS OK")
+            EOF
+        
+        outputFiles:
+          - "web_clean.parquet"
+        
+        retry:
+          type: exponential
+          maxAttempt: 3
+          interval: PT10S
+          maxInterval: PT60S
+        
+        timeout: PT10M
+
+  # ==========================================================================
+  # TACHE 5 : FUSION DES DONNEES
+  # ==========================================================================
+  - id: task_05_merge_data
+    type: io.kestra.plugin.scripts.python.Commands
+    description: |
+      Fusion des 3 sources :
+      - Jointure ERP + LIAISON sur product_id
+      - Suppression des NULL sur id_web
+      - Jointure avec WEB sur id_web = sku
+      - Resultat attendu : 714 lignes avec erp_price et total_sales
+    
+    warningOnStdErr: false
+    
+    inputFiles:
+      erp_clean.parquet: "{{ outputs.task_02_clean_erp.outputFiles['erp_clean.parquet'] }}"
+      liaison_clean.parquet: "{{ outputs.task_03_clean_liaison.outputFiles['liaison_clean.parquet'] }}"
+      web_clean.parquet: "{{ outputs.task_04_clean_web.outputFiles['web_clean.parquet'] }}"
+    
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker
+      image: python:3.14-slim
+    
+    beforeCommands:
+      - pip install --no-cache-dir pandas pyarrow
+    
+    commands:
+      - |
+        python << 'EOF'
+        import pandas as pd
+        
+        print("="*80)
+        print("FUSION DES DONNEES")
+        print("="*80)
+        
+        # Chargement des donnees nettoyees
+        df_erp = pd.read_parquet("erp_clean.parquet")
+        df_liaison = pd.read_parquet("liaison_clean.parquet")
+        df_web = pd.read_parquet("web_clean.parquet")
+        
+        print(f"ERP clean : {len(df_erp)} lignes")
+        print(f"LIAISON clean : {len(df_liaison)} lignes")
+        print(f"WEB clean : {len(df_web)} lignes")
+        
+        # Jointure ERP + LIAISON sur product_id
+        df_merged = df_erp.merge(df_liaison, on="product_id", how="inner")
+        print(f"\nApres jointure ERP-LIAISON : {len(df_merged)} lignes")
+        
+        # Suppression des NULL sur id_web (91 lignes filtrees)
+        df_merged = df_merged.dropna(subset=["id_web"])
+        print(f"Apres suppression NULL sur id_web : {len(df_merged)} lignes")
+        
+        # Conversion pour jointure (garder en string)
+        df_merged["id_web"] = df_merged["id_web"].astype(str).str.strip()
+        df_web["sku"] = df_web["sku"].astype(str).str.strip()
+        
+        # Jointure avec WEB sur id_web = sku
+        df_final = df_merged.merge(
+            df_web[["sku", "total_sales"]], 
+            left_on="id_web", 
+            right_on="sku", 
+            how="inner"
+        )
+        print(f"Apres jointure avec WEB : {len(df_final)} lignes")
+        
+        # Sauvegarde
+        df_final.to_parquet("merged_data.parquet", index=False)
+        print(f"\n[OK] Fusion terminee : {len(df_final)} lignes")
+        print(f"Colonnes : {list(df_final.columns)}")
+        EOF
+    
+    outputFiles:
+      - "merged_data.parquet"
+    
+    retry:
+      type: exponential
+      maxAttempt: 3
+      interval: PT10S
+      maxInterval: PT60S
+    
+    timeout: PT10M
+
+  # ==========================================================================
+  # TACHE 6 : CALCUL DU CHIFFRE D'AFFAIRES
+  # ==========================================================================
+  - id: task_06_calculate_ca
+    type: io.kestra.plugin.scripts.python.Commands
+    description: |
+      Calcul du chiffre d'affaires :
+      - CA par produit = erp_price x total_sales
+      - CA total = somme des CA
+      - Resultat attendu : 70 568,60 euros
+    
+    warningOnStdErr: false
+    
+    inputFiles:
+      merged_data.parquet: "{{ outputs.task_05_merge_data.outputFiles['merged_data.parquet'] }}"
+    
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker
+      image: python:3.14-slim
+    
+    beforeCommands:
+      - pip install --no-cache-dir pandas pyarrow
+    
+    commands:
+      - |
+        python << 'EOF'
+        import pandas as pd
+        
+        print("="*80)
+        print("CALCUL DU CHIFFRE D'AFFAIRES")
+        print("="*80)
+        
+        # Chargement des donnees fusionnees
+        df = pd.read_parquet("merged_data.parquet")
+        
+        # Calcul du CA par produit (colonne 'price')
+        df["ca_produit"] = df["price"] * df["total_sales"]
+        
+        # Calcul du CA total
+        ca_total = df["ca_produit"].sum()
+        
+        print(f"\nCA total : {ca_total:.2f} euros")
+        print(f"Nombre de produits : {len(df)}")
+        print(f"CA moyen par produit : {df['ca_produit'].mean():.2f} euros")
+        
+        # Sauvegarde
+        df.to_parquet("data_with_ca.parquet", index=False)
+        print(f"\n[OK] Calcul CA termine")
+        EOF
+    
+    outputFiles:
+      - "data_with_ca.parquet"
+    
+    retry:
+      type: exponential
+      maxAttempt: 3
+      interval: PT10S
+      maxInterval: PT60S
+    
+    timeout: PT10M
+
+  # ==========================================================================
+  # TACHE 7 : CLASSIFICATION DES VINS (Z-SCORE)
+  # ==========================================================================
+  - id: task_07_classify_wines
+    type: io.kestra.plugin.scripts.python.Commands
+    description: |
+      Classification des vins via z-score :
+      - Calcul moyenne et ecart-type des prix
+      - Calcul z-score = (price - mu) / sigma
+      - Premium si z-score > 2, sinon ordinaire
+      - Resultat attendu : 30 vins premium, 684 ordinaires
+    
+    warningOnStdErr: false
+    
+    inputFiles:
+      data_with_ca.parquet: "{{ outputs.task_06_calculate_ca.outputFiles['data_with_ca.parquet'] }}"
+    
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker
+      image: python:3.14-slim
+    
+    beforeCommands:
+      - pip install --no-cache-dir pandas pyarrow numpy
+    
+    commands:
+      - |
+        python << 'EOF'
+        import pandas as pd
+        import numpy as np
+        
+        print("="*80)
+        print("CLASSIFICATION DES VINS")
+        print("="*80)
+        
+        # Chargement des donnees avec CA
+        df = pd.read_parquet("data_with_ca.parquet")
+        
+        # Calcul des statistiques sur les prix (colonne 'price')
+        mu = df["price"].mean()
+        sigma = df["price"].std()
+        
+        print(f"\nMoyenne des prix : {mu:.2f} euros")
+        print(f"Ecart-type : {sigma:.2f} euros")
+        
+        # Calcul du z-score
+        df["z_score"] = (df["price"] - mu) / sigma
+        
+        # Classification
+        df["categorie"] = df["z_score"].apply(
+            lambda z: "premium" if z > 2 else "ordinaire"
+        )
+        
+        # Statistiques
+        nb_premium = len(df[df["categorie"] == "premium"])
+        nb_ordinaire = len(df[df["categorie"] == "ordinaire"])
+        ca_premium = df[df["categorie"] == "premium"]["ca_produit"].sum()
+        ca_ordinaire = df[df["categorie"] == "ordinaire"]["ca_produit"].sum()
+        
+        print(f"\nVins premium : {nb_premium}")
+        print(f"Vins ordinaires : {nb_ordinaire}")
+        print(f"CA premium : {ca_premium:.2f} euros")
+        print(f"CA ordinaire : {ca_ordinaire:.2f} euros")
+        
+        # Sauvegarde
+        df.to_parquet("data_classified.parquet", index=False)
+        print(f"\n[OK] Classification terminee")
+        EOF
+    
+    outputFiles:
+      - "data_classified.parquet"
+    
+    retry:
+      type: exponential
+      maxAttempt: 3
+      interval: PT10S
+      maxInterval: PT60S
+    
+    timeout: PT10M
+
+  # ==========================================================================
+  # TACHE 8 : VALIDATION GLOBALE
+  # ==========================================================================
+  - id: task_08_validation
+    type: io.kestra.plugin.scripts.python.Commands
+    description: |
+      Tests de validation du pipeline complet :
+      - Nettoyage : 825, 825, 714 lignes
+      - Fusion : 714 lignes
+      - CA total : 70 568,60 euros
+      - Classification : 30 premium, 684 ordinaires
+      
+      BLOQUE les exports et upload S3 si un test echoue
+    
+    warningOnStdErr: false
+    allowFailure: false
+    
+    inputFiles:
+      data_classified.parquet: "{{ outputs.task_07_classify_wines.outputFiles['data_classified.parquet'] }}"
+    
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker
+      image: python:3.14-slim
+    
+    beforeCommands:
+      - pip install --no-cache-dir pandas pyarrow
+    
+    commands:
+      - |
+        python << 'EOF'
+        import pandas as pd
+        import sys
+        
+        print("="*80)
+        print("VALIDATION GLOBALE")
+        print("="*80)
+        
+        # Chargement des donnees
+        df = pd.read_parquet("data_classified.parquet")
+        
+        tests_ok = 0
+        tests_ko = 0
+        
+        # Test 1 : Nombre de lignes fusionnees
+        print("\n[TEST 1] Lignes fusionnees")
+        expected_lines = 714
+        actual_lines = len(df)
+        if actual_lines == expected_lines:
+            print(f"  [OK] {actual_lines} lignes (attendu : {expected_lines})")
+            tests_ok += 1
+        else:
+            print(f"  [KO] {actual_lines} lignes (attendu : {expected_lines})")
+            tests_ko += 1
+        
+        # Test 2 : CA total
+        print("\n[TEST 2] CA total")
+        expected_ca = 70568.60
+        actual_ca = df["ca_produit"].sum()
+        tolerance = 0.01
+        if abs(actual_ca - expected_ca) <= tolerance:
+            print(f"  [OK] {actual_ca:.2f} euros (attendu : {expected_ca:.2f})")
+            tests_ok += 1
+        else:
+            print(f"  [KO] {actual_ca:.2f} euros (attendu : {expected_ca:.2f})")
+            tests_ko += 1
+        
+        # Test 3 : Vins premium
+        print("\n[TEST 3] Vins premium")
+        expected_premium = 30
+        actual_premium = len(df[df["categorie"] == "premium"])
+        if actual_premium == expected_premium:
+            print(f"  [OK] {actual_premium} vins premium (attendu : {expected_premium})")
+            tests_ok += 1
+        else:
+            print(f"  [KO] {actual_premium} vins premium (attendu : {expected_premium})")
+            tests_ko += 1
+        
+        # Test 4 : Vins ordinaires
+        print("\n[TEST 4] Vins ordinaires")
+        expected_ordinaire = 684
+        actual_ordinaire = len(df[df["categorie"] == "ordinaire"])
+        if actual_ordinaire == expected_ordinaire:
+            print(f"  [OK] {actual_ordinaire} vins ordinaires (attendu : {expected_ordinaire})")
+            tests_ok += 1
+        else:
+            print(f"  [KO] {actual_ordinaire} vins ordinaires (attendu : {expected_ordinaire})")
+            tests_ko += 1
+        
+        # Test 5 : Absence de valeurs NULL dans CA
+        print("\n[TEST 5] Valeurs NULL dans CA")
+        null_ca = df["ca_produit"].isnull().sum()
+        if null_ca == 0:
+            print(f"  [OK] Aucune valeur NULL dans CA")
+            tests_ok += 1
+        else:
+            print(f"  [KO] {null_ca} valeurs NULL dans CA")
+            tests_ko += 1
+        
+        # Synthese
+        total_tests = tests_ok + tests_ko
+        success_rate = (tests_ok / total_tests * 100) if total_tests > 0 else 0
+        
+        print("\n" + "="*80)
+        print("SYNTHESE VALIDATION")
+        print("="*80)
+        print(f"Total tests  : {total_tests}")
+        print(f"Tests OK     : {tests_ok}")
+        print(f"Tests KO     : {tests_ko}")
+        print(f"Taux reussite: {success_rate:.1f}%")
+        
+        if tests_ko > 0:
+            print("\n[ERREUR] Validation echouee")
+            sys.exit(1)
+        else:
+            print("\n[OK] VALIDATION GLOBALE REUSSIE")
+            sys.exit(0)
+        EOF
+    
+    retry:
+      type: exponential
+      maxAttempt: 2
+      interval: PT5S
+      maxInterval: PT30S
+    
+    timeout: PT10M
+
+  # ==========================================================================
+  # GROUPE PARALLELE 2 : EXPORTS
+  # ==========================================================================
+  - id: parallel_exports
+    type: io.kestra.plugin.core.flow.Parallel
+    description: "Generation parallele des 3 exports (rapport CA, premium, ordinaires)"
+    
+    tasks:
+      # ========================================================================
+      # TACHE 9 : EXPORT RAPPORT CA
+      # ========================================================================
+      - id: task_09_export_rapport_ca
+        type: io.kestra.plugin.scripts.python.Commands
+        description: |
+          Generation du rapport CA en Excel avec 2 feuilles :
+          - Feuille 1 : CA par produit
+          - Feuille 2 : CA total
+        
+        warningOnStdErr: false
+        
+        inputFiles:
+          data_classified.parquet: "{{ outputs.task_07_classify_wines.outputFiles['data_classified.parquet'] }}"
+    
+        taskRunner:
+          type: io.kestra.plugin.scripts.runner.docker.Docker
+          image: python:3.14-slim
+        
+        beforeCommands:
+          - pip install --no-cache-dir pandas pyarrow openpyxl
+        
+        commands:
+          - |
+            python << 'EOF'
+            import pandas as pd
+            from datetime import datetime
+            
+            print("="*80)
+            print("EXPORT RAPPORT CA")
+            print("="*80)
+            
+            # Nom de fichier fixe (timestamp ajouté lors de l'upload S3)
+            filename = "rapport_ca.xlsx"
+            
+            # Chargement des donnees
+            df = pd.read_parquet("data_classified.parquet")
+            
+            # Preparation feuille 1 : CA par produit
+            df_ca = df[[
+                "product_id", "price", 
+                "total_sales", "ca_produit", "categorie", "z_score"
+            ]].sort_values("ca_produit", ascending=False)
+            
+            # Preparation feuille 2 : CA total
+            ca_total = df["ca_produit"].sum()
+            df_summary = pd.DataFrame({
+                "Indicateur": ["CA Total", "Nombre de produits", "CA moyen"],
+                "Valeur": [
+                    f"{ca_total:.2f} euros",
+                    len(df),
+                    f"{df['ca_produit'].mean():.2f} euros"
+                ]
+            })
+            
+            # Export Excel avec 2 feuilles
+            with pd.ExcelWriter(filename, engine="openpyxl") as writer:
+                df_ca.to_excel(writer, sheet_name="CA_par_produit", index=False)
+                df_summary.to_excel(writer, sheet_name="CA_total", index=False)
+            
+            print(f"\n[OK] Rapport CA genere : {filename}")
+            print(f"CA total : {ca_total:.2f} euros")
+            EOF
+    
+        outputFiles:
+          - "rapport_ca.xlsx"
+        
+        retry:
+          type: exponential
+          maxAttempt: 3
+          interval: PT10S
+          maxInterval: PT60S
+        
+        timeout: PT10M
+
+      # ========================================================================
+      # TACHE 10 : EXPORT VINS PREMIUM
+      # ========================================================================
+      - id: task_10_export_vins_premium
+        type: io.kestra.plugin.scripts.python.Commands
+        description: |
+          Export des vins premium (z-score > 2) en CSV
+          - 30 vins attendus
+        
+        warningOnStdErr: false
+        
+        inputFiles:
+          data_classified.parquet: "{{ outputs.task_07_classify_wines.outputFiles['data_classified.parquet'] }}"
+        
+        taskRunner:
+          type: io.kestra.plugin.scripts.runner.docker.Docker
+          image: python:3.14-slim
+        
+        beforeCommands:
+          - pip install --no-cache-dir pandas pyarrow
+        
+        commands:
+          - |
+            python << 'EOF'
+            import pandas as pd
+            from datetime import datetime
+            
+            print("="*80)
+            print("EXPORT VINS PREMIUM")
+            print("="*80)
+            
+            # Nom de fichier fixe (timestamp ajouté lors de l'upload S3)
+            filename = "vins_premium.csv"
+            
+            # Chargement des donnees
+            df = pd.read_parquet("data_classified.parquet")
+            
+            # Filtrage vins premium
+            df_premium = df[df["categorie"] == "premium"].copy()
+            df_premium = df_premium.sort_values("z_score", ascending=False)
+            
+            # Export CSV
+            df_premium.to_csv(filename, index=False, encoding="utf-8")
+            
+            print(f"\n[OK] Vins premium exportes : {filename}")
+            print(f"Nombre de vins premium : {len(df_premium)}")
+            print(f"CA premium : {df_premium['ca_produit'].sum():.2f} euros")
+            EOF
+        
+        outputFiles:
+          - "vins_premium.csv"
+        
+        retry:
+          type: exponential
+          maxAttempt: 3
+          interval: PT10S
+          maxInterval: PT60S
+        
+        timeout: PT10M
+
+      # ========================================================================
+      # TACHE 11 : EXPORT VINS ORDINAIRES
+      # ========================================================================
+      - id: task_11_export_vins_ordinaires
+        type: io.kestra.plugin.scripts.python.Commands
+        description: |
+          Export des vins ordinaires (z-score <= 2) en CSV
+          - 684 vins attendus
+        
+        warningOnStdErr: false
+        
+        inputFiles:
+          data_classified.parquet: "{{ outputs.task_07_classify_wines.outputFiles['data_classified.parquet'] }}"
+        
+        taskRunner:
+          type: io.kestra.plugin.scripts.runner.docker.Docker
+          image: python:3.14-slim
+        
+        beforeCommands:
+          - pip install --no-cache-dir pandas pyarrow
+        
+        commands:
+          - |
+            python << 'EOF'
+            import pandas as pd
+            from datetime import datetime
+            
+            print("="*80)
+            print("EXPORT VINS ORDINAIRES")
+            print("="*80)
+            
+            # Nom de fichier fixe (timestamp ajouté lors de l'upload S3)
+            filename = "vins_ordinaires.csv"
+            
+            # Chargement des donnees
+            df = pd.read_parquet("data_classified.parquet")
+            
+            # Filtrage vins ordinaires
+            df_ordinaire = df[df["categorie"] == "ordinaire"].copy()
+            df_ordinaire = df_ordinaire.sort_values("ca_produit", ascending=False)
+            
+            # Export CSV
+            df_ordinaire.to_csv(filename, index=False, encoding="utf-8")
+            
+            print(f"\n[OK] Vins ordinaires exportes : {filename}")
+            print(f"Nombre de vins ordinaires : {len(df_ordinaire)}")
+            print(f"CA ordinaire : {df_ordinaire['ca_produit'].sum():.2f} euros")
+            EOF
+        
+        outputFiles:
+          - "vins_ordinaires.csv"
+        
+        retry:
+          type: exponential
+          maxAttempt: 3
+          interval: PT10S
+          maxInterval: PT60S
+        
+        timeout: PT10M
+
+  # ==========================================================================
+  # TACHE 12 : UPLOAD DES EXPORTS VERS S3
+  # ==========================================================================
+  - id: task_12_upload_exports_to_s3
+    type: io.kestra.plugin.scripts.python.Commands
+    description: |
+      Upload des 3 fichiers d'export vers S3/EXPORTS/ dans un dossier horodate
+      Ne s'execute que si la validation (task_08) et les exports ont reussi
+    
+    warningOnStdErr: false
+    
+    env:
+      AWS_ACCESS_KEY_ID: "{{ secret('AWS_ACCESS_KEY_ID') }}"
+      AWS_SECRET_ACCESS_KEY: "{{ secret('AWS_SECRET_ACCESS_KEY') }}"
+      AWS_DEFAULT_REGION: "{{ vars.aws_region }}"
+    
+    inputFiles:
+      rapport_ca.xlsx: "{{ outputs.task_09_export_rapport_ca.outputFiles['rapport_ca.xlsx'] }}"
+      vins_premium.csv: "{{ outputs.task_10_export_vins_premium.outputFiles['vins_premium.csv'] }}"
+      vins_ordinaires.csv: "{{ outputs.task_11_export_vins_ordinaires.outputFiles['vins_ordinaires.csv'] }}"
+    
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker
+      image: python:3.14-slim
+    
+    beforeCommands:
+      - pip install --no-cache-dir boto3
+    
+    commands:
+      - |
+        python << 'EOF'
+        import boto3
+        from datetime import datetime
+        import os
+        from pathlib import Path
+        
+        print("="*80)
+        print("UPLOAD VERS S3/EXPORTS/")
+        print("="*80)
+        
+        # Configuration S3
+        s3_client = boto3.client("s3")
+        bucket = "bottleneck-pipeline-p10"
+        
+        # Dossier horodate
+        folder_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        s3_prefix = f"EXPORTS/{folder_timestamp}"
+        
+        print(f"\nDossier S3 : s3://{bucket}/{s3_prefix}/")
+        
+        # Recherche et upload des fichiers
+        uploaded_files = []
+        for file_path in Path(".").glob("*"):
+            if file_path.is_file() and (
+                file_path.suffix in [".xlsx", ".csv"]
+            ):
+                s3_key = f"{s3_prefix}/{file_path.name}"
+                s3_client.upload_file(str(file_path), bucket, s3_key)
+                uploaded_files.append(file_path.name)
+                print(f"  [OK] {file_path.name} -> s3://{bucket}/{s3_key}")
+        
+        print(f"\n[OK] {len(uploaded_files)} fichiers uploades vers S3")
+        EOF
+    
+    retry:
+      type: exponential
+      maxAttempt: 3
+      interval: PT10S
+      maxInterval: PT60S
+    
+    timeout: PT10M
+
+# ==============================================================================
+# TRIGGERS
+# ==============================================================================
+triggers:
+  - id: monthly_execution
+    type: io.kestra.plugin.core.trigger.Schedule
+    description: "Execution automatique le 15 de chaque mois a 9h (heure Paris)"
+    cron: "0 9 15 * *"
+    timezone: "Europe/Paris"
+
+# ==============================================================================
+# GESTION DES ERREURS
+# ==============================================================================
+errors:
+  - id: error_notification
+    type: io.kestra.plugin.notifications.mail.MailSend
+    description: "Notification email en cas d'echec du workflow"
+    
+    from: "kestra-bottleneck@company.com"
+    to:
+      - "data-team@company.com"
+      - "aymeric.bailleul@company.com"
+    
+    subject: "[ERREUR] Pipeline BottleNeck S3 - Echec de l'execution"
+    
+    htmlTextContent: |
+      <h2>[ERREUR] Echec du Pipeline BottleNeck S3</h2>
+      
+      <h3>Informations de l'execution</h3>
+      <ul>
+        <li><strong>Workflow :</strong> {{ flow.id }}</li>
+        <li><strong>Namespace :</strong> {{ flow.namespace }}</li>
+        <li><strong>Execution ID :</strong> {{ execution.id }}</li>
+        <li><strong>Date de debut :</strong> {{ execution.startDate }}</li>
+      </ul>
+      
+      <h3>Action requise</h3>
+      <p>Consulter les logs dans Kestra pour diagnostiquer le probleme</p>
+      
+      <hr>
+      <p><small>Pipeline BottleNeck S3 - Data Engineering Team</small></p>
