@@ -274,8 +274,8 @@
 - [X] Tester individuellement task_12 (upload S3)
 
 #### 5.2 Tests d'integration
-- [X] Executer le workflow complet de bout en bout
-- [X] Verifier que tous les fichiers de sortie sont generes
+- [X] Exécuter le workflow complet de bout en bout
+- [X] Vérifier que tous les fichiers de sortie sont générés
 - [X] Valider le contenu du rapport CA Excel (2 feuilles, 714 produits)
 - [X] Valider le contenu du fichier vins premium CSV (30 vins)
 - [X] Valider le contenu du fichier vins ordinaires CSV (684 vins)

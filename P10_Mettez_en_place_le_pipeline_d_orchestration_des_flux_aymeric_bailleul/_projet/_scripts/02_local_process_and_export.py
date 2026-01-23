@@ -72,12 +72,12 @@ print(f"Données chargées : {len(merged_data)} lignes")
 
 # Calcul du CA par produit
 print("\n[1.1] Calcul du CA par produit")
-merged_data['ca'] = merged_data['erp_price'] * merged_data['total_sales']
-print(f"  Formule : CA = erp_price × total_sales")
+merged_data['ca_produit'] = merged_data['price'] * merged_data['total_sales']
+print(f"  Formule : CA = price × total_sales")
 
 # Vérification des CA négatifs ou NULL
-nb_ca_null = merged_data['ca'].isna().sum()
-nb_ca_negatif = (merged_data['ca'] < 0).sum()
+nb_ca_null = merged_data['ca_produit'].isna().sum()
+nb_ca_negatif = (merged_data['ca_produit'] < 0).sum()
 print(f"  CA NULL : {nb_ca_null}")
 print(f"  CA negatifs : {nb_ca_negatif}")
 
@@ -85,7 +85,7 @@ if nb_ca_null > 0 or nb_ca_negatif > 0:
     print("  [ATTENTION] : Anomalies detectees dans les CA")
 
 # Calcul du CA total
-ca_total = merged_data['ca'].sum()
+ca_total = merged_data['ca_produit'].sum()
 print(f"\n[1.2] Calcul du CA total")
 print(f"  [OK] CA total : {ca_total:,.2f} €")
 
@@ -107,18 +107,18 @@ print("ETAPE 2/3 : CLASSIFICATION DES VINS (Z-SCORE)")
 print("-" * 80)
 
 # Calcul des statistiques
-mu = merged_data['erp_price'].mean()
-sigma = merged_data['erp_price'].std()
+mu = merged_data['price'].mean()
+sigma = merged_data['price'].std()
 
 print(f"\nStatistiques des prix :")
 print(f"  Moyenne (μ)      : {mu:.2f} €")
 print(f"  Écart-type (σ)   : {sigma:.2f} €")
-print(f"  Prix min         : {merged_data['erp_price'].min():.2f} €")
-print(f"  Prix max         : {merged_data['erp_price'].max():.2f} €")
+print(f"  Prix min         : {merged_data['price'].min():.2f} €")
+print(f"  Prix max         : {merged_data['price'].max():.2f} €")
 
 # Calcul du z-score
 print(f"\n[2.1] Calcul du z-score")
-merged_data['z_score'] = (merged_data['erp_price'] - mu) / sigma
+merged_data['z_score'] = (merged_data['price'] - mu) / sigma
 print(f"  Formule : z = (prix - μ) / σ")
 
 # Vérification des z-scores invalides
@@ -141,8 +141,8 @@ print(f"  [OK] Vins ordinaires : {nb_ordinaire}")
 
 # Statistiques par catégorie
 print(f"\n[2.3] Chiffre d'affaires par catégorie")
-ca_premium = merged_data[merged_data['categorie'] == 'premium']['ca'].sum()
-ca_ordinaire = merged_data[merged_data['categorie'] == 'ordinaire']['ca'].sum()
+ca_premium = merged_data[merged_data['categorie'] == 'premium']['ca_produit'].sum()
+ca_ordinaire = merged_data[merged_data['categorie'] == 'ordinaire']['ca_produit'].sum()
 
 print(f"  CA premium    : {ca_premium:,.2f} € ({ca_premium/ca_total*100:.1f}%)")
 print(f"  CA ordinaire  : {ca_ordinaire:,.2f} € ({ca_ordinaire/ca_total*100:.1f}%)")
@@ -165,15 +165,22 @@ rapport_ca_path = exports_path / f"{timestamp}_rapport_ca.xlsx"
 
 with pd.ExcelWriter(rapport_ca_path, engine='openpyxl') as writer:
     # Feuille 1 : CA par produit
-    # Utiliser post_title au lieu de product_name
     ca_par_produit = merged_data[[
-        'product_id', 'post_title', 'erp_price', 'total_sales', 'ca'
-    ]].sort_values('ca', ascending=False)
+        'product_id', 'price', 'total_sales', 'ca_produit', 'categorie', 'z_score'
+    ]].sort_values('ca_produit', ascending=False)
     
     ca_par_produit.to_excel(writer, sheet_name='CA par produit', index=False)
     
-    # Feuille 2 : CA total
-    ca_total_df = pd.DataFrame({'ca_total': [ca_total]})
+    # Feuille 2 : CA total et statistiques
+    ca_total_data = {
+        'Indicateur': ['CA Total', 'Nombre de produits', 'CA moyen'],
+        'Valeur': [
+            f"{ca_total:.2f} euros",
+            len(merged_data),
+            f"{merged_data['ca_produit'].mean():.2f} euros"
+        ]
+    }
+    ca_total_df = pd.DataFrame(ca_total_data)
     ca_total_df.to_excel(writer, sheet_name='CA total', index=False)
 
 file_size = rapport_ca_path.stat().st_size / 1024
@@ -186,7 +193,7 @@ print("\n[3.2] Export vins_premium.csv")
 vins_premium_path = exports_path / f"{timestamp}_vins_premium.csv"
 
 vins_premium = merged_data[merged_data['categorie'] == 'premium'][[
-    'product_id', 'post_title', 'erp_price', 'total_sales', 'ca', 'z_score'
+    'product_id', 'price', 'total_sales', 'ca_produit', 'z_score'
 ]].sort_values('z_score', ascending=False)
 
 vins_premium.to_csv(vins_premium_path, index=False, encoding='utf-8')
@@ -200,8 +207,8 @@ print("\n[3.3] Export vins_ordinaires.csv")
 vins_ordinaires_path = exports_path / f"{timestamp}_vins_ordinaires.csv"
 
 vins_ordinaires = merged_data[merged_data['categorie'] == 'ordinaire'][[
-    'product_id', 'post_title', 'erp_price', 'total_sales', 'ca', 'z_score'
-]].sort_values('ca', ascending=False)
+    'product_id', 'price', 'total_sales', 'ca_produit', 'z_score'
+]].sort_values('ca_produit', ascending=False)
 
 vins_ordinaires.to_csv(vins_ordinaires_path, index=False, encoding='utf-8')
 

@@ -93,11 +93,6 @@ print(f"  Doublons : {nb_duplicates_erp}")
 # Nettoyage
 erp_clean = erp_raw.dropna().drop_duplicates()
 
-# Renommer les colonnes pour éviter les conflits
-erp_clean = erp_clean.rename(columns={
-    'price': 'erp_price'
-})
-
 print(f"  [OK] Apres nettoyage : {len(erp_clean)} lignes")
 
 # Stockage dans DuckDB
@@ -119,6 +114,10 @@ print(f"  Doublons : {nb_duplicates_liaison}")
 
 # Nettoyage (seulement dédoublonnage, on garde les NULL sur id_web)
 liaison_clean = liaison_raw.drop_duplicates()
+
+# Conversion id_web en string pour éviter les erreurs de type mixte
+liaison_clean['id_web'] = liaison_clean['id_web'].astype(str)
+
 print(f"  [OK] Apres nettoyage : {len(liaison_clean)} lignes")
 
 # Stockage dans DuckDB
@@ -134,20 +133,22 @@ print(f"  Lignes chargées : {len(web_raw)}")
 
 # Statistiques brutes
 nb_total = len(web_raw)
-nb_products = len(web_raw[web_raw['post_type'] == 'product'])
-print(f"  Lignes avec post_type='product' : {nb_products}/{nb_total}")
+print(f"  Lignes brutes : {nb_total}")
 
-# Filtrage sur post_type = 'product'
-web_filtered = web_raw[web_raw['post_type'] == 'product'].copy()
-
-# Suppression des NULL sur sku
-nb_null_sku = web_filtered['sku'].isna().sum()
+# Suppression des NULL sur sku (sans filtrage post_type)
+nb_null_sku = web_raw['sku'].isna().sum()
 print(f"  NULL sur sku : {nb_null_sku}")
-web_no_null = web_filtered.dropna(subset=['sku'])
+web_no_null = web_raw.dropna(subset=['sku'])
+print(f"  Apres suppression NULL : {len(web_no_null)} lignes")
 
-# Dédoublonnage intelligent (garder les lignes avec le plus de ventes)
-web_no_null_sorted = web_no_null.sort_values('total_sales', ascending=False)
-web_clean = web_no_null_sorted.drop_duplicates(subset=['sku'], keep='first')
+# Tri par post_type pour prioriser 'product' lors du dédoublonnage
+# post_type='product' sera gardé en priorité sur 'attachment'
+web_sorted = web_no_null.sort_values('post_type', ascending=False)
+
+# Dédoublonnage sur sku (garde la première occurrence = product)
+web_clean = web_sorted.drop_duplicates(subset=['sku'], keep='first').copy()
+# Conversion sku en string pour éviter les erreurs de type mixte
+web_clean['sku'] = web_clean['sku'].astype(str)
 print(f"  [OK] Apres nettoyage : {len(web_clean)} lignes")
 
 # Stockage dans DuckDB
@@ -184,19 +185,25 @@ print(f"  Lignes avec id_web NULL : {nb_null}")
 merged_1_filtered = merged_1.dropna(subset=['id_web'])
 print(f"  [OK] Apres filtrage : {len(merged_1_filtered)} lignes")
 
+# Conversion pour jointure (garder en string avec strip)
+print("\n[3.3] Conversion et nettoyage des clés de jointure")
+merged_1_filtered['id_web'] = merged_1_filtered['id_web'].astype(str).str.strip()
+web_df['sku'] = web_df['sku'].astype(str).str.strip()
+print(f"  [OK] Conversions effectuees")
+
 # Jointure 2 : (ERP+LIAISON) + WEB
-print("\n[3.3] Jointure (ERP+LIAISON) + WEB sur id_web = sku")
+print("\n[3.4] Jointure (ERP+LIAISON) + WEB sur id_web = sku")
 merged_final = pd.merge(
     merged_1_filtered,
-    web_df,
+    web_df[['sku', 'total_sales']],
     left_on='id_web',
     right_on='sku',
-    how='inner'  # Changed from 'left' to 'inner' to avoid NULL total_sales
+    how='inner'
 )
 print(f"  Résultat jointure finale : {len(merged_final)} lignes")
 
 # Vérification et suppression des NULL sur total_sales (sécurité)
-print("\n[3.4] Nettoyage final des données")
+print("\n[3.5] Nettoyage final des données")
 nb_null_before = merged_final['total_sales'].isna().sum()
 if nb_null_before > 0:
     print(f"  Suppression de {nb_null_before} lignes avec total_sales NULL")
@@ -206,7 +213,7 @@ else:
     print(f"  [OK] Aucune valeur NULL sur total_sales")
 
 # Vérification des colonnes essentielles
-essential_cols = ['product_id', 'erp_price', 'total_sales']
+essential_cols = ['product_id', 'price', 'total_sales']
 all_ok = True
 for col in essential_cols:
     nb_null = merged_final[col].isna().sum()
@@ -218,7 +225,7 @@ if all_ok:
     print(f"[OK] Fusion terminee : {len(merged_final)} lignes propres avec toutes les colonnes essentielles")
 
 # Stockage dans DuckDB
-print("\n[3.5] Stockage dans DuckDB")
+print("\n[3.6] Stockage dans DuckDB")
 conn.execute("DROP TABLE IF EXISTS merged_data_final")
 conn.execute("CREATE TABLE merged_data_final AS SELECT * FROM merged_final")
 

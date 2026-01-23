@@ -212,9 +212,9 @@ def main():
         print("\n[Test 7] Verification CA positifs et non NULL")
         total_tests += 1
         try:
-            # Vérifier dans wines_classified (qui contient les CA calculés)
-            ca_negatifs = conn.execute("SELECT COUNT(*) FROM wines_classified WHERE ca < 0").fetchone()[0]
-            ca_null = conn.execute("SELECT COUNT(*) FROM wines_classified WHERE ca IS NULL").fetchone()[0]
+            # Vérifier dans wines_classified (qui contient les CA calculés avec ca_produit)
+            ca_negatifs = conn.execute("SELECT COUNT(*) FROM wines_classified WHERE ca_produit < 0").fetchone()[0]
+            ca_null = conn.execute("SELECT COUNT(*) FROM wines_classified WHERE ca_produit IS NULL").fetchone()[0]
             
             assert ca_negatifs == 0, f"CA negatifs detectes : {ca_negatifs}"
             assert ca_null == 0, f"CA NULL detectes : {ca_null}"

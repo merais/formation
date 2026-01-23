@@ -44,48 +44,6 @@
 
 ## Architecture
 
-### Vue d'ensemble - Architecture AWS S3
-
-```
-┌────────────────────────────────────────────────────────┐
-│           AWS S3 - bottleneck-pipeline-p10             │
-│           Région: eu-west-3 (Paris)                    │
-│  ─────────────────────────────────────────────────────  │
-│  s3://bottleneck-pipeline-p10/                         │
-│  ├─ RAW/                                               │
-│  │  ├─ fichier_erp.xlsx      (825 lignes brutes)      │
-│  │  ├─ fichier_liaison.xlsx  (825 lignes brutes)      │
-│  │  └─ fichier_web.xlsx      (1513 lignes brutes)     │
-│  │                                                      │
-│  └─ EXPORTS/                                           │
-│     └─ YYYYMMDD_HHMMSS/                                │
-│        ├─ rapport_ca.xlsx                              │
-│        ├─ vins_premium.csv                             │
-│        └─ vins_ordinaires.csv                          │
-└────────────┬───────────────────────────────────────────┘
-             ▼
-┌────────────────────────────────────────────────────────┐
-│  Kestra - Workflow bottleneck_pipeline_s3              │
-│  ─────────────────────────────────────────────────────  │
-│  Tâche 1: Download depuis S3/RAW/                     │
-│           ↓                                            │
-│  Tâches 2-4: Nettoyage parallèle (ERP, LIAISON, WEB)  │
-│           ↓                                            │
-│  Tâche 5: Fusion des données (714 lignes)             │
-│           ↓                                            │
-│  Tâche 6: Calcul CA (70 568,60 €)                     │
-│           ↓                                            │
-│  Tâche 7: Classification z-score (30 premium)         │
-│           ↓                                            │
-│  Tâches 8-11: Exports + Validation en parallèle       │
-│           ↓                                            │
-│  Tâche 12: Upload vers S3/EXPORTS/                    │
-│                                                         │
-│  Parallélisme: 2 groupes (nettoyage + exports)        │
-│  Performance: ~2 minutes (40% plus rapide)            │
-└────────────────────────────────────────────────────────┘
-```
-
 ### Architecture détaillée Kestra
 
 **12 tâches orchestrées avec 2 groupes parallèles:**
@@ -246,45 +204,37 @@ aws s3 ls s3://bottleneck-pipeline-p10/
 #### Tâche 1: Download depuis S3
 - **Input**: s3://bottleneck-pipeline-p10/RAW/
 - **Output**: 3 fichiers Excel téléchargés
-- **Durée**: ~5 secondes
 
 #### Groupe parallèle: Nettoyage (tasks 2-4)
 - **task_02_clean_erp**: 825 lignes (validées) → erp_clean.parquet
 - **task_03_clean_liaison**: 825 lignes (validées) → liaison_clean.parquet
 - **task_04_clean_web**: 1428 → 714 lignes (validées) → web_clean.parquet
-- **Durée**: ~14 secondes (simultané)
 
 #### Tâche 5: Fusion
 - **Input**: 3 fichiers Parquet
 - **Output**: merged_data.parquet (714 lignes)
-- **Durée**: ~13 secondes
 
 #### Tâche 6: Calcul CA
 - **Input**: merged_data.parquet
 - **Output**: data_with_ca.parquet (CA: 70 568,60 €)
-- **Durée**: ~11 secondes
 
 #### Tâche 7: Classification
 - **Input**: data_with_ca.parquet
 - **Output**: data_classified.parquet (30 premium, 684 ordinaires)
-- **Durée**: ~13 secondes
 
 #### Tâche 8: Validation
 - **Input**: data_classified.parquet
 - **Tests**: 5 tests automatisés (714 lignes, CA, premium, ordinaires)
 - **Blocage**: allowFailure: false → arrête le workflow si échec
-- **Durée**: ~13 secondes
 
 #### Groupe parallèle: Exports (tasks 9-11)
 - **task_09_export_rapport_ca**: Excel 2 feuilles
 - **task_10_export_vins_premium**: CSV 30 vins
 - **task_11_export_vins_ordinaires**: CSV 684 vins
-- **Durée**: ~13 secondes (simultané)
 
 #### Tâche 12: Upload vers S3
 - **Input**: 3 fichiers (xlsx, 2x csv)
 - **Output**: s3://bottleneck-pipeline-p10/EXPORTS/YYYYMMDD_HHMMSS/
-- **Durée**: ~10 secondes
 
 ### Planification automatique
 
@@ -436,7 +386,7 @@ triggers:
 
 ---
 
-## Resultats attendus
+## Résultats attendus
 
 ### Métriques clés
 
