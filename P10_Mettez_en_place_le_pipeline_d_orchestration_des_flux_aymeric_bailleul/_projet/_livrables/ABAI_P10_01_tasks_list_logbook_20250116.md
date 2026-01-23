@@ -3,7 +3,7 @@
 **Auteur** : Aymeric Bailleul  
 **Date de début** : 15/01/2026  
 **Date de fin prévue** : 16/02/2026
-**Date de soutenance souhaitable** : Entre le 09/02/2026 et le 13/02/2026
+**Date de soutenance souhaitable** : Entre le 09/02/2026 et le 13/02/2026 (ou avant si possible)
 
 ---
 
@@ -13,7 +13,7 @@
 
 #### 1.1 Analyse des données sources
 - [X] Explorer les fichiers erp.xlsx, web.xlsx, liaison.xlsx dans _projet/sources/
-- [X] Analyser la structure de chaque fichier (colonnes, types de données)
+- [X] Analyser la structure de chaque fichier *(colonnes, types de données)*
 - [X] Identifier les clés primaires et les relations entre les tables
 - [X] Repérer les valeurs manquantes et doublons potentiels
 - [X] Documenter les caractéristiques de chaque source : **ABAI_P10_02_analyse_donnees_sources.md**
@@ -21,8 +21,8 @@
 #### 1.2 Compréhension du processus métier
 - [X] Comprendre le processus de réconciliation via le fichier liaison
 - [X] Identifier les règles métier pour le calcul du chiffre d'affaires
-- [X] Comprendre la méthode de classification des vins (z-score > 2)
-- [X] Définir les critères de qualité des données : **ABAI_P10_03_processus_metier.md**
+- [X] Comprendre la méthode de classification des vins *(z-score > 2)*
+- [X] Définir et documenter les critères de qualité des données : **ABAI_P10_03_processus_metier.md**
 
 #### 1.3 Configuration de l'environnement de développement
 - [X] Installer Docker Desktop
@@ -34,7 +34,7 @@
     --> Accessible sur `http://localhost:8080`
 - [X] Prendre des captures d'écran de l'installation de Kestra
 - [X] Configurer l'environnement Python Poetry avec les dépendances nécessaires
-    --> Poetry 2.2.1 - Python 3.14.0 - pandas, openpyxl, pyarrow, boto3, black, ruff, pytest installés
+    --> Poetry 2.2.1 - Python 3.14.0 - pandas, openpyxl, boto3, duckdb, python-dotenv installés
 
 ---
 
@@ -42,7 +42,7 @@
 
 #### 2.1 Conception du diagramme de flux (Data lineage)
 - [X] Identifier toutes les tâches de transformation nécessaires
-    --> **12 tâches Kestra** implémentées dans bottleneck_pipeline_s3.yaml
+    --> **12 tâches Kestra** a implémenter dans bottleneck_pipeline_s3.yaml
     --> Plan initial : 21 tâches détaillées dans **ABAI_P10_03_conception_data_lineage.md**
 - [X] Lister les tâches de nettoyage (suppression valeurs manquantes, dédoublonnage)
     --> **3 tâches parallèles** : clean_erp, clean_liaison, clean_web (tasks 2-4)
