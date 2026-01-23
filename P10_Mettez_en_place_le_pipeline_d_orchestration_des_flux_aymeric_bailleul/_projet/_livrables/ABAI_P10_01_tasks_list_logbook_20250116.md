@@ -42,8 +42,8 @@
 
 #### 2.1 Conception du diagramme de flux (Data lineage)
 - [X] Identifier toutes les tâches de transformation nécessaires
-    --> **12 tâches Kestra** a implémenter dans bottleneck_pipeline_s3.yaml
-    --> Plan initial : 21 tâches détaillées dans **ABAI_P10_03_conception_data_lineage.md**
+    --> 21 tâches détaillées dans **ABAI_P10_03_conception_data_lineage.md**
+    --> **12 tâches Kestra final** a implémenter dans bottleneck_pipeline_s3.yaml
 - [X] Lister les tâches de nettoyage (suppression valeurs manquantes, dédoublonnage)
     --> **3 tâches parallèles** : clean_erp, clean_liaison, clean_web (tasks 2-4)
 - [X] Lister les tâches de fusion (jointures via fichier liaison)
@@ -68,7 +68,7 @@
 
 ---
 
-### PHASE 3 : DEVELOPPEMENT DES SCRIPTS
+### PHASE 3 : DEVELOPPEMENT DES SCRIPTS LOCAL
 
 #### 3.1 Script de nettoyage et fusion des donnees
 - [X] **01_clean_and_merge.py** : Nettoyage complet et fusion des 3 sources (100% local)
@@ -81,13 +81,13 @@
         - Chargement fichier_erp.xlsx
         - Suppression valeurs manquantes + dedoublonnage
         - Resultat : 825 lignes
-        - Stockage : Fichier Parquet erp_clean.parquet
+        - Stockage : Table DuckDB erp_clean_final
     - **Etape 3 - Nettoyage LIAISON** :
         - Chargement fichier_liaison.xlsx
         - /!\ NULL conserves sur id_web (91 lignes) - Filtres apres jointure
         - Dedoublonnage uniquement
         - Resultat : 825 lignes
-        - Stockage : Fichier Parquet liaison_clean.parquet
+        - Stockage : Table DuckDB liaison_clean_final
     - **Etape 4 - Nettoyage WEB** :
         - Chargement fichier_web.xlsx (1513 lignes)
         - Suppression NULL sur sku (85 NULL)
@@ -95,31 +95,32 @@
         - Tri descendant sur post_type pour prioriser 'product'
         - Dedoublonnage sur sku (garde first = product en priorite)
         - Resultat final : 714 lignes (que des products)
-        - Stockage : Fichier Parquet web_clean.parquet
+        - Stockage : Table DuckDB web_clean_final
     - **Etape 5 - Jointure ERP + LIAISON** :
         - Jointure sur product_id (825 lignes)
         - Suppression NULL sur id_web (734 lignes)
     - **Etape 6 - Jointure finale avec WEB** :
         - Jointure INNER sur id_web = sku
         - Resultat : 714 lignes avec erp_price et total_sales
-        - Stockage : Fichier Parquet merged_data.parquet
-    - **Resultat global** : Fichier merged_data.parquet (714 lignes) pret pour traitement
+        - Stockage : Table DuckDB merged_data_final
+    - **Resultat global** : Table merged_data_final (714 lignes) dans DuckDB, pret pour traitement
     - **Architecture** : 3 etapes (Verification -> Nettoyage -> Fusion)
 
 #### 3.2 Script de traitement, classification et export
 - [X] **02_process_and_export.py** : Calcul CA, classification et exports (100% local)
     - Commande : `cd _projet && poetry run python _scripts/02_process_and_export.py`
     - **Etape 1 - Calcul CA** :
+        - Lecture depuis Table DuckDB merged_data_final
         - Calcul CA par produit : erp_price x total_sales
         - Calcul CA total : SUM(CA par produit)
         - Valeur obtenue : 70 568,60 € (OK)
-        - Stockage : Fichier Parquet data_with_ca.parquet
+        - Stockage : Table DuckDB data_with_ca
     - **Etape 2 - Classification des vins** :
         - Calcul moyenne (mu = 32.49€) et ecart-type (sigma = 27.81€)
         - Calcul z-score : (price - mu) / sigma
         - Classification : premium si z-score > 2, sinon ordinaire
         - Resultat : 30 vins premium, 684 vins ordinaires
-        - Stockage : Fichier Parquet data_classified.parquet
+        - Stockage : Table DuckDB data_classified
     - **Etape 3 - Export local** :
         - Creation rapport_ca.xlsx (2 feuilles)
         - Creation vins_premium.csv (30 vins, CA 6 884,40€)
@@ -184,7 +185,7 @@
 - [X] Encoder les credentials AWS en BASE64 et stocker dans .env
 - [X] Configurer docker-compose.yml pour lire .env via ${SECRET_AWS_ACCESS_KEY_ID}
 - [X] Tester la connexion S3 depuis Kestra
-- [X] Uploader les fichiers sources dans S3/RAW/
+- [X] Uploader les fichiers sources dans S3/RAW/ *(gràce au script 04 dans notre cas)*
 
 #### 4.3 Implementation des taches Kestra
 - [X] **Tache 1 : Download S3** (io.kestra.plugin.aws.s3.Downloads)
@@ -216,7 +217,7 @@
 - [X] **Tache 8 : Validation** (io.kestra.plugin.scripts.python.Commands)
     - 5 tests automatises globaux (allowFailure: false)
     - Test 1 : 714 lignes fusionnees
-    - Test 2 : CA total 70568.60€ (tolerance 0.01€)
+    - Test 2 : CA total 70568.60€
     - Test 3 : 30 vins premium
     - Test 4 : 684 vins ordinaires
     - Test 5 : 0 valeurs NULL dans CA
@@ -244,7 +245,7 @@
 - [X] Configurer retry sur chaque tache (maxAttempt: 3, backoff exponentiel)
 - [X] Configurer timeout 10 minutes par tache
 - [X] Configurer allowFailure: false sur task_08 (validation bloquante)
-- [X] Ajouter une tache d'alerte email (SMTP non configure)
+- [ ] Ajouter une tache d'alerte email (SMTP non configure)
 - [X] Tester les scenarios d'erreur (corrections multiples)
 
 #### 4.8 Validation finale
@@ -320,8 +321,7 @@
 - [ ] Slide 11 : Planification et automatisation
 - [ ] Slide 12 : Gestion des erreurs et résilience
 - [ ] Slide 13 : Résultats et validation des tests
-- [ ] Slide 14 : Pistes d'amélioration
-- [ ] Slide 15 : Conclusion et questions
+- [ ] Slide 14 : Conclusion et questions
 
 #### 6.3 Préparation de la démonstration
 - [ ] Préparer la démonstration du workflow Kestra (3 minutes max)
