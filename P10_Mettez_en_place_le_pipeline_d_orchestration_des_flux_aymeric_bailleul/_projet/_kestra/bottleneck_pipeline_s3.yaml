@@ -905,10 +905,26 @@ triggers:
 # ==============================================================================
 # GESTION DES ERREURS
 # ==============================================================================
+# Cette section configure l'envoi automatique d'un email en cas d'echec du workflow.
+# Le mail contient :
+# - Les informations de l'execution (ID, dates, statut)
+# - Les details de l'erreur (tache en echec, message d'erreur)
+# - Un lien direct vers l'execution dans Kestra
+# 
+# L'email est envoye a :
+# - data-team@company.com (equipe technique)
+# - aymeric.bailleul@company.com (responsable projet)
+# 
+# IMPORTANT : Configurer les parametres SMTP dans le fichier .env :
+# KESTRA_PLUGINS_MAIL_SMTP_HOST=smtp.gmail.com
+# KESTRA_PLUGINS_MAIL_SMTP_PORT=587
+# KESTRA_PLUGINS_MAIL_SMTP_USERNAME=votre-email@gmail.com
+# KESTRA_PLUGINS_MAIL_SMTP_PASSWORD=votre-mot-de-passe-application
+# ==============================================================================
 errors:
   - id: error_notification
     type: io.kestra.plugin.notifications.mail.MailSend
-    description: "Notification email en cas d'echec du workflow"
+    description: "Notification email en cas d'echec du workflow avec details de l'erreur"
     
     from: "kestra-bottleneck@company.com"
     to:
@@ -926,10 +942,22 @@ errors:
         <li><strong>Namespace :</strong> {{ flow.namespace }}</li>
         <li><strong>Execution ID :</strong> {{ execution.id }}</li>
         <li><strong>Date de debut :</strong> {{ execution.startDate }}</li>
+        <li><strong>Date de fin :</strong> {{ execution.endDate }}</li>
+        <li><strong>Statut :</strong> {{ execution.state.current }}</li>
       </ul>
       
+      <h3>Details de l'erreur</h3>
+      <div style="background-color: #fee; border-left: 4px solid #f00; padding: 10px; margin: 10px 0;">
+        <p><strong>Tache en echec :</strong> {{ taskrun.task.id ?? 'N/A' }}</p>
+        <p><strong>Message d'erreur :</strong></p>
+        <pre style="background-color: #fafafa; padding: 10px; overflow-x: auto;">{{ taskrun.outputs.exitCode ?? 'N/A' }}
+      {{ taskrun.outputs.vars ?? 'Aucun detail disponible' }}</pre>
+      </div>
+      
       <h3>Action requise</h3>
-      <p>Consulter les logs dans Kestra pour diagnostiquer le probleme</p>
+      <p>1. Consulter les logs detailles dans Kestra : <a href="http://localhost:8080/ui/flows/company.bottleneck/bottleneck_pipeline_s3/executions/{{ execution.id }}">Voir l'execution</a></p>
+      <p>2. Verifier les donnees sources dans S3/RAW/</p>
+      <p>3. Relancer manuellement le workflow apres correction</p>
       
       <hr>
-      <p><small>Pipeline BottleNeck S3 - Data Engineering Team</small></p>
+      <p><small>Pipeline BottleNeck S3 - Data Engineering Team | Envoye automatiquement par Kestra</small></p>

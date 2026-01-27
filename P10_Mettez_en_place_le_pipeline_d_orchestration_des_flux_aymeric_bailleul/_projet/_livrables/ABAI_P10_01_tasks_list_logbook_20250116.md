@@ -308,19 +308,18 @@
 - [X] Rédiger le README avec les instructions d'installation et d'utilisation
 
 #### 6.2 Création du support de présentation
-- [ ] Slide 1 : Contexte de la mission BottleNeck
-- [ ] Slide 2 : Objectifs et enjeux métier
-- [ ] Slide 3 : Architecture globale (logigramme Draw.io)
-- [ ] Slide 4 : Présentation de Kestra (vulgarisation)
-- [ ] Slide 5 : Installation et prise en main de Kestra (captures)
-- [ ] Slide 6 : Topologie du workflow Kestra
-- [ ] Slide 7 : Détail des tâches de nettoyage et tests
-- [ ] Slide 8 : Détail des tâches de fusion et agrégation
-- [ ] Slide 9 : Classification des vins (z-score)
-- [ ] Slide 10 : Extractions et livrables
-- [ ] Slide 11 : Planification et automatisation
-- [ ] Slide 12 : Gestion des erreurs et résilience
-- [ ] Slide 13 : Résultats et validation des tests
+- [X] Slide 2 : Contexte et enjeux métier
+- [X] Slide 3 : Objectif et KPI 
+- [X] Slide 4 : Présentation de Kestra (vulgarisation)
+- [X] Slide 5 : Arichitecture du pipeline
+- [X] Slide 6 : Détail des tâches de nettoyage et tests
+- [X] Slide 7 : Détail des tâches de fusion et agrégation
+- [X] Slide 8 : Résumé des jointures
+- [X] Slide 9 : Classification des vins (z-score)
+- [X] Slide 10 : Histogramme des prix
+- [X] Slide 11 : Extractions et livrables
+- [X] Slide 12 : Planification et automatisation
+- [ ] Slide 13 : Gestion des erreurs et résilience
 - [ ] Slide 14 : Conclusion et questions
 
 #### 6.3 Préparation de la démonstration
