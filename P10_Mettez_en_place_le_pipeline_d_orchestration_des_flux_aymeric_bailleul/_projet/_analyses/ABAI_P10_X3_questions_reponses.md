@@ -1,10 +1,8 @@
-# 🎯 Questions/Réponses - Soutenance P10 BottleNeck
-
-**Date** : 27/01/2026 | **Projet** : Pipeline d'orchestration BottleNeck
+# Questions/Réponses - Soutenance P10 BottleNeck
 
 ---
 
-## 📋 MÉTIER & CONTEXTE
+## MÉTIER & CONTEXTE
 
 ### **Q1 : Pourquoi réconcilier 3 sources de données ?**
 **R** : ERP (stock/prix) + Web (ventes) + Liaison (correspondances) ne communiquent pas. Processus manuel 4h/mois → automatisé en 2 min. Gain 99% + 0 erreur.
@@ -17,7 +15,7 @@
 
 ---
 
-## 🏗️ ARCHITECTURE & TECHNIQUE
+## ARCHITECTURE & TECHNIQUE
 
 ### **Q4 : Pourquoi Kestra plutôt qu'Airflow ?**
 **R** : YAML déclaratif vs code Python. Retry exponential natif. UI moderne avec Gantt temps réel. Courbe d'apprentissage plus rapide.
@@ -39,7 +37,7 @@
 
 ---
 
-## 🧪 TESTS & VALIDATION
+## TESTS & VALIDATION
 
 ### **Q8 : Les 10 tests automatiques ?**
 **R** : 
@@ -54,7 +52,7 @@
 
 ---
 
-## 🔄 DÉPLOIEMENT & PRODUCTION
+## DÉPLOIEMENT & PRODUCTION
 
 ### **Q11 : Déploiement en production ?**
 **R** : Docker Compose (Kestra + PostgreSQL). Credentials AWS encodés BASE64 dans .env. Trigger cron "0 9 15 * *" (9h le 15/mois).
@@ -67,7 +65,7 @@
 
 ---
 
-## 📊 DONNÉES & ANALYSE
+## DONNÉES & ANALYSE
 
 ### **Q14 : Pourquoi 1428 lignes Web mais 714 uniques ?**
 **R** : WooCommerce : product (714) + product_variation (714). Tri post_type descendant + dédoublonnage keep='first' → 714 products.
@@ -80,7 +78,7 @@
 
 ---
 
-## ⚙️ CHOIX TECHNIQUES
+## CHOIX TECHNIQUES
 
 ### **Q17 : Python/Pandas vs SQL pur ?**
 **R** : Pandas : flexibilité nettoyage, z-score natif, intégration S3/Kestra. SQL adapté si données déjà en BDD. Compromis : dev DuckDB + prod Pandas.
@@ -99,7 +97,7 @@
 
 ---
 
-## 📚 DIFFICULTÉS RENCONTRÉES
+## DIFFICULTÉS RENCONTRÉES
 
 ### **Q21 : Principales difficultés ?**
 **R** : 
@@ -111,5 +109,3 @@
 **Leçons** : Explorer données avant automatiser. Tester mini-datasets. Logger abondamment.
 
 ---
-
-**Auteur** : Aymeric Bailleul | **Projet** : P10 BottleNeck | **Date** : 27/01/2026
