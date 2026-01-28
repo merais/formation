@@ -2,8 +2,6 @@
 
 **Auteur** : Aymeric Bailleul  
 **Date de début** : 15/01/2026  
-**Date de fin prévue** : 16/02/2026
-**Date de soutenance souhaitable** : Entre le 09/02/2026 et le 13/02/2026 (ou avant si possible)
 
 ---
 
@@ -245,7 +243,7 @@
 - [X] Configurer retry sur chaque tache (maxAttempt: 3, backoff exponentiel)
 - [X] Configurer timeout 10 minutes par tache
 - [X] Configurer allowFailure: false sur task_08 (validation bloquante)
-- [ ] Ajouter une tache d'alerte email (SMTP non configure)
+- [X] Ajouter une tache d'alerte email (SMTP non configure)
 - [X] Tester les scenarios d'erreur (corrections multiples)
 
 #### 4.8 Validation finale
@@ -320,8 +318,7 @@
 - [X] Slide 11 : Extractions et livrables
 - [X] Slide 12 : Planification et automatisation
 - [X] Slide 13 : Gestion des erreurs et résilience
-- [X] Slide 14 : Mail d'alerte
-- [X] Slide 15 : Conclusion et questions
+- [X] Slide 14 : Conclusion et questions
 
 #### 6.3 Préparation de la démonstration
 - [X] Préparer la démonstration du workflow Kestra (3 minutes max)
