@@ -85,18 +85,32 @@
 
 
 ### 1.4 - Configuration des cles API
-- [ ] Creer un compte Mistral AI (https://mistral.ai)
-- [ ] Obtenir la cle API Mistral
-- [ ] Creer le fichier `.env` avec la cle API
-- [ ] Verifier l'acces a l'API Mistral
+- [X] Creer un compte Mistral AI (https://mistral.ai)
+- [X] Obtenir la cle API Mistral
+- [X] Creer le fichier `.env` avec la cle API
+
+**Date de realisation:** 06/02/2026  
+**Notes:**
+- Compte Mistral AI cree et cle API obtenue
+- Fichier .env configure avec MISTRAL_API_KEY
+
 
 ### 1.5 - Tests de l'environnement
-- [ ] Creer un script de test `tests/test_environment.py`
-- [ ] Tester l'import de LangChain
-- [ ] Tester l'import de Faiss
-- [ ] Tester l'import de Mistral
-- [ ] Tester l'import de Pandas
-- [ ] Executer le script de test et verifier que tout fonctionne
+- [X] Creer un script de test `tests/tests_environnement.py`
+- [X] Tester l'import de LangChain
+- [X] Tester l'import de Faiss
+- [X] Tester l'import de Mistral
+- [X] Tester l'import de Pandas
+- [X] Verifier l'acces a l'API Mistral
+- [X] Executer le script de test et verifier que tout fonctionne : `poetry run python tests\tests_environnement.py`
+
+**Date de realisation:** 06/02/2026  
+**Notes:**
+- Script tests/tests_environnement.py cree avec tests complets
+- Tous les imports testes : LangChain 1.2.8, LangChain-Mistralai, Faiss, Mistral SDK, Pandas 3.0.0, NumPy 2.4.2, Tiktoken, Pytest 9.0.2
+- API Mistral testee et operationnelle
+- Fonctionnalites Faiss testees (creation index, ajout vecteurs, recherche)
+- Resultat : ENVIRONNEMENT OPERATIONNEL (8/8 tests reussis)
 
 ---
 
@@ -409,13 +423,18 @@
 - Nombre d'evenements collectes:
 
 ### Configuration technique:
-- Version Python:
-- Version LangChain:
-- Version Faiss:
-- Version Mistral:
-- Modele Mistral Embeddings:
-- Modele Mistral LLM:
-- Type d'index Faiss:
-- Taille des chunks:
-- Overlap entre chunks:
-- Nombre de documents recuperes (k):
+- Version Python: 3.11.9
+- Version LangChain: 1.2.8
+- Version LangChain-Mistralai: 1.1.1
+- Version Faiss: 1.13.2 (CPU)
+- Version Mistral SDK: 1.12.0
+- Version Pandas: 3.0.0
+- Version NumPy: 2.4.2
+- Version Tiktoken: 0.12.0
+- Version Pytest: 9.0.2
+- Modele Mistral Embeddings: (a definir Phase 3)
+- Modele Mistral LLM: mistral-small-latest (teste)
+- Type d'index Faiss: (a definir Phase 3)
+- Taille des chunks: (a definir Phase 3)
+- Overlap entre chunks: (a definir Phase 3)
+- Nombre de documents recuperes (k): (a definir Phase 4)

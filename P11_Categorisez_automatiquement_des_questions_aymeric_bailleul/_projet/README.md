@@ -2,7 +2,8 @@
 
 **Projet:** Developpement d'un assistant pour la recommandation d'evenements culturels  
 **Auteur:** Aymeric Bailleul  
-**Date:** Fevrier 2026
+**Date de début** : 16/02/2026  
+**Date de fin maximum** : 10/03/2026
 
 ---
 
@@ -158,7 +159,7 @@ MISTRAL_API_KEY=votre_cle_api_mistral
 4. Verifier l'installation
 
 ```bash
-python tests/test_environment.py
+poetry run python tests/tests_environnement.py
 ```
 
 ---
