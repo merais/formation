@@ -57,6 +57,13 @@ poetry.lock
 *.db
 *.sqlite
 
+# RAG
+**/vectorstore/
+**/data/
+*.faiss
+*.pkl
+*.pickle
+
 # Docker & Infrastructure
 .airbyte/
 
@@ -88,7 +95,7 @@ desktop.ini
 *.rar
 *.7z
 
-# Vidéos
+# Video files
 *.mp4
 *.avi
 *.mov

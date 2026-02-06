@@ -1,0 +1,9 @@
+# Dépendances pour l'exercice Docling
+docling>=1.0.0
+matplotlib>=3.8.0
+mistralai>=1.0.0
+numpy>=1.26.0
+scikit-learn>=1.4.0
+sentence-transformers>=2.6.0
+gensim>=4.3.0
+scipy>=1.11.0
