@@ -217,8 +217,8 @@ Ce script orchestre automatiquement toutes les etapes : collecte, nettoyage, chu
 
 ## Perimetre du POC
 
-- **Zone geographique** : [A definir]
-- **Periode** : Evenements de moins d'un an (historique et a venir)
+- **Zone geographique** : Occitanie (13 departements)
+- **Periode** : 1 an en arriere (depuis le 09/02/2025) + tous evenements futurs (~8,000 evenements)
 - **Source de donnees** : Open Agenda (https://public.opendatasoft.com/explore/dataset/evenements-publics-openagenda)
 
 ---

@@ -51,6 +51,7 @@
   - [X] `poetry run pip install mistralai`
 **Manipulation de données**
   - [X] `poetry run pip install pandas`
+  - [X] `poetry run pip install pyarrow`
 **Requêtes HTTP**
   - [X] `poetry run pip install requests` (deja installe)
 **Gestion des variables d'environnement**
@@ -66,9 +67,10 @@
 **Date de realisation:** 06/02/2026  
 **Notes:**
 - Toutes les dependances installees avec succes
-- faiss-cpu v1.13.2, mistralai v1.12.0, pandas v3.0.0
+- faiss-cpu v1.13.2, mistralai v1.12.0, pandas v3.0.0, pyarrow v23.0.0
 - pytest v9.0.2, notebook v7.5.3 (inclut jupyterlab v4.5.3)
 - tiktoken v0.12.0 pour le comptage de tokens
+- pyarrow necessaire pour la lecture de fichiers Parquet
 - Certaines dependances etaient deja presentes (requests, python-dotenv, numpy)
 
 
@@ -110,27 +112,36 @@
 - Tous les imports testes : LangChain 1.2.8, LangChain-Mistralai, Faiss, Mistral SDK, Pandas 3.0.0, NumPy 2.4.2, Tiktoken, Pytest 9.0.2
 - API Mistral testee et operationnelle
 - Fonctionnalites Faiss testees (creation index, ajout vecteurs, recherche)
-- Resultat : ENVIRONNEMENT OPERATIONNEL (8/8 tests reussis)
 
 ---
 
 ## PHASE 2 - COLLECTE ET PRE-PROCESSING DES DONNEES
 
-### 2.1 - Exploration de l'API Open Agenda
-- [ ] Explorer le dataset Open Agenda: https://public.opendatasoft.com/explore/dataset/evenements-publics-openagenda
-- [ ] Comprendre la structure des donnees disponibles
-- [ ] Identifier les champs pertinents (titre, description, date, lieu, etc.)
-- [ ] Determiner le perimetre geographique (ville/region)
-- [ ] Definir la periode de collecte (moins d'un an)
+### 2.1- Collecte des donnees
+- [X] Dataset complet disponible en format Parquet
+- [X] Fichier source : data/raw/evenements-publics-openagenda.parquet
+
+**Date de realisation:** 09/02/2026  
+**Notes:**
+- Le dataset complet Open Agenda est telecharge (913,818 evenements)
 
 
-### 2.2 - Collecte des donnees via API
-- [ ] Creer le script `src/preprocessing/fetch_openagenda.py`
-- [ ] Implementer la connexion a l'API Open Agenda
-- [ ] Implementer les filtres (geographique, temporel)
-- [ ] Recuperer les evenements (format JSON)
-- [ ] Sauvegarder les donnees brutes dans `data/raw/`
-- [ ] Ajouter des docstrings au script
+### 2.2 - Exploration et analyse du dataset Open Agenda
+- [X] Explorer le dataset Open Agenda: https://public.opendatasoft.com/explore/dataset/evenements-publics-openagenda
+- [X] Comprendre la structure des donnees disponibles : **913,818 evenements, 56 colonnes, 905.94 MB**
+- [X] Identifier les champs pertinents : **title_fr, description_fr, longdescription_fr, firstdate_begin, location_*, etc.**
+- [X] Determiner le perimetre geographique : **Occitanie (13 departements)**
+- [X] Definir la periode de collecte : **1 an en arriere + tous evenements futurs**
+- [X] Analyser la qualite des donnees (completude, doublons, colonnes vides)
+- [X] Analyser les textes pour la vectorisation (longueur, HTML)
+
+**Date de realisation:** 09/02/2026  
+**Notes:**
+- Analyse complete dans analyses/analyse_dataset.ipynb (Sections 1-7)
+- Perimetre final retenu : Region Occitanie, 7,983 evenements (7,784 passes + 199 futurs)
+- Completude excellente : title_fr 100%, description_fr 99.49%, dates 100%
+- 5 colonnes vides identifiees (contributor_*, category)
+- Pas de doublons exacts sur UID 
 
 
 ### 2.3 - Nettoyage des donnees
