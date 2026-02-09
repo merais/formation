@@ -3,7 +3,8 @@
 **Projet:** Developpement d'un assistant pour la recommandation d'evenements culturels  
 **Auteur:** Aymeric Bailleul  
 **Date de début** : 16/02/2026  
-**Date de fin maximum** : 10/03/2026
+**Date de fin maximum** : 10/03/2026  
+**Dernière mise à jour** : 09/02/2026
 
 ---
 
@@ -80,16 +81,21 @@ L'entreprise Puls-Events souhaite integrer un assistant conversationnel capable 
 P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/
 ├── _projet/
 │   ├── data/                      # Donnees du projet
-│   │   ├── raw/                   # Donnees brutes Open Agenda
-│   │   ├── processed/             # Donnees nettoyees et structurees
+│   │   ├── RAW/                   # Donnees brutes Open Agenda (905 MB, 913K evenements)
+│   │   ├── processed/             # Donnees nettoyees (7,983 evenements Occitanie)
 │   │   └── vectorstore/           # Base de donnees vectorielle FAISS
 │   ├── src/                       # Code source
 │   │   ├── preprocessing/         # Scripts de collecte et nettoyage
+│   │   │   └── clean_data.py      # Script de nettoyage complet
 │   │   ├── vectorization/         # Scripts de vectorisation et indexation
 │   │   └── rag/                   # Systeme RAG et interface chat
 │   ├── tests/                     # Tests unitaires
-│   ├── _analyses/                 # Notebooks d'exploration
+│   │   ├── tests_environnement.py # Tests de configuration (8/8)
+│   │   └── test_preprocessing.py  # Tests du preprocessing (22/22)
+│   ├── analyses/                  # Notebooks d'exploration
+│   │   └── analyse_dataset.ipynb  # Analyse complete du dataset
 │   ├── _docs/                     # Documentation du projet
+│   │   └── ABAI_P11_X0_tasks_list_logbook.md
 │   ├── README.md                  # Ce fichier
 │   ├── pyproject.toml             # Configuration Poetry
 │   └── requirements.txt           # Dependances Python
@@ -108,6 +114,8 @@ P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/
 - **Mistral AI 1.12.0** : SDK pour modeles de langage et embeddings
 - **Faiss 1.13.2** : Base de donnees vectorielle pour la recherche semantique
 - **Pandas 3.0.0** : Manipulation et analyse de donnees
+- **NumPy 2.4.2** : Calculs numeriques et operations matricielles
+- **PyArrow 23.0.0** : Lecture/ecriture de fichiers Parquet
 - **Pytest 9.0.2** : Tests unitaires
 - **Jupyter Notebook 7.5.3** : Environnement de developpement interactif
 - **Tiktoken 0.12.0** : Comptage de tokens pour les modeles LLM
@@ -169,11 +177,15 @@ poetry run python tests/tests_environnement.py
 ### 1. Collecte et pre-processing des donnees
 
 ```bash
-# Collecter les evenements depuis Open Agenda
-python src/preprocessing/fetch_openagenda.py
+# Nettoyer les donnees (fichier RAW deja present)
+poetry run python src/preprocessing/clean_data.py
 
-# Nettoyer les donnees
-python src/preprocessing/clean_data.py
+# Le script effectue :
+# - Filtrage geographique (Occitanie) et temporel (1 an + futurs)
+# - Suppression des colonnes vides
+# - Nettoyage du HTML dans les descriptions
+# - Creation du champ text_for_rag pour la vectorisation
+# - Sauvegarde dans data/processed/evenements_occitanie_clean.parquet
 ```
 
 ### 2. Vectorisation et creation de l'index FAISS
@@ -198,7 +210,13 @@ python src/rag/chat_interface.py
 ### 4. Executer les tests
 
 ```bash
-pytest tests/
+# Tous les tests
+poetry run pytest tests/
+
+# Tests du preprocessing uniquement
+poetry run pytest tests/test_preprocessing.py -v
+
+# Resultats actuels : 22/22 tests passent
 ```
 
 ---
@@ -218,7 +236,11 @@ Ce script orchestre automatiquement toutes les etapes : collecte, nettoyage, chu
 ## Perimetre du POC
 
 - **Zone geographique** : Occitanie (13 departements)
-- **Periode** : 1 an en arriere (depuis le 09/02/2025) + tous evenements futurs (~8,000 evenements)
+- **Periode** : 1 an en arriere (depuis le 09/02/2025) + tous evenements futurs
+- **Volume de donnees** : 
+  - Dataset brut : 913,818 evenements (905 MB)
+  - Dataset nettoye : 7,983 evenements Occitanie
+  - Repartition : 7,784 evenements passes + 199 evenements futurs
 - **Source de donnees** : Open Agenda (https://public.opendatasoft.com/explore/dataset/evenements-publics-openagenda)
 
 ---
@@ -255,15 +277,29 @@ Les resultats detailles sont disponibles dans le rapport technique.
 
 ---
 
+## Etat d'avancement
+
+- [FAIT] **Phase 1** : Configuration environnement et API Mistral (8/8 tests)
+- [FAIT] **Phase 2.1-2.2** : Collection et exploration des donnees (notebook complet)
+- [FAIT] **Phase 2.3** : Script de nettoyage clean_data.py (9 fonctions documentees)
+- [FAIT] **Phase 2.4** : Structuration des donnees (48 colonnes finales)
+- [FAIT] **Phase 2.5** : Tests unitaires preprocessing (22/22 tests)
+- [TODO] **Phase 3** : Vectorisation et index FAISS (en attente)
+- [TODO] **Phase 4** : Systeme RAG avec LangChain (en attente)
+- [TODO] **Phase 5** : Interface chatbot (en attente)
+- [TODO] **Phase 6** : Evaluation et optimisation (en attente)
+
+---
+
 ## Livrables
 
-1. README.md (ce fichier)
-2. Gestion des dependances (pyproject.toml, requirements.txt)
-3. Scripts de pre-processing avec docstrings
-4. Scripts de vectorisation avec docstrings
-5. Tests unitaires avec pytest
-6. Code du systeme RAG complet
-7. Rapport technique (5-10 pages)
-8. Presentation PowerPoint (10-15 slides)
+1. [FAIT] README.md (ce fichier)
+2. [FAIT] Gestion des dependances (pyproject.toml, requirements.txt)
+3. [FAIT] Scripts de pre-processing avec docstrings
+4. [TODO] Scripts de vectorisation avec docstrings
+5. [FAIT] Tests unitaires avec pytest (22 tests)
+6. [TODO] Code du systeme RAG complet
+7. [TODO] Rapport technique (5-10 pages)
+8. [TODO] Presentation PowerPoint (10-15 slides)
 
 ---

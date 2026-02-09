@@ -144,31 +144,51 @@
 - Pas de doublons exacts sur UID 
 
 
-### 2.3 - Nettoyage des donnees
-- [ ] Creer le script `src/preprocessing/clean_data.py`
-- [ ] Gerer les valeurs manquantes
-- [ ] Normaliser les formats de dates
-- [ ] Nettoyer les descriptions (HTML, caracteres speciaux)
-- [ ] Verifier la coherence des donnees
-- [ ] Supprimer les doublons eventuels
-- [ ] Ajouter des docstrings au script
+### 2.3 - Nettoyage des donnees ✅ [09/02/2026]
+- [x] Creer le script `src/preprocessing/clean_data.py`
+- [x] Gerer les valeurs manquantes
+- [x] Normaliser les formats de dates
+- [x] Nettoyer les descriptions (HTML, caracteres speciaux)
+- [x] Verifier la coherence des donnees
+- [x] Supprimer les doublons eventuels
+- [x] Ajouter des docstrings au script
+
+**Notes:**
+- Script complet avec 9 fonctions modulaires et docstrings detaillees
+- Fonctions principales: `load_raw_data()`, `filter_by_region_and_time()`, `remove_empty_columns()`, `clean_html()`, `clean_html_descriptions()`, `create_rag_text_field()`, `verify_data_quality()`, `save_cleaned_data()`, `main()`
+- Nettoyage HTML avec regex et unescape pour decoder les entites
+- Creation d'un champ `text_for_rag` consolidant titre, descriptions, keywords et lieu
+- Metriques de qualite calculees et affichees
 
 
-### 2.4 - Structuration des donnees
-- [ ] Creer un DataFrame Pandas avec les donnees nettoyees
-- [ ] Definir le schema de donnees (colonnes necessaires)
-- [ ] Sauvegarder les donnees structurees dans `data/processed/events_cleaned.csv`
-- [ ] Generer un rapport de statistiques descriptives
+### 2.4 - Structuration des donnees ✅ [09/02/2026]
+- [x] Creer un DataFrame Pandas avec les donnees nettoyees
+- [x] Definir le schema de donnees (colonnes necessaires)
+- [x] Sauvegarder les donnees structurees dans `data/processed/evenements_occitanie_clean.parquet`
+- [x] Generer un rapport de statistiques descriptives
+
+**Notes:**
+- Schema final: suppression des colonnes vides (contributor_*, category_id)
+- Conservation de 48 colonnes utiles sur 56 initiales
+- Ajout du champ `text_for_rag` pour la vectorisation
+- Rapport de qualite integre dans la fonction `verify_data_quality()`
 
 
-### 2.5 - Tests unitaires du pre-processing
-- [ ] Creer le fichier `tests/test_preprocessing.py`
-- [ ] Test: verifier que tous les evenements sont dans la periode definie
-- [ ] Test: verifier que tous les evenements sont dans la region geographique
-- [ ] Test: verifier l'absence de valeurs manquantes critiques
-- [ ] Test: verifier le format des dates
-- [ ] Test: verifier la structure du DataFrame
-- [ ] Executer les tests avec pytest
+### 2.5 - Tests unitaires du pre-processing ✅ [09/02/2026]
+- [x] Creer le fichier `tests/test_preprocessing.py`
+- [x] Test: verifier que tous les evenements sont dans la periode definie
+- [x] Test: verifier que tous les evenements sont dans la region geographique
+- [x] Test: verifier l'absence de valeurs manquantes critiques
+- [x] Test: verifier le format des dates
+- [x] Test: verifier la structure du DataFrame
+- [x] Executer les tests avec pytest
+
+**Notes:**
+- 22 tests unitaires et d'integration crees
+- Fixtures pytest pour donnees de test et donnees nettoyees
+- Tests couvrant: filtrage geographique (3 tests), filtrage temporel (2 tests), suppression colonnes vides (2 tests), nettoyage HTML (4 tests), creation text_for_rag (4 tests), verification qualite (4 tests), chargement donnees (2 tests), integration (2 tests)
+- **Resultats:** ✅ 22/22 tests passes (3.52s)
+- Tests sur donnees reelles et donnees synthetiques
 
 
 ---
