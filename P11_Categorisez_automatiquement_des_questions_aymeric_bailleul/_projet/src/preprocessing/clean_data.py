@@ -175,7 +175,7 @@ def clean_html_descriptions(df: pd.DataFrame) -> pd.DataFrame:
         
         print(f"  Textes avec HTML avant: {html_avant}")
         print(f"  Textes avec HTML apres: {html_apres}")
-        print(f"  ✓ Nettoyage HTML termine")
+        print(f"  [OK] Nettoyage HTML termine")
     else:
         print("  Colonne longdescription_fr non trouvee")
     
@@ -231,7 +231,7 @@ def create_rag_text_field(df: pd.DataFrame) -> pd.DataFrame:
     
     longueur_moyenne = df['text_for_rag'].str.len().mean()
     print(f"  Longueur moyenne: {longueur_moyenne:.0f} caracteres")
-    print(f"  ✓ Champ text_for_rag cree")
+    print(f"  [OK] Champ text_for_rag cree")
     
     return df
 
@@ -272,7 +272,7 @@ def verify_data_quality(df: pd.DataFrame) -> dict:
         metrics['html_restant'] = html_restant
         print(f"  Balises HTML restantes: {html_restant}")
     
-    print("  ✓ Verification terminee")
+    print("  [OK] Verification terminee")
     
     return metrics
 
@@ -296,7 +296,7 @@ def save_cleaned_data(df: pd.DataFrame, output_path: str) -> None:
     print(f"  Taille: {file_size:.2f} MB")
     print(f"  Lignes: {len(df):,}")
     print(f"  Colonnes: {len(df.columns)}")
-    print("  ✓ Sauvegarde terminee")
+    print("  [OK] Sauvegarde terminee")
 
 
 def main():

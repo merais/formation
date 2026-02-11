@@ -414,7 +414,7 @@ def test_real_data_pipeline_if_available():
         assert dates_max <= ten_years_future, \
             f"Des evenements trop eloignes dans le futur: {dates_max}"
         
-        print(f"\n✓ Test sur donnees reelles: {len(df_clean):,} evenements valides")
+        print(f"\n[OK] Test sur donnees reelles: {len(df_clean):,} evenements valides")
     else:
         pytest.skip("Fichier de donnees nettoyees non disponible")
 

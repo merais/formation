@@ -81,16 +81,28 @@ P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/
 ├── _projet/
 │   ├── data/                      # Donnees du projet
 │   │   ├── RAW/                   # Donnees brutes Open Agenda (905 MB, 913K evenements)
-│   │   ├── processed/             # Donnees nettoyees (7,983 evenements Occitanie)
-│   │   └── vectorstore/           # Base de donnees vectorielle FAISS
+│   │   ├── processed/             # Donnees nettoyees (7,960 evenements Occitanie)
+│   │   │   ├── evenements_occitanie_clean.parquet (9.32 MB)
+│   │   │   └── evenements_chunks.parquet (3.28 MB, 10,646 chunks)
+│   │   └── vectorstore/           # Base vectorielle FAISS (140.64 MB)
+│   │       ├── embeddings.npy      (83.17 MB, 10,646 vecteurs 1024D)
+│   │       ├── metadata.parquet    (3.28 MB)
+│   │       ├── faiss_index.bin     (41.59 MB, IndexFlatIP)
+│   │       ├── config.txt
+│   │       └── index_config.txt
 │   ├── src/                       # Code source
 │   │   ├── preprocessing/         # Scripts de collecte et nettoyage
-│   │   │   └── clean_data.py      # Script de nettoyage complet
+│   │   │   ├── clean_data.py      
+│   │   │   └── chunk_texts.py     
 │   │   ├── vectorization/         # Scripts de vectorisation et indexation
-│   │   └── rag/                   # Systeme RAG et interface chat
+│   │   │   ├── vectorize_data.py  (305 lignes)
+│   │   │   └── create_faiss_index.py 
+│   │   ├── rag/                   # Systeme RAG et interface chat
+│   │   └── build_vectorstore.py   # Orchestrateur pipeline complet
 │   ├── tests/                     # Tests unitaires
 │   │   ├── tests_environnement.py # Tests de configuration (8/8)
-│   │   └── test_preprocessing.py  # Tests du preprocessing (22/22)
+│   │   ├── test_01_preprocessing.py  # Tests du preprocessing (22/22)
+│   │   └── test_02_vectorstore.py    # Tests base vectorielle (27/27)
 │   ├── analyses/                  # Notebooks d'exploration
 │   │   └── analyse_dataset.ipynb  # Analyse complete du dataset
 │   ├── _docs/                     # Documentation du projet
@@ -190,7 +202,25 @@ poetry run python src/preprocessing/clean_data.py
 
 ### 2. Vectorisation et creation de l'index FAISS
 
+```bash
+# Option 1 : Pipeline complet automatique (recommande)
+poetry run python src/build_vectorstore.py
+
+# Le script build_vectorstore.py orchestre automatiquement :
+# 1. Nettoyage des donnees (clean_data.py)
+# 2. Decoupage en chunks (chunk_texts.py)
+# 3. Vectorisation Mistral (vectorize_data.py)
+# 4. Creation index FAISS (create_faiss_index.py)
+# Duree totale : ~4-5 minutes pour 10,646 chunks
+
+# Option 2 : Etapes manuelles
+poetry run python src/vectorization/vectorize_data.py     # Vectorisation (3.9 min)
+poetry run python src/vectorization/create_faiss_index.py # Indexation (0.4 sec)
+```
+
 ### 3. Lancer le chatbot
+
+(En cours de developpement - Phase 4)
 
 ### 4. Executer les tests
 
@@ -207,6 +237,9 @@ pytest tests/test_00_environnement.py -v
 
 # Tests du preprocessing
 pytest tests/test_01_preprocessing.py -v
+
+# Tests de la base vectorielle
+pytest tests/test_02_vectorstore.py -v
 ```
 
 ---
@@ -217,9 +250,10 @@ pytest tests/test_01_preprocessing.py -v
 - **Periode** : 1 an en arriere (depuis le 09/02/2025) + tous evenements futurs
 - **Volume de donnees** : 
   - Dataset brut : 913,818 evenements (905 MB)
-  - Dataset nettoye : 7,983 evenements Occitanie
-  - Dataset chunks : 10,676 chunks (250 tokens/chunk, overlap 75 tokens)
-  - Repartition : 7,784 evenements passes + 199 evenements futurs
+  - Dataset nettoye : 7,960 evenements Occitanie
+  - Dataset chunks : 10,646 chunks (250 tokens/chunk, overlap 75 tokens)
+  - Base vectorielle : 10,646 embeddings 1024D (83.17 MB) + index FAISS (41.59 MB)
+  - Repartition : 7,784 evenements passes + 176 evenements futurs
   - Distribution chunks : 76.4% evenements avec 1 chunk, 23.6% avec plusieurs chunks
 - **Source de donnees** : Open Agenda (https://public.opendatasoft.com/explore/dataset/evenements-publics-openagenda)
 
@@ -253,10 +287,11 @@ Les resultats detailles sont disponibles dans le rapport technique.
 - [FAIT] **Phase 2.3** : Script de nettoyage clean_data.py (9 fonctions documentees)
 - [FAIT] **Phase 2.4** : Structuration des donnees (48 colonnes finales)
 - [FAIT] **Phase 2.5** : Tests unitaires preprocessing (22/22 tests PASSED)
-- [FAIT] **Phase 2.6** : Chunking des textes (10,676 chunks crees, 250 tokens/chunk)
-- [TODO] **Phase 3.1** : Vectorisation avec Mistral Embeddings (mistral-embed)
-- [TODO] **Phase 3.2** : Creation de l'index FAISS
-- [TODO] **Phase 3.3** : Tests vectorisation et FAISS
+- [FAIT] **Phase 2.6** : Chunking des textes (10,646 chunks crees, 250 tokens/chunk)
+- [FAIT] **Phase 3.1** : Vectorisation avec Mistral Embeddings (10,646 embeddings 1024D, 3.95 min)
+- [FAIT] **Phase 3.2** : Creation de l'index FAISS (IndexFlatIP, 41.70 MB, 0.39 sec)
+- [FAIT] **Phase 3.3** : Tests vectorisation et FAISS (27/27 tests PASSED)
+- [FAIT] **Phase 3.4** : Script de reconstruction complete (build_vectorstore.py, 4m 37s)
 - [TODO] **Phase 4** : Systeme RAG avec LangChain
 - [TODO] **Phase 5** : Evaluation et optimisation
 - [TODO] **Phase 6-8** : Documentation et livrables finaux
@@ -270,8 +305,11 @@ Les resultats detailles sont disponibles dans le rapport technique.
 3. [FAIT] Scripts de pre-processing avec docstrings
    - clean_data.py
    - chunk_texts.py
-4. [TODO] Scripts de vectorisation avec docstrings (en cours)
-5. [FAIT] Tests unitaires avec pytest (30/30 tests PASSED : 8 environnement + 22 preprocessing)
+4. [FAIT] Scripts de vectorisation avec docstrings
+   - vectorize_data.py
+   - create_faiss_index.py
+   - build_vectorstore.py
+5. [FAIT] Tests unitaires avec pytest (57/57 tests PASSED : 8 environnement + 22 preprocessing + 27 vectorstore)
 6. [TODO] Code du systeme RAG complet
 7. [TODO] Rapport technique (5-10 pages)
 8. [TODO] Presentation PowerPoint (10-15 slides)

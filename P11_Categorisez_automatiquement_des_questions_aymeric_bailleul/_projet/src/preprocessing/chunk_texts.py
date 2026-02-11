@@ -49,7 +49,7 @@ def load_cleaned_data(data_path: str) -> pd.DataFrame:
     
     print(f"Chargement des donnees depuis {data_path}...")
     df = pd.read_parquet(data_path)
-    print(f"✓ {len(df):,} evenements charges avec {len(df.columns)} colonnes")
+    print(f"[OK] {len(df):,} evenements charges avec {len(df.columns)} colonnes")
     
     return df
 
@@ -206,7 +206,7 @@ def create_chunks_dataframe(
     df_chunks = pd.DataFrame(chunks_data)
     
     # Afficher les statistiques
-    print(f"\n✓ Decoupage termine:")
+    print(f"\n[OK] Decoupage termine:")
     print(f"  - Evenements traites: {len(df) - skipped_events:,}")
     print(f"  - Evenements ignores (texte vide): {skipped_events}")
     print(f"  - Total chunks crees: {total_chunks:,}")
@@ -292,7 +292,7 @@ def save_chunks(df_chunks: pd.DataFrame, output_path: str):
     
     # Afficher la taille du fichier
     file_size_mb = output_path.stat().st_size / (1024 * 1024)
-    print(f"✓ Fichier sauvegarde ({file_size_mb:.2f} MB)")
+    print(f"[OK] Fichier sauvegarde ({file_size_mb:.2f} MB)")
 
 
 # ============================================================================
@@ -325,14 +325,14 @@ def main():
         save_chunks(df_chunks, output_path)
         
         print("\n" + "=" * 70)
-        print("✓ CHUNKING TERMINE AVEC SUCCES")
+        print("[SUCCES] CHUNKING TERMINE AVEC SUCCES")
         print("=" * 70)
         print(f"\nFichier genere: {output_path}")
         print(f"Total chunks: {len(df_chunks):,}")
         print(f"Pret pour la vectorisation (Phase 3.1)")
         
     except Exception as e:
-        print(f"\n❌ ERREUR: {e}")
+        print(f"\n[ERREUR] {e}")
         raise
 
 

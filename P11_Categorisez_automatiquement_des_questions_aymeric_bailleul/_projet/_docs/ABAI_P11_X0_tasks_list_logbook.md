@@ -210,7 +210,7 @@
 - Parametres optimises: CHUNK_SIZE=250 tokens, CHUNK_OVERLAP=75 tokens (30%)
 - Utilisation de tiktoken avec encodage cl100k_base (compatible Mistral)
 - Fonctions principales: `load_cleaned_data()`, `count_tokens()`, `split_text_into_chunks()`, `create_chunks_dataframe()`, `verify_chunks_quality()`, `save_chunks()`, `main()`
-- Resultats: 7,981 evenements -> 10,676 chunks crees (moyenne 1.34 chunks/evenement)
+- Resultats: 7,960 evenements -> 10,646 chunks crees (moyenne 1.34 chunks/evenement)
 - Fichier genere: data/processed/evenements_chunks.parquet
 
 ---
@@ -218,40 +218,85 @@
 ## PHASE 3 - VECTORISATION ET INDEX FAISS
 
 ### 3.1 - Vectorisation avec Mistral
-- [ ] Creer le script `src/vectorization/vectorize_data.py`
-- [ ] Charger les chunks depuis `data/processed/evenements_chunks.parquet`
-- [ ] Configurer l'acces a l'API Mistral Embeddings
-- [ ] Choisir le modele d'embedding Mistral approprie
-- [ ] Implementer la vectorisation des chunks
-- [ ] Gerer la limitation de l'API (rate limiting)
-- [ ] Sauvegarder les vecteurs et metadonnees associees
-- [ ] Ajouter des docstrings au script
+- [x] Creer le script `src/vectorization/vectorize_data.py`
+- [x] Charger les chunks depuis `data/processed/evenements_chunks.parquet`
+- [x] Configurer l'acces a l'API Mistral Embeddings
+- [x] Choisir le modele d'embedding Mistral approprie
+- [x] Implementer la vectorisation des chunks
+- [x] Gerer la limitation de l'API (rate limiting)
+- [x] Sauvegarder les vecteurs et metadonnees associees
+- [x] Ajouter des docstrings au script
+
+**Date de realisation:** 11/02/2026  
+**Notes:**
+- Modele: mistral-embed (1024 dimensions)
+- Parametres: batch_size=100 chunks, rate_limit=1.0s entre batches
+- Retry logic: 3 tentatives max avec delai 5s
+- Fonctions principales: `load_api_key()`, `load_chunks()`, `vectorize_batch()`, `vectorize_chunks()`, `verify_embeddings()`, `save_embeddings()`, `main()`
+- Resultats: 10,646 chunks vectorises
+- 107 batches traites avec succes
+- Qualite: norme moyenne 1.000 (vecteurs normalises), pas de NaN/Inf
+- Fichiers generes:
+  - data/vectorstore/embeddings.npy
+  - data/vectorstore/metadata.parquet
+  - data/vectorstore/config.txt
 
 
 ### 3.2 - Creation de l'index FAISS
-- [ ] Creer le script `src/vectorization/create_faiss_index.py`
-- [ ] Choisir le type d'index FAISS (ex: IndexFlatL2, IndexIVFFlat)
-- [ ] Creer l'index FAISS
-- [ ] Ajouter les vecteurs a l'index
-- [ ] Associer les metadonnees aux vecteurs
-- [ ] Sauvegarder l'index dans `data/vectorstore/`
-- [ ] Ajouter des docstrings au script
+- [x] Creer le script `src/vectorization/create_faiss_index.py`
+- [x] Choisir le type d'index FAISS (ex: IndexFlatL2, IndexIVFFlat)
+- [x] Creer l'index FAISS
+- [x] Ajouter les vecteurs a l'index
+- [x] Associer les metadonnees aux vecteurs
+- [x] Sauvegarder l'index dans `data/vectorstore/`
+- [x] Ajouter des docstrings au script
+
+**Date de realisation:** 11/02/2026  
+**Notes:**
+- Type d'index: IndexFlatIP (recherche exacte avec Inner Product)
+- Metrique: Inner Product equivalent a cosine similarity pour vecteurs normalises
+- Resultats: 10,646 vecteurs indexes avec succes
+- Taille de l'index: 41.70 MB
+- Test fonctionnel reussi: recherche semantique avec scores de similarite 0.84-1.0
+- Fichiers generes:
+  - data/vectorstore/faiss_index.bin
+  - data/vectorstore/index_config.txt
 
 
 ### 3.3 - Tests de la base vectorielle
-- [ ] Creer le fichier `tests/test_02_vectorstore.py`
-- [ ] Test: verifier que tous les evenements sont indexes
-- [ ] Test: tester une recherche de similarite simple
-- [ ] Test: verifier la coherence des metadonnees
-- [ ] Test: mesurer les temps de recherche
-- [ ] Executer les tests avec pytest
+- [x] Creer le fichier `tests/test_02_vectorstore.py`
+- [x] Test: verifier que tous les evenements sont indexes
+- [x] Test: tester une recherche de similarite simple
+- [x] Test: verifier la coherence des metadonnees
+- [x] Test: mesurer les temps de recherche
+- [x] Executer les tests avec pytest
+
+**Date de realisation:** 11/02/2026  
+**Notes:**
+- Tous les tests passes: 27/27
+- Categories de tests: structure (3), qualite embeddings (3), metadonnees (4), index FAISS (3), recherche similarite (4), coherence (4), couverture (2), performance (3), integration (2)
+- Tests de qualite: embeddings normalises (norme=1.0), pas de NaN/Inf, dimensions correctes (10646, 1024)
+- Tests de recherche: similarite fonctionnelle, scores coherents (0.84-1.0), batch processing valide
+- Tests de performance: 0.02ms par requete en batch, < 100ms pour recherche unitaire
+- Tests de couverture: 100% des evenements indexes (7,960), 99.98% de completude metadonnees
+- Workflow end-to-end valide: chargement, recherche, recuperation metadonnees
 
 
 ### 3.4 - Script de reconstruction de la base
-- [ ] Creer un script `rebuild_vectorstore.py`
-- [ ] Orchestrer toutes les etapes (clean, chunk, vectorize, index)
-- [ ] Ajouter des logs pour suivre l'execution
-- [ ] Tester la reconstruction complete de la base
+- [x] Creer un script `src/build_vectorstore.py`
+- [x] Orchestrer toutes les etapes (clean, chunk, vectorize, index)
+- [x] Ajouter des logs pour suivre l'execution
+- [x] Tester la reconstruction complete de la base
+
+**Date de realisation:** 11/02/2026  
+**Notes:**
+- Orchestration de 4 etapes: nettoyage, chunking, vectorisation, indexation
+- Verification des prerequis: donnees brutes, .env, scripts, Python
+- Logs detailles pour chaque etape avec progression ETA
+- Test complet reussi: 4/4 etapes
+- Statistiques finales: 7,960 evenements -> 10,646 chunks -> 10,646 embeddings -> index 41.59 MB
+- Gestion des erreurs: arret si echec, retry logic API
+- Fichiers generes verifies: 140.64 MB total (clean, chunks, embeddings, metadata, index, configs)
 
 
 ---
@@ -477,12 +522,17 @@
 - Version NumPy: 2.4.2
 - Version Tiktoken: 0.12.0
 - Version Pytest: 9.0.2
-- Modele Mistral Embeddings: (a definir Phase 3.1)
+- Modele Mistral Embeddings: mistral-embed (1024 dimensions)
 - Modele Mistral LLM: mistral-small-latest (teste)
-- Type d'index Faiss: (a definir Phase 3.2)
+- Type d'index Faiss: IndexFlatIP (recherche exacte, Inner Product)
+- Taille index Faiss: 41.70 MB pour 10,646 vecteurs
+- Temps creation index: 0.39 secondes
+- Batch size vectorisation: 100 chunks
+- Rate limit vectorisation: 1.0s entre batches
+- Temps vectorisation: 3.95 minutes pour 10,646 chunks
 - Taille des chunks: 250 tokens
 - Overlap entre chunks: 75 tokens (30%)
 - Encodage tokens: cl100k_base (compatible Mistral)
-- Nombre total de chunks: 10,676
+- Nombre total de chunks: 10,646
 - Moyenne chunks/evenement: 1.34
 - Nombre de documents recuperes (k): (a definir Phase 4)
