@@ -144,7 +144,7 @@
 - Pas de doublons exacts sur UID 
 
 
-### 2.3 - Nettoyage des donnees ✅ [09/02/2026]
+### 2.3 - Nettoyage des donnees
 - [x] Creer le script `src/preprocessing/clean_data.py`
 - [x] Gerer les valeurs manquantes
 - [x] Normaliser les formats de dates
@@ -161,7 +161,7 @@
 - Metriques de qualite calculees et affichees
 
 
-### 2.4 - Structuration des donnees ✅ [09/02/2026]
+### 2.4 - Structuration des donnees
 - [x] Creer un DataFrame Pandas avec les donnees nettoyees
 - [x] Definir le schema de donnees (colonnes necessaires)
 - [x] Sauvegarder les donnees structurees dans `data/processed/evenements_occitanie_clean.parquet`
@@ -174,7 +174,7 @@
 - Rapport de qualite integre dans la fonction `verify_data_quality()`
 
 
-### 2.5 - Tests unitaires du pre-processing ✅ [09/02/2026]
+### 2.5 - Tests unitaires du pre-processing
 - [x] Creer le fichier `tests/test_preprocessing.py`
 - [x] Test: verifier que tous les evenements sont dans la periode definie
 - [x] Test: verifier que tous les evenements sont dans la region geographique
@@ -187,34 +187,48 @@
 - 22 tests unitaires et d'integration crees
 - Fixtures pytest pour donnees de test et donnees nettoyees
 - Tests couvrant: filtrage geographique (3 tests), filtrage temporel (2 tests), suppression colonnes vides (2 tests), nettoyage HTML (4 tests), creation text_for_rag (4 tests), verification qualite (4 tests), chargement donnees (2 tests), integration (2 tests)
-- **Resultats:** ✅ 22/22 tests passes (3.52s)
 - Tests sur donnees reelles et donnees synthetiques
 
 
+### 2.6 - Chunking des textes
+- [x] Creer le script `src/preprocessing/chunk_texts.py`
+- [x] Implementer la strategie de decoupage du champ text_for_rag
+- [x] Definir la taille des chunks
+- [x] Definir le overlap entre chunks
+- [x] Conserver les metadonnees essentielles avec chaque chunk:
+  - uid de l'evenement
+  - title_fr
+  - firstdate_begin
+  - location_city
+  - location_region
+  - chunk_index (numero du chunk pour l'evenement)
+- [x] Sauvegarder les chunks dans `data/processed/evenements_chunks.parquet`
+- [x] Ajouter des docstrings au script
+
+**Date de realisation:** 11/02/2026  
+**Notes:**
+- Parametres optimises: CHUNK_SIZE=250 tokens, CHUNK_OVERLAP=75 tokens (30%)
+- Utilisation de tiktoken avec encodage cl100k_base (compatible Mistral)
+- Fonctions principales: `load_cleaned_data()`, `count_tokens()`, `split_text_into_chunks()`, `create_chunks_dataframe()`, `verify_chunks_quality()`, `save_chunks()`, `main()`
+- Resultats: 7,981 evenements -> 10,676 chunks crees (moyenne 1.34 chunks/evenement)
+- Fichier genere: data/processed/evenements_chunks.parquet
+
 ---
 
-## PHASE 3 - VECTORISATION ET BASE DE DONNEES FAISS
+## PHASE 3 - VECTORISATION ET INDEX FAISS
 
-### 3.1 - Chunking des textes
-- [ ] Creer le script `src/vectorization/chunk_texts.py`
-- [ ] Implementer la strategie de decoupage des descriptions
-- [ ] Definir la taille des chunks (ex: 500 tokens)
-- [ ] Definir le overlap entre chunks (ex: 50 tokens)
-- [ ] Conserver les metadonnees (date, lieu, titre) avec chaque chunk
-- [ ] Ajouter des docstrings au script
-
-
-### 3.2 - Vectorisation avec Mistral
+### 3.1 - Vectorisation avec Mistral
 - [ ] Creer le script `src/vectorization/vectorize_data.py`
+- [ ] Charger les chunks depuis `data/processed/evenements_chunks.parquet`
 - [ ] Configurer l'acces a l'API Mistral Embeddings
 - [ ] Choisir le modele d'embedding Mistral approprie
 - [ ] Implementer la vectorisation des chunks
 - [ ] Gerer la limitation de l'API (rate limiting)
-- [ ] Sauvegarder les vecteurs et metadonnees
+- [ ] Sauvegarder les vecteurs et metadonnees associees
 - [ ] Ajouter des docstrings au script
 
 
-### 3.3 - Creation de l'index FAISS
+### 3.2 - Creation de l'index FAISS
 - [ ] Creer le script `src/vectorization/create_faiss_index.py`
 - [ ] Choisir le type d'index FAISS (ex: IndexFlatL2, IndexIVFFlat)
 - [ ] Creer l'index FAISS
@@ -224,8 +238,8 @@
 - [ ] Ajouter des docstrings au script
 
 
-### 3.4 - Tests de la base vectorielle
-- [ ] Creer le fichier `tests/test_vectorstore.py`
+### 3.3 - Tests de la base vectorielle
+- [ ] Creer le fichier `tests/test_02_vectorstore.py`
 - [ ] Test: verifier que tous les evenements sont indexes
 - [ ] Test: tester une recherche de similarite simple
 - [ ] Test: verifier la coherence des metadonnees
@@ -233,9 +247,9 @@
 - [ ] Executer les tests avec pytest
 
 
-### 3.5 - Script de reconstruction de la base
-- [ ] Creer un script `rebuild_vectorstore.sh` ou `.py`
-- [ ] Orchestrer toutes les etapes (fetch, clean, chunk, vectorize, index)
+### 3.4 - Script de reconstruction de la base
+- [ ] Creer un script `rebuild_vectorstore.py`
+- [ ] Orchestrer toutes les etapes (clean, chunk, vectorize, index)
 - [ ] Ajouter des logs pour suivre l'execution
 - [ ] Tester la reconstruction complete de la base
 
@@ -303,7 +317,7 @@
 
 
 ### 5.3 - Tests du systeme RAG complet
-- [ ] Creer le fichier `tests/test_rag_system.py`
+- [ ] Creer le fichier `tests/test_03_rag_system.py`
 - [ ] Test: verifier la generation de reponses
 - [ ] Test: verifier la recuperation de documents pertinents
 - [ ] Test: tester des cas limites (questions hors sujet)
@@ -463,9 +477,12 @@
 - Version NumPy: 2.4.2
 - Version Tiktoken: 0.12.0
 - Version Pytest: 9.0.2
-- Modele Mistral Embeddings: (a definir Phase 3)
+- Modele Mistral Embeddings: (a definir Phase 3.1)
 - Modele Mistral LLM: mistral-small-latest (teste)
-- Type d'index Faiss: (a definir Phase 3)
-- Taille des chunks: (a definir Phase 3)
-- Overlap entre chunks: (a definir Phase 3)
+- Type d'index Faiss: (a definir Phase 3.2)
+- Taille des chunks: 250 tokens
+- Overlap entre chunks: 75 tokens (30%)
+- Encodage tokens: cl100k_base (compatible Mistral)
+- Nombre total de chunks: 10,676
+- Moyenne chunks/evenement: 1.34
 - Nombre de documents recuperes (k): (a definir Phase 4)

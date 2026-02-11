@@ -4,7 +4,6 @@
 **Auteur:** Aymeric Bailleul  
 **Date de début** : 16/02/2026  
 **Date de fin maximum** : 10/03/2026  
-**Dernière mise à jour** : 09/02/2026
 
 ---
 
@@ -167,7 +166,8 @@ MISTRAL_API_KEY=votre_cle_api_mistral
 4. Verifier l'installation
 
 ```bash
-poetry run python tests/tests_environnement.py
+# Executer les tests d'environnement
+pytest tests/test_00_environnement.py -v
 ```
 
 ---
@@ -190,46 +190,24 @@ poetry run python src/preprocessing/clean_data.py
 
 ### 2. Vectorisation et creation de l'index FAISS
 
-```bash
-# Decouper les textes en chunks
-python src/vectorization/chunk_texts.py
-
-# Vectoriser avec Mistral Embeddings
-python src/vectorization/vectorize_data.py
-
-# Creer l'index FAISS
-python src/vectorization/create_faiss_index.py
-```
-
 ### 3. Lancer le chatbot
-
-```bash
-python src/rag/chat_interface.py
-```
 
 ### 4. Executer les tests
 
 ```bash
+# IMPORTANT : Toujours executer depuis le repertoire _projet avec venv active
+cd P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/_projet
+.venv\Scripts\Activate.ps1
+
 # Tous les tests
-poetry run pytest tests/
+pytest tests/ -v
 
-# Tests du preprocessing uniquement
-poetry run pytest tests/test_preprocessing.py -v
+# Tests de l'environnement
+pytest tests/test_00_environnement.py -v
 
-# Resultats actuels : 22/22 tests passent
+# Tests du preprocessing
+pytest tests/test_01_preprocessing.py -v
 ```
-
----
-
-## Reconstruction de la base vectorielle
-
-Pour reconstruire completement la base de donnees vectorielle depuis les donnees Open Agenda :
-
-```bash
-python rebuild_vectorstore.py
-```
-
-Ce script orchestre automatiquement toutes les etapes : collecte, nettoyage, chunking, vectorisation et indexation.
 
 ---
 
@@ -240,7 +218,9 @@ Ce script orchestre automatiquement toutes les etapes : collecte, nettoyage, chu
 - **Volume de donnees** : 
   - Dataset brut : 913,818 evenements (905 MB)
   - Dataset nettoye : 7,983 evenements Occitanie
+  - Dataset chunks : 10,676 chunks (250 tokens/chunk, overlap 75 tokens)
   - Repartition : 7,784 evenements passes + 199 evenements futurs
+  - Distribution chunks : 76.4% evenements avec 1 chunk, 23.6% avec plusieurs chunks
 - **Source de donnees** : Open Agenda (https://public.opendatasoft.com/explore/dataset/evenements-publics-openagenda)
 
 ---
@@ -266,40 +246,36 @@ Les resultats detailles sont disponibles dans le rapport technique.
 
 ---
 
-## Ameliorations futures
-
-- Implementer un historique de conversation
-- Ajouter une interface web (Streamlit, Gradio)
-- Optimiser l'index FAISS pour des volumes plus importants
-- Implementer du re-ranking pour ameliorer la pertinence
-- Deployer le systeme en production (API REST)
-- Ajouter des filtres dynamiques (date, type d'evenement, lieu)
-
----
-
 ## Etat d'avancement
 
-- [FAIT] **Phase 1** : Configuration environnement et API Mistral (8/8 tests)
+- [FAIT] **Phase 1** : Configuration environnement et API Mistral (8/8 tests PASSED)
 - [FAIT] **Phase 2.1-2.2** : Collection et exploration des donnees (notebook complet)
 - [FAIT] **Phase 2.3** : Script de nettoyage clean_data.py (9 fonctions documentees)
 - [FAIT] **Phase 2.4** : Structuration des donnees (48 colonnes finales)
-- [FAIT] **Phase 2.5** : Tests unitaires preprocessing (22/22 tests)
-- [TODO] **Phase 3** : Vectorisation et index FAISS (en attente)
-- [TODO] **Phase 4** : Systeme RAG avec LangChain (en attente)
-- [TODO] **Phase 5** : Interface chatbot (en attente)
-- [TODO] **Phase 6** : Evaluation et optimisation (en attente)
+- [FAIT] **Phase 2.5** : Tests unitaires preprocessing (22/22 tests PASSED)
+- [FAIT] **Phase 2.6** : Chunking des textes (10,676 chunks crees, 250 tokens/chunk)
+- [TODO] **Phase 3.1** : Vectorisation avec Mistral Embeddings (mistral-embed)
+- [TODO] **Phase 3.2** : Creation de l'index FAISS
+- [TODO] **Phase 3.3** : Tests vectorisation et FAISS
+- [TODO] **Phase 4** : Systeme RAG avec LangChain
+- [TODO] **Phase 5** : Evaluation et optimisation
+- [TODO] **Phase 6-8** : Documentation et livrables finaux
 
 ---
 
 ## Livrables
 
-1. [FAIT] README.md (ce fichier)
+1. [FAIT] README.md (ce fichier, mise a jour 11/02/2026)
 2. [FAIT] Gestion des dependances (pyproject.toml, requirements.txt)
 3. [FAIT] Scripts de pre-processing avec docstrings
-4. [TODO] Scripts de vectorisation avec docstrings
-5. [FAIT] Tests unitaires avec pytest (22 tests)
+   - clean_data.py
+   - chunk_texts.py
+4. [TODO] Scripts de vectorisation avec docstrings (en cours)
+5. [FAIT] Tests unitaires avec pytest (30/30 tests PASSED : 8 environnement + 22 preprocessing)
 6. [TODO] Code du systeme RAG complet
 7. [TODO] Rapport technique (5-10 pages)
 8. [TODO] Presentation PowerPoint (10-15 slides)
+9. [FAIT] Logbook detaille (ABAI_P11_X0_tasks_list_logbook.md)
+10. [FAIT] Notebook d'exploration (analyse_dataset.ipynb - 8 sections)
 
 ---
