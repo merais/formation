@@ -63,6 +63,8 @@
 **Autres dépendances utiles**
   - [X] `poetry run pip install numpy` (deja installe)
   - [X] `poetry run pip install tiktoken`
+**Interface**
+  - [X] `poetry run pip install streamlit`
 
 **Date de realisation:** 06/02/2026  
 **Notes:**
@@ -244,7 +246,7 @@
 
 ### 3.2 - Creation de l'index FAISS
 - [x] Creer le script `src/vectorization/create_faiss_index.py`
-- [x] Choisir le type d'index FAISS (ex: IndexFlatL2, IndexIVFFlat)
+- [x] Choisir le type d'index FAISS (ex: IndexFlatIP, IndexFlatL2, IndexIVFFlat)
 - [x] Creer l'index FAISS
 - [x] Ajouter les vecteurs a l'index
 - [x] Associer les metadonnees aux vecteurs
@@ -304,41 +306,82 @@
 ## PHASE 4 - SYSTEME RAG AVEC LANGCHAIN
 
 ### 4.1 - Configuration de LangChain
-- [ ] Creer le script `src/rag/rag_system.py`
-- [ ] Configurer l'acces a Mistral LLM
-- [ ] Choisir le modele LLM Mistral approprie
-- [ ] Configurer les parametres du LLM (temperature, max_tokens, etc.)
-- [ ] Ajouter des docstrings au script
+- [x] Creer le script `src/rag/rag_system.py`
+- [x] Configurer l'acces a Mistral LLM
+- [x] Choisir le modele LLM Mistral approprie
+- [x] Configurer les parametres du LLM (temperature, max_tokens, etc.)
+- [x] Ajouter des docstrings au script
+
+**Date de realisation:** 12/02/2026  
+**Notes:**
+- Modele LLM: mistral-small-latest (equilibre performance/cout)
+- Parametres LLM: temperature=0.3 (factuel), max_tokens=1024, top_p=0.9
+- Integration complete LangChain: ChatMistralAI, MistralAIEmbeddings
+- Architecture modulaire: 9 methodes (_load_environment, _initialize_llm, _initialize_embeddings, _load_vectorstore, _create_retriever, _build_rag_chain, query, query_with_details, main)
+- Docstrings detaillees pour chaque methode avec exemples
+- Gestion d'erreurs: ValueError pour API key, FileNotFoundError pour fichiers manquants
+- Test reussi: systeme initialise en ~5s, reponse generee avec contexte pertinent
 
 
 ### 4.2 - Integration de FAISS avec LangChain
-- [ ] Creer un VectorStore LangChain a partir de l'index FAISS
-- [ ] Implementer un retriever avec top-k documents
-- [ ] Tester la recuperation de documents pertinents
-- [ ] Ajuster les parametres de recherche (k, score_threshold)
+- [x] Creer un VectorStore LangChain a partir de l'index FAISS
+- [x] Implementer un retriever avec top-k documents
+- [x] Tester la recuperation de documents pertinents
+- [x] Ajuster les parametres de recherche (k, score_threshold)
+
+**Date de realisation:** 12/02/2026  
+**Notes:**
+- VectorStore FAISS LangChain cree a partir de l'index existant (10,646 documents)
+- Conversion metadata Parquet -> Documents LangChain avec page_content et metadata
+- Retriever configure: search_type="similarity", top_k=5 documents
+- Seuil de similarite: 0.7 (ajustable)
+- Test fonctionnel: recuperation de 5 documents pertinents pour "concerts Toulouse"
+- Documents recuperes contiennent: title_fr, firstdate_begin, location_city, location_region, uid, chunk_index
+- Integration transparente avec l'index FAISS pre-calcule (pas de re-vectorisation)
 
 
 ### 4.3 - Creation de la chaine RAG
-- [ ] Implementer une chaine de prompt pour le RAG
-- [ ] Definir le template de prompt (contexte + question)
-- [ ] Integrer le retriever dans la chaine
-- [ ] Implementer la generation de reponse avec le LLM
-- [ ] Gerer les erreurs et cas limites
+- [x] Implementer une chaine de prompt pour le RAG
+- [x] Definir le template de prompt (contexte + question)
+- [x] Integrer le retriever dans la chaine
+- [x] Implementer la generation de reponse avec le LLM
+- [x] Gerer les erreurs et cas limites
 
-
-### 4.4 - Optimisation du systeme
-- [ ] Ajuster le nombre de documents recuperes (top-k)
-- [ ] Optimiser le prompt template
-- [ ] Implementer une strategie de re-ranking (optionnel)
-- [ ] Tester avec differentes questions
+**Date de realisation:** 12/02/2026  
+**Notes:**
+- Chaine RAG complete implementee dans _build_rag_chain()
+- Template de prompt structure: instructions + contexte formate + question utilisateur
+- Instructions LLM: reponses claires, mentions dates/lieux, suggestions alternatives, factuel uniquement
+- Retriever integre avec fonction format_docs() pour formater le contexte
+- Generation via ChatPromptTemplate + LLM + StrOutputParser
+- Chaine construite avec operateur pipe LangChain: {context + question} | prompt | llm | parser
+- Gestion d'erreurs: ValueError (API key), FileNotFoundError (fichiers vectorstore)
+- Test reussi: question "concerts Toulouse" -> reponse coherente avec 2 evenements + dates/lieux
+- Format de sortie: dictionnaire {question, answer, sources} avec metadonnees detaillees
 
 
 ### 4.5 - Interface de chat simple
-- [ ] Creer un script `src/rag/chat_interface.py`
-- [ ] Implementer une boucle de conversation en ligne de commande
-- [ ] Afficher les sources (evenements utilises)
-- [ ] Ajouter des commandes (exit, help, etc.)
-- [ ] Tester l'interface avec plusieurs scenarios
+- [x] Creer un script `src/rag/chat_interface.py`
+- [x] Implementer une interface web Streamlit
+- [x] Afficher les sources (evenements utilises)
+- [x] Ajouter des statistiques et aide dans la sidebar
+- [x] Tester l'interface avec plusieurs scenarios
+
+**Date de realisation:** 12/02/2026  
+**Notes:**
+- Interface web avec Streamlit
+- Script src/rag/chat_interface.py cree
+- Fonctionnalites implementees:
+  - Gestion de l'historique de conversation (st.session_state.messages)
+  - Affichage des messages en bulles de chat (st.chat_message)
+  - Sidebar avec aide, statistiques, exemples de questions
+  - Affichage des sources formatees avec metadonnees (titre, date, lieu)
+  - Bouton "Nouvelle conversation" pour reinitialiser
+  - Cache du systeme RAG avec @st.cache_resource (initialisation unique)
+  - Mesure et affichage du temps de reponse
+- Configuration: page_title="Chatbot Puls-Events", page_icon="🎭", layout="wide"
+- Commande de lancement: poetry run streamlit run src/rag/chat_interface.py
+- URL locale: http://localhost:8501
 
 
 ---
