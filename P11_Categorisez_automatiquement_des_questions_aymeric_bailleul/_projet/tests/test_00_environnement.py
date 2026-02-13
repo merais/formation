@@ -91,7 +91,8 @@ def test_imports():
     except Exception as e:
         print(f"  [ERREUR] Pytest : {str(e)}")
     
-    return tests_passed, tests_total
+    # Assertion pytest (pas de return)
+    assert tests_passed == tests_total, f"Seulement {tests_passed}/{tests_total} imports reussis"
 
 
 def test_mistral_api():
@@ -102,9 +103,7 @@ def test_mistral_api():
     # Recuperer la cle API
     api_key = os.getenv("MISTRAL_API_KEY")
     
-    if not api_key:
-        print("  [ERREUR] MISTRAL_API_KEY non trouvee dans le fichier .env")
-        return False
+    assert api_key is not None, "MISTRAL_API_KEY non trouvee dans le fichier .env"
     
     print(f"  [OK] Cle API chargee : {api_key[:8]}...")
     
@@ -129,11 +128,13 @@ def test_mistral_api():
         # Verifier la reponse
         result = response.choices[0].message.content
         print(f"  [OK] Reponse de l'API : {result}")
-        return True
+        
+        # Assertion pytest (pas de return)
+        assert result is not None, "Aucune reponse de l'API Mistral"
         
     except Exception as e:
         print(f"  [ERREUR] Appel API : {str(e)}")
-        return False
+        raise AssertionError(f"Echec de l'appel API Mistral : {str(e)}")
 
 
 def test_faiss_functionality():
@@ -160,11 +161,13 @@ def test_faiss_functionality():
         distances, indices = index.search(query, k=3)
         print(f"  [OK] Recherche effectuee (k=3)")
         
-        return True
+        # Assertion pytest (pas de return)
+        assert index.ntotal == 10, f"Nombre de vecteurs incorrect: {index.ntotal}"
+        assert len(indices[0]) == 3, "Recherche n'a pas retourne 3 resultats"
         
     except Exception as e:
         print(f"  [ERREUR] Faiss : {str(e)}")
-        return False
+        raise AssertionError(f"Echec du test Faiss : {str(e)}")
 
 
 def main():
@@ -175,28 +178,43 @@ def main():
     print("=" * 70)
     print()
     
+    all_tests_passed = True
+    
     # Test des imports
-    imports_passed, imports_total = test_imports()
+    try:
+        test_imports()
+        imports_status = "OK"
+    except AssertionError as e:
+        imports_status = f"ERREUR: {str(e)}"
+        all_tests_passed = False
     
     # Test de l'API Mistral
-    api_ok = test_mistral_api()
+    try:
+        test_mistral_api()
+        api_status = "OK"
+    except AssertionError as e:
+        api_status = f"ERREUR: {str(e)}"
+        all_tests_passed = False
     
     # Test de Faiss
-    faiss_ok = test_faiss_functionality()
+    try:
+        test_faiss_functionality()
+        faiss_status = "OK"
+    except AssertionError as e:
+        faiss_status = f"ERREUR: {str(e)}"
+        all_tests_passed = False
     
     # Resume final
     print("\n" + "=" * 70)
     print("RESUME DES TESTS")
     print("=" * 70)
-    print(f"Imports        : {imports_passed}/{imports_total} reussis")
-    print(f"API Mistral    : {'OK' if api_ok else 'ERREUR'}")
-    print(f"Faiss          : {'OK' if faiss_ok else 'ERREUR'}")
+    print(f"Imports        : {imports_status}")
+    print(f"API Mistral    : {api_status}")
+    print(f"Faiss          : {faiss_status}")
     print()
     
     # Statut global
-    all_ok = (imports_passed == imports_total) and api_ok and faiss_ok
-    
-    if all_ok:
+    if all_tests_passed:
         print("STATUT GLOBAL  : ENVIRONNEMENT OPERATIONNEL")
         print("=" * 70)
         return 0

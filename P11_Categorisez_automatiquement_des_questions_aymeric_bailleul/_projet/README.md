@@ -197,7 +197,7 @@ pytest tests/test_00_environnement.py -v
 ### 1. Collecte et pre-processing des donnees
 
 ```bash
-# Nettoyer les donnees (fichier RAW deja present)
+# Nettoyer les donnees (fichier dans data/RAW deja present)
 poetry run python src/preprocessing/clean_data.py
 
 # Le script effectue :
@@ -222,8 +222,8 @@ poetry run python src/build_vectorstore.py
 # Duree totale : ~4-5 minutes pour 10,646 chunks
 
 # Option 2 : Etapes manuelles
-poetry run python src/vectorization/vectorize_data.py     # Vectorisation (3.9 min)
-poetry run python src/vectorization/create_faiss_index.py # Indexation (0.4 sec)
+poetry run python src/vectorization/vectorize_data.py     # Vectorisation
+poetry run python src/vectorization/create_faiss_index.py # Indexation
 ```
 
 ### 3. Lancer le chatbot Streamlit
@@ -243,45 +243,23 @@ poetry run streamlit run src/rag/chat_interface.py
 # - Affichage du temps de reponse
 ```
 
-#### Utilisation programmatique du systeme RAG
-
-```python
-# Utiliser le systeme RAG directement en Python
-from src.rag.rag_system import RAGSystem
-
-# Initialiser le systeme
-rag = RAGSystem()
-
-# Poser une question simple
-response = rag.query("Quels concerts a Toulouse ce week-end ?")
-print(response)
-
-# Obtenir les details (reponse + sources)
-result = rag.query_with_details("Expositions a Montpellier")
-print(f"Reponse: {result['answer']}")
-print(f"Sources: {len(result['sources'])} documents consultes")
-for source in result['sources']:
-    print(f"  - {source['metadata']['title_fr']}")
-```
-
 ### 4. Executer les tests
 
 ```bash
 # IMPORTANT : Toujours executer depuis le repertoire _projet avec venv active
 cd P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/_projet
-.venv\Scripts\Activate.ps1
 
 # Tous les tests
-pytest tests/ -v
+poetry run pytest tests/ -v --disable-warnings
 
 # Tests de l'environnement
-pytest tests/test_00_environnement.py -v
+poetry run pytest tests/test_00_environnement.py -v
 
 # Tests du preprocessing
-pytest tests/test_01_preprocessing.py -v
+poetry run pytest tests/test_01_preprocessing.py -v
 
 # Tests de la base vectorielle
-pytest tests/test_02_vectorstore.py -v
+poetry run pytest tests/test_02_vectorstore.py -v
 ```
 
 ---
@@ -291,39 +269,18 @@ pytest tests/test_02_vectorstore.py -v
 - **Zone geographique** : Occitanie (13 departements)
 - **Periode** : 1 an en arriere (depuis le 09/02/2025) + tous evenements futurs
 - **Volume de donnees** : 
-  - Dataset brut : 913,818 evenements (905 MB)
+  - Dataset brut : 913,818 evenements
   - Dataset nettoye : 7,960 evenements Occitanie
   - Dataset chunks : 10,646 chunks (250 tokens/chunk, overlap 75 tokens)
-  - Base vectorielle : 10,646 embeddings 1024D (83.17 MB) + index FAISS (41.59 MB)
+  - Base vectorielle : 10,646 embeddings 1024D + index FAISS 
   - Repartition : 7,784 evenements passes + 176 evenements futurs
-  - Distribution chunks : 76.4% evenements avec 1 chunk, 23.6% avec plusieurs chunks
 - **Source de donnees** : Open Agenda (https://public.opendatasoft.com/explore/dataset/evenements-publics-openagenda)
 
 ---
 
 ## Evaluation
 
-Le systeme sera evalue sur un jeu de donnees test annote contenant des questions/reponses representatives (Phase 5 en cours). Les metriques evaluees incluront :
-
-- **Pertinence des documents recuperes**: Precision@k et Recall@k pour mesurer la qualite du retriever
-- **Qualite des reponses generees**: Coherence, completude et pertinence des reponses LLM
-- **Temps de reponse**: Performance end-to-end du systeme RAG
-- **Couverture semantique**: Capacite a repondre a differents types de questions
-
-Les resultats detailles seront disponibles dans le rapport technique une fois l'evaluation completee.
-
----
-
-## Limitations connues
-
-- Le POC ne conserve pas l'historique entre les sessions (uniquement dans la session active)
-- La recherche semantique est limitee au perimetre geographique defini (Occitanie)
-- Les performances dependent de la qualite des donnees Open Agenda
-- La vectorisation peut etre couteuse pour un large volume de donnees
-- Pas d'authentification utilisateur dans l'interface Streamlit
-- Pas de persistence des conversations dans une base de donnees
-- Le systeme ne gere pas les questions multi-tours complexes
-- Les reponses sont limitees aux evenements pre-indexes (pas de mise a jour en temps reel)
+Le systeme sera evalue sur un jeu de donnees test annote contenant des questions/reponses representatives (Phase 5 en cours)
 
 ---
 
@@ -340,28 +297,10 @@ Les resultats detailles seront disponibles dans le rapport technique une fois l'
 - [FAIT] **Phase 3.3** : Tests vectorisation et FAISS (27/27 tests PASSED)
 - [FAIT] **Phase 3.4** : Script de reconstruction complete (build_vectorstore.py, 4m 37s)
 - [FAIT] **Phase 4.1-4.3** : Systeme RAG avec LangChain
-  - Configuration LLM Mistral (mistral-small-latest, temperature=0.3)
-  - Integration FAISS avec LangChain (VectorStore + Retriever)
-  - Creation de la chaine RAG (prompt + context + LLM)
-  - Script rag_system.py (468 lignes, 9 methodes documentees)
 - [FAIT] **Phase 4.4** : Tests et optimisation du RAG
-  - Recuperation de 5 documents pertinents (k=5)
-  - Reponses generees avec contexte semantique
-  - Temps de reponse: ~2-5 secondes par requete
 - [FAIT] **Phase 4.5** : Interface de chat Streamlit
-  - Interface web interactive (chat_interface.py, 309 lignes)
-  - Gestion de l'historique de conversation (st.session_state)
-  - Affichage des sources avec metadonnees (titre, date, lieu, extrait)
-  - Sidebar avec statistiques, aide et exemples
-  - Bouton "Nouvelle conversation" et reset
 - [TODO] **Phase 5** : Evaluation et optimisation
-  - Creation jeu de donnees test avec questions annotees
-  - Script d'evaluation automatique (metriques)
-  - Tests unitaires du systeme RAG complet
 - [TODO] **Phase 6-8** : Documentation et livrables finaux
-  - Rapport technique (5-10 pages)
-  - Presentation PowerPoint (10-15 slides)
-  - Documentation complete du code
 
 ---
 
@@ -370,12 +309,12 @@ Les resultats detailles seront disponibles dans le rapport technique une fois l'
 1. [FAIT] README.md (ce fichier, mise a jour 13/02/2026)
 2. [FAIT] Gestion des dependances (pyproject.toml, requirements.txt)
 3. [FAIT] Scripts de pre-processing avec docstrings
-   - clean_data.py
-   - chunk_texts.py
+   - src/preprocessing/clean_data.py
+   - src/preprocessing/chunk_texts.py
 4. [FAIT] Scripts de vectorisation avec docstrings
-   - vectorize_data.py
-   - create_faiss_index.py
-   - build_vectorstore.py
+   - src/vectorization/vectorize_data.py
+   - src/vectorization/create_faiss_index.py
+   - src/build_vectorstore.py
 5. [FAIT] Tests unitaires avec pytest (57/57 tests PASSED : 8 environnement + 22 preprocessing + 27 vectorstore)
 6. [FAIT] Code du systeme RAG complet
    - src/rag/rag_system.py (systeme RAG avec LangChain)
