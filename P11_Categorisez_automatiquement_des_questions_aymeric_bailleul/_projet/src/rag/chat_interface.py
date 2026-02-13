@@ -8,7 +8,7 @@ Ce script fournit une interface web interactive permettant aux utilisateurs de :
 - Bénéficier d'une gestion de l'historique de conversation
 
 Usage:
-    streamlit run src/rag/chat_interface.py
+    poetry run streamlit run src/rag/chat_interface.py
 """
 
 import streamlit as st

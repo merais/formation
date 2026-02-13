@@ -2,8 +2,10 @@
 
 **Projet:** Developpement d'un assistant pour la recommandation d'evenements culturels  
 **Auteur:** Aymeric Bailleul  
-**Date de début** : 16/02/2026  
+**Date de début** : 03/02/2026  
+**Date de derniere mise a jour** : 13/02/2026  
 **Date de fin maximum** : 10/03/2026  
+**Statut:** Phase 4 completee - RAG fonctionnel avec interface Streamlit  
 
 ---
 
@@ -98,9 +100,11 @@ P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/
 │   │   │   ├── vectorize_data.py  (305 lignes)
 │   │   │   └── create_faiss_index.py 
 │   │   ├── rag/                   # Systeme RAG et interface chat
+│   │   │   ├── rag_system.py      # Systeme RAG complet (468 lignes)
+│   │   │   └── chat_interface.py  # Interface web Streamlit (309 lignes)
 │   │   └── build_vectorstore.py   # Orchestrateur pipeline complet
 │   ├── tests/                     # Tests unitaires
-│   │   ├── tests_environnement.py # Tests de configuration (8/8)
+│   │   ├── test_00_environnement.py # Tests de configuration (8/8)
 │   │   ├── test_01_preprocessing.py  # Tests du preprocessing (22/22)
 │   │   └── test_02_vectorstore.py    # Tests base vectorielle (27/27)
 │   ├── analyses/                  # Notebooks d'exploration
@@ -120,16 +124,20 @@ P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/
 
 - **Python 3.11.9** : Langage de programmation principal
 - **Poetry** : Gestion des dependances et environnement virtuel
-- **LangChain 1.2.8** : Framework pour orchestrer le systeme RAG
-- **LangChain-Mistralai 1.1.1** : Integration Mistral avec LangChain
-- **Mistral AI 1.12.0** : SDK pour modeles de langage et embeddings
-- **Faiss 1.13.2** : Base de donnees vectorielle pour la recherche semantique
-- **Pandas 3.0.0** : Manipulation et analyse de donnees
-- **NumPy 2.4.2** : Calculs numeriques et operations matricielles
-- **PyArrow 23.0.0** : Lecture/ecriture de fichiers Parquet
-- **Pytest 9.0.2** : Tests unitaires
-- **Jupyter Notebook 7.5.3** : Environnement de developpement interactif
-- **Tiktoken 0.12.0** : Comptage de tokens pour les modeles LLM
+- **LangChain >= 0.3.19** : Framework pour orchestrer le systeme RAG
+- **LangChain-Community >= 0.3.19** : Extensions communautaires LangChain
+- **LangChain-Mistralai >= 0.2.7** : Integration Mistral avec LangChain
+- **Mistral AI >= 1.12.0** : SDK pour modeles de langage et embeddings
+- **Faiss-cpu >= 1.13.2** : Base de donnees vectorielle pour la recherche semantique
+- **Pandas >= 2.3.3** : Manipulation et analyse de donnees (downgrade pour Streamlit)
+- **NumPy >= 2.4.2** : Calculs numeriques et operations matricielles
+- **PyArrow >= 23.0.0** : Lecture/ecriture de fichiers Parquet
+- **Streamlit >= 1.54.0** : Framework pour interface web interactive
+- **Pytest >= 9.0.2** : Tests unitaires
+- **Jupyter Notebook >= 7.5.3** : Environnement de developpement interactif
+- **Tiktoken >= 0.12.0** : Comptage de tokens pour les modeles LLM
+- **Python-dotenv >= 1.2.1** : Gestion des variables d'environnement
+- **Requests >= 2.32.5** : Requetes HTTP
 
 ---
 
@@ -218,9 +226,43 @@ poetry run python src/vectorization/vectorize_data.py     # Vectorisation (3.9 m
 poetry run python src/vectorization/create_faiss_index.py # Indexation (0.4 sec)
 ```
 
-### 3. Lancer le chatbot
+### 3. Lancer le chatbot Streamlit
 
-(En cours de developpement - Phase 4)
+```bash
+# Lancer l'interface web interactive
+poetry run streamlit run src/rag/chat_interface.py
+
+# L'interface s'ouvre automatiquement dans votre navigateur
+# URL par defaut: http://localhost:8501
+
+# Fonctionnalites disponibles:
+# - Chat interactif avec historique de conversation
+# - Affichage des sources d'evenements consultes
+# - Sidebar avec statistiques, aide et exemples de questions
+# - Bouton "Nouvelle conversation" pour reinitialiser
+# - Affichage du temps de reponse
+```
+
+#### Utilisation programmatique du systeme RAG
+
+```python
+# Utiliser le systeme RAG directement en Python
+from src.rag.rag_system import RAGSystem
+
+# Initialiser le systeme
+rag = RAGSystem()
+
+# Poser une question simple
+response = rag.query("Quels concerts a Toulouse ce week-end ?")
+print(response)
+
+# Obtenir les details (reponse + sources)
+result = rag.query_with_details("Expositions a Montpellier")
+print(f"Reponse: {result['answer']}")
+print(f"Sources: {len(result['sources'])} documents consultes")
+for source in result['sources']:
+    print(f"  - {source['metadata']['title_fr']}")
+```
 
 ### 4. Executer les tests
 
@@ -261,22 +303,27 @@ pytest tests/test_02_vectorstore.py -v
 
 ## Evaluation
 
-Le systeme est evalue sur un jeu de donnees test annote contenant des questions/reponses representatives. Les metriques evaluees incluent :
+Le systeme sera evalue sur un jeu de donnees test annote contenant des questions/reponses representatives (Phase 5 en cours). Les metriques evaluees incluront :
 
-- Pertinence des documents recuperes
-- Qualite et coherence des reponses generees
-- Temps de reponse
+- **Pertinence des documents recuperes**: Precision@k et Recall@k pour mesurer la qualite du retriever
+- **Qualite des reponses generees**: Coherence, completude et pertinence des reponses LLM
+- **Temps de reponse**: Performance end-to-end du systeme RAG
+- **Couverture semantique**: Capacite a repondre a differents types de questions
 
-Les resultats detailles sont disponibles dans le rapport technique.
+Les resultats detailles seront disponibles dans le rapport technique une fois l'evaluation completee.
 
 ---
 
 ## Limitations connues
 
-- Le POC ne conserve pas l'historique de conversation
-- La recherche semantique est limitee au perimetre geographique defini
+- Le POC ne conserve pas l'historique entre les sessions (uniquement dans la session active)
+- La recherche semantique est limitee au perimetre geographique defini (Occitanie)
 - Les performances dependent de la qualite des donnees Open Agenda
 - La vectorisation peut etre couteuse pour un large volume de donnees
+- Pas d'authentification utilisateur dans l'interface Streamlit
+- Pas de persistence des conversations dans une base de donnees
+- Le systeme ne gere pas les questions multi-tours complexes
+- Les reponses sont limitees aux evenements pre-indexes (pas de mise a jour en temps reel)
 
 ---
 
@@ -292,15 +339,35 @@ Les resultats detailles sont disponibles dans le rapport technique.
 - [FAIT] **Phase 3.2** : Creation de l'index FAISS (IndexFlatIP, 41.70 MB, 0.39 sec)
 - [FAIT] **Phase 3.3** : Tests vectorisation et FAISS (27/27 tests PASSED)
 - [FAIT] **Phase 3.4** : Script de reconstruction complete (build_vectorstore.py, 4m 37s)
-- [TODO] **Phase 4** : Systeme RAG avec LangChain
+- [FAIT] **Phase 4.1-4.3** : Systeme RAG avec LangChain
+  - Configuration LLM Mistral (mistral-small-latest, temperature=0.3)
+  - Integration FAISS avec LangChain (VectorStore + Retriever)
+  - Creation de la chaine RAG (prompt + context + LLM)
+  - Script rag_system.py (468 lignes, 9 methodes documentees)
+- [FAIT] **Phase 4.4** : Tests et optimisation du RAG
+  - Recuperation de 5 documents pertinents (k=5)
+  - Reponses generees avec contexte semantique
+  - Temps de reponse: ~2-5 secondes par requete
+- [FAIT] **Phase 4.5** : Interface de chat Streamlit
+  - Interface web interactive (chat_interface.py, 309 lignes)
+  - Gestion de l'historique de conversation (st.session_state)
+  - Affichage des sources avec metadonnees (titre, date, lieu, extrait)
+  - Sidebar avec statistiques, aide et exemples
+  - Bouton "Nouvelle conversation" et reset
 - [TODO] **Phase 5** : Evaluation et optimisation
+  - Creation jeu de donnees test avec questions annotees
+  - Script d'evaluation automatique (metriques)
+  - Tests unitaires du systeme RAG complet
 - [TODO] **Phase 6-8** : Documentation et livrables finaux
+  - Rapport technique (5-10 pages)
+  - Presentation PowerPoint (10-15 slides)
+  - Documentation complete du code
 
 ---
 
 ## Livrables
 
-1. [FAIT] README.md (ce fichier, mise a jour 11/02/2026)
+1. [FAIT] README.md (ce fichier, mise a jour 13/02/2026)
 2. [FAIT] Gestion des dependances (pyproject.toml, requirements.txt)
 3. [FAIT] Scripts de pre-processing avec docstrings
    - clean_data.py
@@ -310,7 +377,9 @@ Les resultats detailles sont disponibles dans le rapport technique.
    - create_faiss_index.py
    - build_vectorstore.py
 5. [FAIT] Tests unitaires avec pytest (57/57 tests PASSED : 8 environnement + 22 preprocessing + 27 vectorstore)
-6. [TODO] Code du systeme RAG complet
+6. [FAIT] Code du systeme RAG complet
+   - src/rag/rag_system.py (systeme RAG avec LangChain)
+   - src/rag/chat_interface.py (interface web Streamlit)
 7. [TODO] Rapport technique (5-10 pages)
 8. [TODO] Presentation PowerPoint (10-15 slides)
 9. [FAIT] Logbook detaille (ABAI_P11_X0_tasks_list_logbook.md)
