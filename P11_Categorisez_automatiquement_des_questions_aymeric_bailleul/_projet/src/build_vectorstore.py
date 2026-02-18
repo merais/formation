@@ -197,9 +197,6 @@ def main():
         print("\n[ERREUR] Prérequis non satisfaits. Arrêt du pipeline.")
         sys.exit(1)
     
-    print("\n[OK] Tous les prérequis sont satisfaits. Démarrage du pipeline...\n")
-    input("Appuyez sur ENTRÉE pour continuer (ou Ctrl+C pour annuler)...")
-    
     # 2. Exécuter chaque étape
     results = []
     total_steps = len(SCRIPTS)
