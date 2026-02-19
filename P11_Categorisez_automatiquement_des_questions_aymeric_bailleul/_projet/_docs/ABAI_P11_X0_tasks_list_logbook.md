@@ -389,28 +389,55 @@
 ## PHASE 5 - EVALUATION DU SYSTEME
 
 ### 5.1 - Creation du jeu de donnees test
-- [ ] Creer le fichier `data/evaluation/test_questions.json`
-- [ ] Rediger 10-20 questions representatives
-- [ ] Annoter les reponses attendues pour chaque question
-- [ ] Identifier les evenements pertinents pour chaque question
-- [ ] Valider la qualite des annotations
+- [X] Creer le fichier `data/evaluation/test_dataset_ragas.json`
+- [X] Selectionner 5 questions representatives et ciblees (Occitanie)
+- [X] Generer les reponses (answer) via le pipeline RAG complet
+- [X] Recuperer les contextes (contexts) utilises par le retriever FAISS
+- [X] Rediger les ground_truth en texte brut (format narratif, sans Markdown)
+- [X] Valider le dataset (texte brut uniquement, pas de caracterees speciaux)
+
+**Date de realisation:** 19/02/2026  
+**Notes:**
+- Format: JSON avec 4 champs par entree (question, answer, contexts, ground_truth)
+- 5 questions ciblees Occitanie : expositions Montpellier, spectacles enfants, festivals ete, Carcassonne weekend, evenements plein air
+- 10 contextes (chunks FAISS, k=10) par question
+- Ground_truth rediges en style narratif court, texte simple, pour coller au style de reponse du modele
+- Fichier : data/evaluation/test_dataset_ragas.json
 
 
 ### 5.2 - Script d'evaluation
-- [ ] Creer le script `src/evaluation/evaluate_rag.py`
-- [ ] Implementer l'evaluation automatique sur le jeu test
-- [ ] Calculer des metriques (pertinence, coherence)
-- [ ] Generer un rapport d'evaluation
-- [ ] Identifier les points d'amelioration
+- [X] Creer le script `src/evaluation/evaluate_rag.py`
+- [X] Charger les donnees de test depuis test_dataset_ragas.json
+- [X] Formater le dataset pour Ragas avec `datasets.Dataset`
+- [X] Initialiser le LLM et les embeddings Mistral via LangChain
+- [X] Lancer l'evaluation Ragas avec les 4 metriques
+- [X] Afficher les resultats sous forme de DataFrame pandas
+- [X] Sauvegarder les resultats dans un fichier JSON date
 
-
-### 5.3 - Tests du systeme RAG complet
-- [ ] Creer le fichier `tests/test_03_rag_system.py`
-- [ ] Test: verifier la generation de reponses
-- [ ] Test: verifier la recuperation de documents pertinents
-- [ ] Test: tester des cas limites (questions hors sujet)
-- [ ] Test: verifier les temps de reponse
-- [ ] Executer les tests avec pytest
+**Date de realisation:** 19/02/2026  
+**Notes:**
+- Script structure en 7 fonctions modulaires (conforme cours OC chapitre 4 partie 4)
+- Modele d'evaluation : `mistral-large-latest` (temperature=0.1, via Mistral API)
+- Embeddings d'evaluation : `mistral-embed` (via Mistral API, MistralAIEmbeddings)
+- Import : `langchain_mistralai.ChatMistralAI` et `langchain_mistralai.MistralAIEmbeddings`
+- 4 metriques Ragas : faithfulness, answer_relevancy, context_precision, context_recall
+- Prompts Ragas traduits en francais via `configure_french_prompts()` :
+  - Evite le biais cosinus (questions generees en anglais depuis reponses francaises)
+  - Contraintes binaires explicites (REGLE ABSOLUE : 0 ou 1 uniquement) pour reduire les NaN
+  - Modifie les attributs `.instruction` sur : statement_generator_prompt, nli_statements_prompt, question_generation, context_precision_prompt, context_recall_prompt
+  - context_precision conserve le prompt natif anglais Ragas (parsing plus fiable)
+- Retriever optimise : MMR (Maximal Marginal Relevance) active dans `_create_retriever()` :
+  - `search_type="mmr"`, `fetch_k=20` (candidats pre-selectionnes), `lambda_mult=0.7` (70% similarite / 30% diversite)
+  - Reduit les quasi-doublons de chunks issus du meme evenement
+- `answer_relevancy.strictness = 1` pour eviter TypeError dict+=dict avec LangChain
+- RunConfig : max_workers=1, timeout=120s, max_retries=3, max_wait=60s
+- Variable d'environnement MAX_EVAL_QUESTIONS pour limiter le nombre de questions (tests)
+- Scores finaux (5 questions, 19/02/2026, mistral-large-latest) :
+  - faithfulness     : 0.764
+  - answer_relevancy : 0.910
+  - context_precision: 0.700
+  - context_recall   : 0.583
+- Fichier resultats : data/evaluation/ragas_results_final.json
 
 
 ---
@@ -547,26 +574,35 @@
 ## ANNEXE - NOTES TECHNIQUES
 
 ### Perimetre geographique selectionne:
-- Region/Ville:
-- Justification:
+- Region/Ville: Occitanie (13 departements : 09, 11, 12, 30, 31, 32, 34, 46, 48, 65, 66, 81, 82)
+- Justification: Region Occitanie retenue comme perimetre geographique representatif pour le POC
 
 ### Periode de collecte:
-- Date debut:
-- Date fin:
-- Nombre d'evenements collectes:
+- Date debut: 09/02/2025 (1 an en arriere au moment du telechargement)
+- Date fin: evenements futurs sans limite de date
+- Nombre d'evenements collectes: 7,983 (7,784 passes + 199 futurs au 09/02/2026, reduit a 7,960 apres nettoyage)
 
 ### Configuration technique:
 - Version Python: 3.11.9
 - Version LangChain: 1.2.8
+- Version LangChain-Community: 0.4.1
 - Version LangChain-Mistralai: 1.1.1
+- Version LangChain-Core: 1.2.12
 - Version Faiss: 1.13.2 (CPU)
 - Version Mistral SDK: 1.12.0
-- Version Pandas: 3.0.0
+- Version Pandas: 3.0.1
 - Version NumPy: 2.4.2
+- Version PyArrow: 23.0.0
 - Version Tiktoken: 0.12.0
 - Version Pytest: 9.0.2
-- Modele Mistral Embeddings: mistral-embed (1024 dimensions)
-- Modele Mistral LLM: mistral-small-latest (teste)
+- Version Streamlit: 1.54.0
+- Version Ragas: 0.4.3
+- Version Datasets: 4.5.0
+- Version Nest-asyncio: 1.6.0
+- Modele Mistral Embeddings: mistral-embed (1024 dimensions, production)
+- Modele Mistral LLM (production): mistral-small-latest (temperature=0.1)
+- Modele LLM (evaluation Ragas): mistral-large-latest (temperature=0.1, via Mistral API)
+- Modele Embeddings (evaluation Ragas): mistral-embed (via Mistral API, MistralAIEmbeddings)
 - Type d'index Faiss: IndexFlatIP (recherche exacte, Inner Product)
 - Taille index Faiss: 41.70 MB pour 10,646 vecteurs
 - Temps creation index: 0.39 secondes
@@ -578,4 +614,6 @@
 - Encodage tokens: cl100k_base (compatible Mistral)
 - Nombre total de chunks: 10,646
 - Moyenne chunks/evenement: 1.34
-- Nombre de documents recuperes (k): (a definir Phase 4)
+- Nombre de documents recuperes (k): 10 (RETRIEVER_K dans rag_system.py, augmente de 7 a 10)
+- Seuil de similarite: 0.7 (RETRIEVER_SCORE_THRESHOLD dans rag_system.py, defini mais non applique avec MMR)
+- Type de recherche : MMR - Maximal Marginal Relevance (fetch_k=20, lambda_mult=0.7)

@@ -55,12 +55,12 @@ VECTORSTORE_DIR = DATA_DIR / "vectorstore"
 
 # Configuration du modèle LLM Mistral
 LLM_MODEL = "mistral-small-latest"  # Modèle équilibré performance/coût
-LLM_TEMPERATURE = 0.3  # Peu créatif, plus factuel (0.0-1.0)
+LLM_TEMPERATURE = 0.0  # Déterministe pour maximiser la faithfulness (0.3 → 0.1 → 0.0)
 LLM_MAX_TOKENS = 1024  # Longueur maximale de la réponse
-LLM_TOP_P = 0.9  # Nucleus sampling
+LLM_TOP_P = 1.0  # top_p=1.0 obligatoire avec temperature=0.0 (greedy sampling)
 
 # Configuration du retriever
-RETRIEVER_K = 5  # Nombre de documents à récupérer
+RETRIEVER_K = 10  # Nombre de documents à récupérer (5→7→10 : meilleur recall)
 RETRIEVER_SCORE_THRESHOLD = 0.7  # Seuil de similarité minimum
 
 # Configuration des embeddings
@@ -187,11 +187,13 @@ class RAGSystem:
             print(f"   - Temperature: {temperature}")
             print(f"   - Max tokens: {max_tokens}")
         
+        # Mistral exige top_p=1.0 en mode greedy (temperature=0.0)
+        effective_top_p = 1.0 if temperature == 0.0 else LLM_TOP_P
         self.llm = ChatMistralAI(
             model=model,
             temperature=temperature,
             max_tokens=max_tokens,
-            top_p=LLM_TOP_P
+            top_p=effective_top_p
         )
         
         if self.verbose:
@@ -252,8 +254,8 @@ class RAGSystem:
         # Créer des Documents LangChain à partir des métadonnées
         documents = []
         for idx, row in metadata_df.iterrows():
-            # Construire le texte pour la recherche
-            text = row.get('text', '')
+            # Construire le texte pour la recherche (colonne chunk_text dans le parquet)
+            text = row.get('chunk_text', '')
             
             # Métadonnées associées
             metadata = {
@@ -294,8 +296,12 @@ class RAGSystem:
             print(f"   - Seuil de similarité: {RETRIEVER_SCORE_THRESHOLD}")
         
         self.retriever = self.vectorstore.as_retriever(
-            search_type="similarity",
-            search_kwargs={"k": self.retriever_k}
+            search_type="mmr",
+            search_kwargs={
+                "k": self.retriever_k,   # chunks finaux retournés
+                "fetch_k": 20,           # candidats pré-sélectionnés avant diversification MMR
+                "lambda_mult": 0.7       # 1.0 = full similarity, 0.0 = full diversity
+            }
         )
         
         if self.verbose:
@@ -309,8 +315,11 @@ class RAGSystem:
             print(f"\n6. Construction de la chaîne RAG...")
         
         # Template du prompt
+        # IMPORTANT : "suggère des alternatives proches" a été retiré — il poussait le LLM
+        # à sortir du contexte (hallucinations + answer_relevancy = 0 sur questions hors-zone).
         template = """Tu es un assistant spécialisé dans la recommandation d'événements culturels en Occitanie.
-            Utilise les informations suivantes sur les événements pour répondre à la question de l'utilisateur.
+            Utilise UNIQUEMENT les informations du CONTEXTE ci-dessous pour répondre.
+            INTERDICTION ABSOLUE d'utiliser tes connaissances générales ou d'inventer des informations.
 
             CONTEXTE (Événements pertinents):
             {context}
@@ -318,12 +327,16 @@ class RAGSystem:
             QUESTION:
             {question}
 
-            INSTRUCTIONS:
-            - Réponds de manière claire et concise
-            - Mentionne les événements spécifiques avec leurs dates et lieux
-            - Si plusieurs événements correspondent, liste-les
-            - Si aucun événement ne correspond exactement, suggère des alternatives proches
-            - Reste factuel et base-toi uniquement sur les informations fournies
+            INSTRUCTIONS STRICTES:
+            - Base ta réponse EXCLUSIVEMENT sur les événements du CONTEXTE fourni
+            - Mentionne les événements spécifiques avec leurs dates et lieux exacts
+            - Si plusieurs événements correspondent, liste-les tous
+            - Si aucun événement du contexte ne correspond exactement à la question, réponds UNIQUEMENT :
+              "Aucun événement trouvé pour cette recherche dans notre base Puls-Events."
+            - N'invente JAMAIS de dates, lieux, prix ou détails absents du contexte
+            - N'utilise PAS tes connaissances générales sur des villes, artistes ou événements
+            - Ne suggère PAS d'alternatives hors du contexte fourni
+            - Cite les informations telles qu'elles apparaissent dans le contexte
 
             RÉPONSE:"""
         

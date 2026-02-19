@@ -1,43 +1,65 @@
 """
-Script d'évaluation Ragas pour le système RAG Puls-Events.
+Évaluation du système RAG avec Ragas.
 
-Auteur: Aymeric Bailleul
-Date: 2026-02-17
+Ce script évalue les performances du système RAG Puls-Events en utilisant
+le framework Ragas avec 4 métriques clés, en suivant la structure du cours
+OpenClassrooms "Mettez en place un RAG pour un LLM".
+
+Structure du script (conforme au cours OC) :
+    1. Charger les données de test (question, answer, contexts, ground_truth)
+    2. Formater le dataset pour Ragas (avec `datasets.Dataset`)
+    3. Initialiser le LLM et les embeddings Mistral (via LangChain)
+    4. Lancer l'évaluation Ragas avec les 4 métriques
+    5. Afficher et sauvegarder les résultats
+
+Métriques évaluées :
+    - faithfulness          : La réponse est-elle fidèle au contexte ? (anti-hallucination)
+    - answer_relevancy      : La réponse répond-elle à la question ?
+    - context_precision     : Le contexte récupéré est-il exempt de bruit ?
+    - context_recall        : Toutes les infos nécessaires ont-elles été récupérées ?
+
+Usage :
+    poetry run python src/evaluation/evaluate_rag.py
+
+    # Limiter le nombre de questions (pour un test rapide) :
+    $env:MAX_EVAL_QUESTIONS="3"; poetry run python src/evaluation/evaluate_rag.py
+
+Auteur : Aymeric Bailleul
+Date   : Février 2026
 """
 
+# =============================================================================
+# IMPORTS
+# =============================================================================
+
 import os
-import sys
 import json
-import pandas as pd
-from pathlib import Path
-from datasets import Dataset
-import asyncio
-import nest_asyncio
+import warnings
 import traceback
-import logging
-from typing import List, Dict
+from pathlib import Path
 from datetime import datetime
-from dotenv import load_dotenv
 
-# Configuration des logs pour debug
-logging.basicConfig(level=logging.WARNING)
-logging.getLogger("ragas").setLevel(logging.DEBUG)
-
-# Chargement des variables d'environnement depuis .env
-load_dotenv()
-
-# Désactivation de la télémétrie Ragas (évite les timeouts réseau)
+# Désactiver le tracking Ragas (évite les timeouts réseau)
 os.environ["RAGAS_DO_NOT_TRACK"] = "true"
 
-# Configuration pour permettre asyncio dans Jupyter/interactive
-nest_asyncio.apply()
+# Masquer les warnings de dépendances tierces non maîtrisées
+# Note : les warnings Ragas utilisent stacklevel=2 → ils pointent vers ce fichier,
+# donc on filtre par message plutôt que par module.
+warnings.filterwarnings("ignore", category=FutureWarning, module="instructor")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="langchain")
+warnings.filterwarnings(
+    "ignore",
+    category=DeprecationWarning,
+    message=".*Importing.*ragas\\.metrics.*deprecated.*",
+)
 
-# Imports LangChain pour Mistral
-from langchain_mistralai.chat_models import ChatMistralAI
-from langchain_mistralai.embeddings import MistralAIEmbeddings
-
-# Imports Ragas
+import pandas as pd
+from datasets import Dataset
+import nest_asyncio
+from dotenv import load_dotenv
+from langchain_mistralai import ChatMistralAI, MistralAIEmbeddings
 from ragas import evaluate
+from ragas.run_config import RunConfig
 from ragas.metrics import (
     faithfulness,
     answer_relevancy,
@@ -45,336 +67,374 @@ from ragas.metrics import (
     context_recall,
 )
 
+# Appliquer nest_asyncio pour éviter les conflits d'event loop
+nest_asyncio.apply()
 
-def load_test_dataset(json_path: str, max_questions: int = None) -> Dict[str, List]:
+
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
+
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+
+# Charger les variables d'environnement (.env)
+load_dotenv(PROJECT_ROOT / ".env")
+
+# Chemins des données
+DATASET_PATH = PROJECT_ROOT / "data" / "evaluation" / "test_dataset_ragas.json"
+RESULTS_DIR  = PROJECT_ROOT / "data" / "evaluation"
+
+# Modèle Mistral API pour l'évaluation
+EVAL_LLM_MODEL       = "mistral-large-latest"
+EVAL_EMBED_MODEL     = "mistral-embed"
+EVAL_TEMPERATURE     = 0.1
+MISTRAL_API_KEY      = os.getenv("MISTRAL_API_KEY")
+
+# Nombre maximum de questions à évaluer (None = toutes)
+# Peut être surchargé via la variable d'environnement MAX_EVAL_QUESTIONS
+MAX_QUESTIONS = os.getenv("MAX_EVAL_QUESTIONS")
+MAX_QUESTIONS = int(MAX_QUESTIONS) if MAX_QUESTIONS else None
+
+# Configuration du timeout et du parallélisme pour Ragas
+# max_workers=4  : 4 workers en parallèle (Mistral API, rate limit géré par max_wait)
+# timeout=120    : 2 minutes max par opération
+# max_retries=3  : 3 tentatives en cas d'erreur réseau
+# max_wait=60    : 60s max entre les tentatives (backoff API)
+RUN_CONFIG = RunConfig(
+    max_workers=1,
+    timeout=120,
+    max_retries=3,
+    max_wait=60,
+)
+
+
+# =============================================================================
+# 1. CHARGEMENT DES DONNÉES DE TEST
+# =============================================================================
+
+def load_test_dataset(path: Path, max_questions: int = None) -> dict:
     """
-    Charge le fichier JSON de test et le transforme au format attendu par Ragas :
+    Charge le jeu de données de test depuis le fichier JSON.
 
-        "question": ["Q1", "Q2", ...],
-        "answer": ["A1", "A2", ...],
-        "contexts": [["ctx1", "ctx2"], ["ctx3"], ...],
-        "ground_truth": ["GT1", "GT2", ...]
-    
+    Le dataset contient des entrées pré-calculées par le pipeline RAG :
+        - question    : Question posée à l'assistant
+        - answer      : Réponse générée par le système RAG
+        - contexts    : Chunks récupérés par le retriever FAISS
+        - ground_truth: Réponse idéale définie manuellement
+
     Args:
-        json_path: Chemin vers le fichier JSON de test
-        max_questions: Nombre maximum de questions à évaluer (None = toutes)
-        
+        path         : Chemin vers le fichier JSON
+        max_questions: Nombre maximum de questions à charger (None = toutes)
+
     Returns:
-        Dictionnaire au format Ragas (listes parallèles)
+        Dictionnaire avec les listes questions, answers, contexts, ground_truths
     """
-    print(f"\nChargement du jeu de données de test : {json_path}")
-    
-    with open(json_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-    
-    # Transformation du format {"data": [...]} vers le format Ragas
-    questions = []
-    answers = []
-    contexts = []
-    ground_truths = []
-    
-    items = data.get("data", [])
+    print(f"\nChargement du dataset : {path.name}")
+
+    with open(path, "r", encoding="utf-8") as f:
+        raw = json.load(f)
+
+    data = raw["data"]
+
     if max_questions:
-        items = items[:max_questions]
-        print(f"ATTENTION : Limitation à {max_questions} questions pour éviter les timeouts")
-    
-    for item in items:
-        questions.append(item["question"])
-        answers.append(item["answer"])
-        contexts.append(item["contexts"])
-        ground_truths.append(item["ground_truth"])
-    
-    print(f"-> {len(questions)} questions chargées")
-    
+        data = data[:max_questions]
+        print(f"   Mode test : {max_questions} question(s) chargée(s)")
+    else:
+        print(f"   {len(data)} questions chargées")
+
+    questions    = [item["question"]    for item in data]
+    answers      = [item["answer"]      for item in data]
+    contexts     = [item["contexts"]    for item in data]
+    ground_truths = [item["ground_truth"] for item in data]
+
     return {
-        "question": questions,
-        "answer": answers,
-        "contexts": contexts,
-        "ground_truth": ground_truths
+        "question":     questions,
+        "answer":       answers,
+        "contexts":     contexts,
+        "ground_truth": ground_truths,
     }
 
 
-def create_ragas_dataset(evaluation_data: Dict[str, List]) -> Dataset:
+# =============================================================================
+# 2. FORMATAGE DU DATASET POUR RAGAS
+# =============================================================================
+
+def build_ragas_dataset(evaluation_data: dict) -> Dataset:
     """
-    Crée un objet Dataset Hugging Face à partir des données d'évaluation.
-    
-    evaluation_dataset = Dataset.from_dict(evaluation_data)
-    
+    Formate les données en objet Dataset Hugging Face, format attendu par Ragas.
+
     Args:
-        evaluation_data: Dictionnaire avec les listes parallèles
-        
+        evaluation_data: Dictionnaire avec les clés question, answer, contexts, ground_truth
+
     Returns:
         Dataset Hugging Face prêt pour Ragas
     """
-    print("\nCréation du Dataset Hugging Face...")
-    
-    # Création du Dataset
     evaluation_dataset = Dataset.from_dict(evaluation_data)
-    
-    print(f"-> Dataset créé avec {len(evaluation_dataset)} exemples")
-    print("\n--- Aperçu du Dataset formaté pour Ragas ---")
+
+    print(f"\n--- Aperçu du Dataset formaté pour Ragas ---")
     print(evaluation_dataset)
-    
+
     return evaluation_dataset
 
 
-def initialize_llm_and_embeddings(api_key: str) -> tuple:
+# =============================================================================
+# 3. INITIALISATION DU LLM ET DES EMBEDDINGS MISTRAL
+# =============================================================================
+
+def initialize_models() -> tuple:
     """
-    Initialise le LLM et les embeddings Mistral :
-    
-    - ChatMistralAI avec model="mistral-small-latest"
-    - MistralAIEmbeddings
-    
-    Args:
-        api_key: Clé API Mistral
-        
+    Initialise le LLM et les embeddings Mistral API via LangChain.
+
+    Le LLM est utilisé par Ragas pour juger certaines métriques (faithfulness,
+    answer_relevancy). Les embeddings sont utilisés pour les métriques sémantiques.
+    Nécessite la variable d'environnement MISTRAL_API_KEY définie dans .env.
+
     Returns:
-        (mistral_llm, mistral_embeddings)
+        Tuple (mistral_llm, mistral_embeddings)
     """
-    print("\nInitialisation LLM et Embeddings Mistral...")
-    
-    # Configuration du LLM 
+    if not MISTRAL_API_KEY:
+        raise ValueError("MISTRAL_API_KEY non trouvée. Vérifiez le fichier .env.")
+
+    print(f"\nInitialisation LLM et Embeddings Mistral API...")
+    print(f"   Modèle LLM        : {EVAL_LLM_MODEL}")
+    print(f"   Modèle Embeddings : {EVAL_EMBED_MODEL}")
+    print(f"   Temperature      : {EVAL_TEMPERATURE}")
+
     mistral_llm = ChatMistralAI(
-        mistral_api_key=api_key,
-        model="mistral-small-latest",  # Temporaire: test pour answer_relevancy
-        #model="mistral-large-latest",
-        temperature=0.2,
-        timeout=300,  # Timeout de 5 minutes par appel pour éviter les timeouts API (Ragas peut être long)
-        max_retries=2
+        model=EVAL_LLM_MODEL,
+        api_key=MISTRAL_API_KEY,
+        temperature=EVAL_TEMPERATURE,
     )
-    
+
     mistral_embeddings = MistralAIEmbeddings(
-        mistral_api_key=api_key
+        model=EVAL_EMBED_MODEL,
+        api_key=MISTRAL_API_KEY,
     )
-    
-    print("-> LLM et Embeddings initialisés (mistral-large-latest).")
+
+    print("   LLM et Embeddings initialisés.")
+
     return mistral_llm, mistral_embeddings
 
 
-def run_ragas_evaluation(dataset: Dataset, llm, embeddings, metrics_to_evaluate: List) -> Dict:
+# =============================================================================
+# 4. CONFIGURATION DES PROMPTS EN FRANÇAIS
+# =============================================================================
+
+def configure_french_prompts() -> None:
     """
-    Lance l'évaluation Ragas QUESTION PAR QUESTION (séquentiel).
-    
-    Args:
-        dataset: Dataset Hugging Face
-        llm: Modèle ChatMistralAI
-        embeddings: MistralAIEmbeddings
-        metrics_to_evaluate: Liste des métriques Ragas
-        
-    Returns:
-        Résultats de l'évaluation
+    Traduit les prompts internes de Ragas en français.
+
+    En Ragas 0.4+, chaque métrique expose ses prompts via des attributs
+    PydanticPrompt dont on peut modifier l'attribut `instruction` directement.
+    Sans cette configuration, Ragas génère ses requêtes au LLM juge en anglais,
+    ce qui crée un biais de langue — notamment pour `answer_relevancy` qui génère
+    des questions en anglais depuis des réponses françaises, entraînant une faible
+    similarité cosinus avec les questions originales en français.
+
+    Métriques concernées :
+        - faithfulness           : 2 prompts (extraction + NLI)
+        - answer_relevancy       : 1 prompt (génération de question)
+        - context_precision      : 1 prompt (vérification d'utilité)
+        - context_recall         : 1 prompt (classification phrase par phrase)
     """
-    print("\nLancement de l'évaluation Ragas SÉQUENTIELLE...")
-    print(f"Métriques sélectionnées: {[m.name for m in metrics_to_evaluate]}")
-    
-    # Récupération des données du dataset
-    num_questions = len(dataset)
-    all_results = []
-    
-    # Boucle sur chaque question INDIVIDUELLEMENT
-    for i in range(num_questions):
-        print(f"\n{'─'*60}")
-        print(f"Question {i+1}/{num_questions}")
-        print(f"{'─'*60}")
-        
-        # Créer un mini-dataset avec UNE SEULE question
-        single_question_data = {
-            "question": [dataset[i]["question"]],
-            "answer": [dataset[i]["answer"]],
-            "contexts": [dataset[i]["contexts"]],
-            "ground_truth": [dataset[i]["ground_truth"]]
-        }
-        single_dataset = Dataset.from_dict(single_question_data)
-        
-        try:
-            # Évaluation d'UNE SEULE question
-            result = evaluate(
-                dataset=single_dataset,
-                metrics=metrics_to_evaluate,
-                llm=llm,
-                embeddings=embeddings
-            )
-            
-            # Convertir en dict et stocker
-            result_dict = result.to_pandas().iloc[0].to_dict()
-            all_results.append(result_dict)
-            
-            # Afficher les scores de cette question
-            metrics_scores = {k: v for k, v in result_dict.items() 
-                            if k in [m.name for m in metrics_to_evaluate]}
-            print(f"-> Scores: {metrics_scores}")
-            
-        except Exception as e:
-            print(f"ERREUR sur question {i+1}: {e}")
-            # Ajouter des NaN pour cette question
-            result_dict = {
-                "question": dataset[i]["question"],
-                "answer": dataset[i]["answer"],
-                "contexts": dataset[i]["contexts"],
-                "ground_truth": dataset[i]["ground_truth"]
-            }
-            for metric in metrics_to_evaluate:
-                result_dict[metric.name] = None
-            all_results.append(result_dict)
-    
-    print("\n" + "="*60)
-    print("-> Évaluation Ragas terminée")
-    
-    # Reconstruire un objet ressemblant au résultat Ragas
-    results_df = pd.DataFrame(all_results)
-    
-    # Créer un objet avec méthode to_pandas() pour compatibilité
-    class RagasResults:
-        def __init__(self, df):
-            self.df = df
-        def to_pandas(self):
-            return self.df
-    
-    return RagasResults(results_df)
+    print("\nConfiguration des prompts Ragas en français...")
+
+    # --- Faithfulness : extraction des affirmations ---
+    faithfulness.statement_generator_prompt.instruction = (
+        "Étant donné une question et une réponse, analysez la complexité de chaque "
+        "phrase de la réponse. Décomposez chaque phrase en une ou plusieurs "
+        "affirmations autonomes et compréhensibles. Assurez-vous qu'aucun pronom "
+        "n'est utilisé dans les affirmations (remplacez les pronoms par les noms "
+        "explicites). Formatez les résultats en JSON."
+    )
+
+    # --- Faithfulness : jugement NLI (Natural Language Inference) ---
+    faithfulness.nli_statements_prompt.instruction = (
+        "Votre tâche est de juger la fidélité d'une série d'affirmations par rapport "
+        "à un contexte donné. Pour chaque affirmation, retournez verdict=1 si "
+        "l'affirmation peut être directement déduite du contexte, ou verdict=0 si "
+        "elle ne peut pas être directement déduite du contexte. "
+        "RÈGLE ABSOLUE : verdict doit être EXACTEMENT 0 ou 1, jamais une valeur "
+        "décimale comme 0.5 ou 0.8. Toute valeur intermédiaire est interdite."
+    )
+
+    # --- Answer Relevancy : génération de la question inverse ---
+    answer_relevancy.question_generation.instruction = (
+        "Génère une question en français pour la réponse donnée et identifie si "
+        "la réponse est évasive. "
+        "RÈGLE ABSOLUE : noncommittal doit être EXACTEMENT 0 ou 1. "
+        "Donne noncommittal=1 si la réponse est évasive, vague ou ambiguë "
+        "(ex : 'je ne sais pas', 'je ne suis pas sûr'). "
+        "Donne noncommittal=0 si la réponse est claire et précise. "
+        "Jamais de valeur décimale."
+    )
+
+    # NOTE : context_precision utilise le prompt natif anglais de Ragas.
+    # Le prompt FR personnalisé empêchait mistral-large-latest de retourner le
+    # champ 'verdict' attendu → score 0 sur ~80% des questions. Le prompt anglais
+    # natif est correctement parsé par Ragas + mistral-large-latest.
+
+    # --- Context Recall : attribution phrase par phrase ---
+    context_recall.context_recall_prompt.instruction = (
+        "Étant donné un contexte et une réponse de référence, analysez chaque phrase "
+        "de la réponse et indiquez si la phrase peut être attribuée au contexte donné. "
+        "RÈGLE ABSOLUE : le champ 'attributed' doit être EXACTEMENT 1 (oui) ou 0 (non). "
+        "Les valeurs décimales comme 0.5, 0.8 ou toute autre fraction sont INTERDITES. "
+        "En cas de doute, choisissez 0 ou 1 selon que l'attribution est majoritairement "
+        "vraie ou fausse. Fournissez une raison en français. Sortie JSON."
+    )
+
+    print("   [OK] Prompts FR configurés : faithfulness (x2), answer_relevancy, context_recall.")
+    print("   [OK] context_precision : prompt anglais natif Ragas (parsing plus fiable).")
 
 
-def display_results(results) -> pd.DataFrame:
+# =============================================================================
+# 5. LANCEMENT DE L'ÉVALUATION RAGAS
+# =============================================================================
+
+def run_evaluation(
+    evaluation_dataset: Dataset,
+    eval_llm,
+    eval_embeddings,
+) -> pd.DataFrame:
     """
-    Affiche les résultats de l'évaluation.
-    
-    - Affichage du DataFrame complet
-    - Calcul et affichage des scores moyens
-    
+    Lance l'évaluation Ragas avec les 4 métriques clés.
+
+    Métriques de génération (Le "G" de RAG) :
+        - faithfulness      : La réponse est-elle ancrée dans les contextes ?
+        - answer_relevancy  : La réponse correspond-elle à la question ?
+
+    Métriques de récupération (Le "R" de RAG) :
+        - context_precision : Les contextes récupérés sont-ils pertinents (peu de bruit) ?
+        - context_recall    : Toutes les informations nécessaires ont-elles été récupérées ?
+
     Args:
-        results: Résultats Ragas
-        
+        evaluation_dataset : Dataset Ragas
+        eval_llm           : LLM Ollama pour juger les métriques
+        eval_embeddings    : Embeddings Ollama pour les comparaisons sémantiques
+
     Returns:
-        DataFrame pandas avec les résultats
+        DataFrame Pandas avec les scores par question et par métrique
     """
-    print("\n" + "="*80)
-    print("RÉSULTATS DE L'ÉVALUATION RAGAS")
-    print("="*80)
-    
-    # Conversion en DataFrame selon le cours
+    # FIX : strictness=3 (défaut) génère 3 requêtes en parallèle → LangChain/Mistral
+    # tente de fusionner les llm_output dicts avec += → TypeError. strictness=1 évite ce bug.
+    answer_relevancy.strictness = 1
+
+    # Adapter les prompts des 4 métriques au français
+    configure_french_prompts()
+
+    metrics_to_evaluate = [
+        faithfulness,       # Génération : fidèle au contexte ?
+        answer_relevancy,   # Génération : réponse pertinente à la question ?
+        context_precision,  # Récupération : contexte précis (peu de bruit) ?
+        context_recall,     # Récupération : infos clés récupérées (nécessite ground_truth) ?
+    ]
+
+    print(f"\nMétriques sélectionnées : {[m.name for m in metrics_to_evaluate]}")
+    print(f"RunConfig : max_workers={RUN_CONFIG.max_workers}, timeout={RUN_CONFIG.timeout}s, max_retries={RUN_CONFIG.max_retries}")
+    print("\nLancement de l'évaluation Ragas (peut prendre du temps)...")
+
+    results = evaluate(
+        dataset=evaluation_dataset,
+        metrics=metrics_to_evaluate,
+        llm=eval_llm,
+        embeddings=eval_embeddings,
+        run_config=RUN_CONFIG,
+    )
+
+    print("\n--- Évaluation Ragas terminée ---")
+
     results_df = results.to_pandas()
-    
-    print("\n--- Résultats de l'évaluation (DataFrame) ---")
-    print(results_df)
-    
-    # Calcul et affichage des scores moyens
-    print("\n" + "="*80)
-    print("SCORES MOYENS (sur tout le dataset)")
-    print("="*80)
-    average_scores = results_df.mean(numeric_only=True)
-    print(average_scores)
-    
+
     return results_df
 
 
-def save_results(results_df: pd.DataFrame, output_path: str):
-    """
-    Sauvegarde les résultats au format JSON.
-    
-    Args:
-        results_df: DataFrame avec les résultats
-        output_path: Chemin de base pour les fichiers de sortie
-    """
-    print(f"\nSauvegarde des résultats...")
-    
-    # Préparation des métadonnées
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
-    # Calcul des scores moyens
-    average_scores = results_df.mean(numeric_only=True).to_dict()
-    
-    # Sauvegarde JSON
-    json_output = {
-        "meta": {
-            "evaluation_date": timestamp,
-            "questions_evaluated": len(results_df),
-            "model": "mistral-large-latest",
-            "temperature": 0.2,
-            "note": "Évaluation séquentielle avec mistral-large-latest"
-        },
-        "scores": average_scores,
-        "details": results_df.to_dict(orient='records')
-    }
-    
-    json_path = output_path.replace('.json', '_detailed.json')
-    with open(json_path, 'w', encoding='utf-8') as f:
-        json.dump(json_output, f, indent=2, ensure_ascii=False)
-    print(f"-> Résultats JSON sauvegardés : {json_path}")
+# =============================================================================
+# 6. AFFICHAGE ET SAUVEGARDE DES RÉSULTATS
+# =============================================================================
 
+def display_results(results_df: pd.DataFrame) -> None:
+    """
+    Affiche les résultats par question et les scores moyens.
+
+    Args:
+        results_df: DataFrame avec les scores Ragas
+    """
+    pd.set_option("display.max_rows",    None)
+    pd.set_option("display.max_columns", None)
+    pd.set_option("display.width",       1000)
+    pd.set_option("display.max_colwidth", 150)
+
+    print("\n--- Résultats de l'évaluation (DataFrame) ---")
+    print(results_df)
+
+    print("\n--- Scores Moyens (sur tout le dataset) ---")
+    average_scores = results_df.mean(numeric_only=True)
+    print(average_scores)
+
+
+def save_results(results_df: pd.DataFrame, nb_questions: int) -> None:
+    """
+    Sauvegarde les résultats dans un fichier JSON daté.
+
+    Args:
+        results_df   : DataFrame avec les scores Ragas
+        nb_questions : Nombre de questions évaluées
+    """
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_path = RESULTS_DIR / f"ragas_results_{timestamp}.json"
+
+    average_scores = results_df.mean(numeric_only=True).to_dict()
+
+    output = {
+        "metadata": {
+            "date":           datetime.now().isoformat(),
+            "nb_questions":   nb_questions,
+            "llm_model":      EVAL_LLM_MODEL,
+            "embed_model":    EVAL_EMBED_MODEL,
+            "prompts_lang":   "french",
+            "metrics":        ["faithfulness", "answer_relevancy", "context_precision", "context_recall"],
+        },
+        "average_scores": average_scores,
+        "detailed_results": results_df.to_dict(orient="records"),
+    }
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(output, f, ensure_ascii=False, indent=2, default=str)
+
+    print(f"\nRésultats sauvegardés : {output_path.name}")
+
+
+# =============================================================================
+# 7. POINT D'ENTRÉE PRINCIPAL
+# =============================================================================
 
 def main():
-    """
-    Fonction principale d'évaluation Ragas.
-    """
-    print("="*80)
-    print("ÉVALUATION RAGAS - SYSTÈME RAG PULS-EVENTS")
-    print("="*80)
-    print(f"Date : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("="*80)
-    
-    # --- Configuration et Exécution de l'Évaluation ---
-    
-    # Vérification de la clé API Mistral
-    MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
-    if not MISTRAL_API_KEY:
-        print("ERREUR : Clé API Mistral non trouvée.")
-        print("ATTENTION : Définissez la variable d'environnement MISTRAL_API_KEY")
-        sys.exit(1)
-    
+    print("\n" + "=" * 70)
+    print(" ÉVALUATION DU SYSTÈME RAG PULS-EVENTS AVEC RAGAS ".center(70, "="))
+    print("=" * 70)
+
     try:
-        # Chemins des fichiers
-        project_root = Path(__file__).parent.parent.parent
-        test_dataset_path = project_root / "data" / "evaluation" / "test_dataset_ragas.json"
-        output_path = project_root / "data" / "evaluation" / "ragas_evaluation_results.json"
-        
-        # 1. Chargement et transformation des données
-        MAX_QUESTIONS = int(os.getenv("MAX_EVAL_QUESTIONS", "10"))
-        evaluation_data = load_test_dataset(str(test_dataset_path), max_questions=MAX_QUESTIONS)
-        
-        # 2. Création du Dataset Hugging Face
-        evaluation_dataset = create_ragas_dataset(evaluation_data)
-        
-        # 3. Initialisation du LLM et des Embeddings
-        mistral_llm, mistral_embeddings = initialize_llm_and_embeddings(MISTRAL_API_KEY)
-        
-        # 4. Définition des métriques à calculer
-        # Évaluation séquentielle permet d'utiliser les 4 métriques sans timeout
-        # LIMITATION: answer_relevancy cause des timeouts avec mistral-small-latest (Ragas 0.4.3)
-        # Temporairement désactivée pour obtenir des résultats fonctionnels
-        metrics_to_evaluate = [
-            faithfulness,       # Génération: fidèle au contexte ? (anti-hallucinations)
-            # answer_relevancy,   # DÉSACTIVÉ: timeout avec mistral-small-latest + Ragas 0.4.3
-            context_precision,  # Récupération: contexte précis (peu de bruit) ?
-            context_recall,     # Récupération: infos clés récupérées ? (qualité retriever)
-        ]
-        
-        # DEBUG: Vérification des métriques
-        print(f"\n>>> DEBUG: Nombre de métriques définies = {len(metrics_to_evaluate)}")
-        print(f">>> DEBUG: Noms des métriques = {[m.name for m in metrics_to_evaluate]}")
-        print(f">>> DEBUG: answer_relevancy temporairement désactivée (timeout mitral-small + Ragas 0.4.3)")
-        
-        # 5. Lancement de l'évaluation Ragas
-        results = run_ragas_evaluation(
-            evaluation_dataset,
-            mistral_llm,
-            mistral_embeddings,
-            metrics_to_evaluate
-        )
-        
-        # 6. Affichage des résultats
-        results_df = display_results(results)
-        
-        # 7. Sauvegarde des résultats
-        save_results(results_df, str(output_path))
-        
-        print("\n" + "="*80)
-        print("ÉVALUATION TERMINÉE AVEC SUCCÈS")
-        print("="*80)
-        
+        # 1. Charger les données
+        evaluation_data = load_test_dataset(DATASET_PATH, max_questions=MAX_QUESTIONS)
+
+        # 2. Formater pour Ragas
+        evaluation_dataset = build_ragas_dataset(evaluation_data)
+
+        # 3. Initialiser LLM et embeddings (Ollama local, pas de clé API)
+        ollama_llm, ollama_embeddings = initialize_models()
+
+        # 4. Lancer l'évaluation
+        results_df = run_evaluation(evaluation_dataset, eval_llm=ollama_llm, eval_embeddings=ollama_embeddings)
+
+        # 5. Afficher et sauvegarder
+        display_results(results_df)
+        save_results(results_df, nb_questions=len(evaluation_data["question"]))
+
     except Exception as e:
         print(f"\nERREUR lors de l'évaluation Ragas : {e}")
-        print("\nTraceback:")
+        print("\nTraceback :")
         traceback.print_exc()
-        sys.exit(1)
 
 
 if __name__ == "__main__":

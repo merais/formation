@@ -3,9 +3,9 @@
 **Projet:** Developpement d'un assistant pour la recommandation d'evenements culturels  
 **Auteur:** Aymeric Bailleul  
 **Date de début** : 03/02/2026  
-**Date de derniere mise a jour** : 13/02/2026  
+**Date de derniere mise a jour** : 19/02/2026  
 **Date de fin maximum** : 10/03/2026  
-**Statut:** Phase 4 completee - RAG fonctionnel avec interface Streamlit  
+**Statut:** Phase 5.2 completee - Evaluation Ragas avec MMR (faith=0.764, prec=0.700)  
 
 ---
 
@@ -86,6 +86,8 @@ P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/
 │   │   ├── processed/             # Donnees nettoyees (7,960 evenements Occitanie)
 │   │   │   ├── evenements_occitanie_clean.parquet (9.32 MB)
 │   │   │   └── evenements_chunks.parquet (3.28 MB, 10,646 chunks)
+│   │   ├── evaluation/            # Donnees et resultats d'evaluation
+│   │   │   └── test_dataset_ragas.json (5 questions annotees, plain text)
 │   │   └── vectorstore/           # Base vectorielle FAISS (140.64 MB)
 │   │       ├── embeddings.npy      (83.17 MB, 10,646 vecteurs 1024D)
 │   │       ├── metadata.parquet    (3.28 MB)
@@ -100,8 +102,10 @@ P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/
 │   │   │   ├── vectorize_data.py  (305 lignes)
 │   │   │   └── create_faiss_index.py 
 │   │   ├── rag/                   # Systeme RAG et interface chat
-│   │   │   ├── rag_system.py      # Systeme RAG complet (468 lignes)
+│   │   │   ├── rag_system.py      # Systeme RAG complet (494 lignes)
 │   │   │   └── chat_interface.py  # Interface web Streamlit (309 lignes)
+│   │   ├── evaluation/            # Evaluation du systeme RAG
+│   │   │   └── evaluate_rag.py    # Script Ragas (4 metriques)
 │   │   └── build_vectorstore.py   # Orchestrateur pipeline complet
 │   ├── tests/                     # Tests unitaires
 │   │   ├── test_00_environnement.py # Tests de configuration (8/8)
@@ -127,12 +131,17 @@ P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/
 - **LangChain >= 0.3.19** : Framework pour orchestrer le systeme RAG
 - **LangChain-Community >= 0.3.19** : Extensions communautaires LangChain
 - **LangChain-Mistralai >= 0.2.7** : Integration Mistral avec LangChain
+- **LangChain-Ollama >= 1.0.1** : Integration Ollama local avec LangChain (evaluation RAG)
 - **Mistral AI >= 1.12.0** : SDK pour modeles de langage et embeddings
+- **Ollama** : Serveur d'inference local (mistral:latest) utilise pour l'evaluation Ragas
 - **Faiss-cpu >= 1.13.2** : Base de donnees vectorielle pour la recherche semantique
-- **Pandas >= 2.3.3** : Manipulation et analyse de donnees (downgrade pour Streamlit)
+- **Pandas >= 3.0.0** : Manipulation et analyse de donnees
 - **NumPy >= 2.4.2** : Calculs numeriques et operations matricielles
 - **PyArrow >= 23.0.0** : Lecture/ecriture de fichiers Parquet
 - **Streamlit >= 1.54.0** : Framework pour interface web interactive
+- **Ragas >= 0.4.3** : Framework d'evaluation des systemes RAG
+- **Datasets >= 3.3.0** : Format de dataset Hugging Face (requis par Ragas)
+- **Nest-asyncio >= 1.6.0** : Gestion des event loops asyncio imbriquees
 - **Pytest >= 9.0.2** : Tests unitaires
 - **Jupyter Notebook >= 7.5.3** : Environnement de developpement interactif
 - **Tiktoken >= 0.12.0** : Comptage de tokens pour les modeles LLM
@@ -280,7 +289,39 @@ poetry run pytest tests/test_02_vectorstore.py -v
 
 ## Evaluation
 
-Le systeme sera evalue sur un jeu de donnees test annote contenant des questions/reponses representatives (Phase 5 en cours)
+Le systeme est evalue avec le framework **Ragas** sur un jeu de 5 questions annotees manuellement (`data/evaluation/test_dataset_ragas.json`).
+
+### Metriques Ragas — Scores finaux
+
+Dataset : `data/evaluation/test_dataset_ragas.json` (5 questions, ground_truths plain text)  
+Modele d'evaluation : `mistral-large-latest` (temperature=0.1)  
+Embeddings d'evaluation : `mistral-embed`  
+Configuration RAG : k=10, MMR (fetch_k=20, lambda=0.7), temperature=0.0, prompt strict  
+Prompts Ragas : traduits en francais sauf context_precision (natif anglais)  
+Date : 19/02/2026  
+Fichier resultats : `data/evaluation/ragas_results_final.json`
+
+| Metrique | Description | Score |
+|---|---|---|
+| `faithfulness` | La reponse est-elle fidele au contexte ? (anti-hallucination) | **0.764** |
+| `answer_relevancy` | La reponse repond-elle a la question ? | **0.910** |
+| `context_precision` | Le contexte recupere est-il exempt de bruit ? | **0.700** |
+| `context_recall` | Toutes les infos necessaires ont-elles ete recuperees ? | **0.583** |
+
+> Le retriever utilise MMR (Maximal Marginal Relevance) pour diversifier les chunks recuperes et reduire les quasi-doublons issus du meme evenement. Le dataset de test couvre 5 questions representatives de la zone Occitanie : expositions, spectacles enfants, festivals, evenements locaux et plein air.
+
+### Lancer l'evaluation
+
+```bash
+# Evaluation complete (17 questions)
+poetry run python src/evaluation/evaluate_rag.py
+
+# Evaluation rapide (N questions)
+$env:MAX_EVAL_QUESTIONS="3"; poetry run python src/evaluation/evaluate_rag.py
+
+# Regenerer le dataset de test (apres modification du RAG)
+poetry run python src/evaluation/generate_test_dataset.py
+```
 
 ---
 
@@ -299,14 +340,15 @@ Le systeme sera evalue sur un jeu de donnees test annote contenant des questions
 - [FAIT] **Phase 4.1-4.3** : Systeme RAG avec LangChain
 - [FAIT] **Phase 4.4** : Tests et optimisation du RAG
 - [FAIT] **Phase 4.5** : Interface de chat Streamlit
-- [TODO] **Phase 5** : Evaluation et optimisation
+- [FAIT] **Phase 5.1** : Jeu de donnees test Ragas (5 questions ciblees, ground_truths plain text)
+- [FAIT] **Phase 5.2** : Script d'evaluation Ragas + optimisation RAG (4 metriques, mistral-large-latest, prompts FR, MMR, scores : faith=0.764, rel=0.910, prec=0.700, recall=0.583)
 - [TODO] **Phase 6-8** : Documentation et livrables finaux
 
 ---
 
 ## Livrables
 
-1. [FAIT] README.md (ce fichier, mise a jour 13/02/2026)
+1. [FAIT] README.md (ce fichier, mise a jour 19/02/2026)
 2. [FAIT] Gestion des dependances (pyproject.toml, requirements.txt)
 3. [FAIT] Scripts de pre-processing avec docstrings
    - src/preprocessing/clean_data.py
