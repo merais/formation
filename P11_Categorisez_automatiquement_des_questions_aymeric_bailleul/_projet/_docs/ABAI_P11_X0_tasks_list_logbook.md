@@ -445,39 +445,50 @@
 ## PHASE 6 - DOCUMENTATION
 
 ### 6.1 - README.md complet
-- [ ] Rediger la presentation du projet
-- [ ] Decrire les objectifs du POC
-- [ ] Documenter l'architecture du systeme
-- [ ] Expliquer la structure des dossiers et fichiers
-- [ ] Fournir les instructions d'installation
-- [ ] Expliquer comment reproduire le projet
-- [ ] Ajouter des exemples d'utilisation
-- [ ] Documenter les limitations connues
+- [X] Rediger la presentation du projet
+- [X] Decrire les objectifs du POC
+- [X] Documenter l'architecture du systeme
+- [X] Expliquer la structure des dossiers et fichiers
+- [X] Fournir les instructions d'installation
+- [X] Expliquer comment reproduire le projet
+- [X] Ajouter des exemples d'utilisation
+- [X] Documenter les limitations connues
+
+**Date de realisation:** 19/02/2026  
+**Notes:**
+- Section "Limitations connues" ajoutee : perimetre geographique, donnees statiques, context_recall, dependance API, langue, volume
+- Section "Exemples de questions" ajoutee dans Utilisation : 4 categories (type, lieu, critere, hors perimetre)
+- Technologies : suppression des references Ollama/LangChain-Ollama (non utilises dans la version finale)
+- Prerequis : suppression du doublon "Cle API Mistral AI"
+- Etat d'avancement : decoupage Phase 6-8 en etapes distinctes
 
 
-### 6.2 - Documentation technique (Rapport PDF/Word)
-- [ ] Creer le document `docs/rapport_technique_P11.pdf`
-- [ ] Introduction et contexte du projet
-- [ ] Architecture du systeme RAG (schemas)
-- [ ] Choix techniques justifies:
-  - Pourquoi Faiss?
-  - Pourquoi Mistral?
-  - Pourquoi LangChain?
-- [ ] Description des modeles selectionnes
-- [ ] Methodologie de pre-processing
-- [ ] Strategie de vectorisation et indexation
-- [ ] Resultats du POC (metriques, exemples)
-- [ ] Limitations et ameliorations futures
-- [ ] Recommandations pour la version finale
-- [ ] Conclusion
-- [ ] Verifier que le document fait entre 5 et 10 pages
+### 6.2 - Documentation technique (Rapport Markdown exportable)
+- [X] Creer le document `_docs/ABAI_P11_rapport_technique.md`
+- [X] Introduction et contexte du projet
+- [X] Architecture du systeme RAG (schemas pipeline)
+- [X] Choix techniques justifies (Faiss, Mistral, LangChain)
+- [X] Description des modeles selectionnes
+- [X] Methodologie de pre-processing
+- [X] Strategie de vectorisation et indexation
+- [X] Resultats du POC (metriques, exemples de reponses)
+- [X] Limitations et ameliorations futures
+- [X] Recommandations pour la version finale
+- [X] Conclusion
+
+**Date de realisation:** 19/02/2026  
+**Notes:**
+- Document cree en Markdown (exportable PDF/Word via Pandoc ou VS Code extension)
+- 9 sections, ~10 pages equivalentes
+- Sections couvertes : contexte metier, pipeline complet ASCII, comparatif Faiss vs alternatives, pattern producteur leger/juge lourd, formule MMR, tableau metriques Ragas, analyse par question, exemples de reponses, tableau limitations/impact/cause, 5 recommandations production
+- Fichier : `_docs/ABAI_P11_rapport_technique.md`
 
 
 ### 6.3 - Documentation du code
-- [ ] Verifier que tous les scripts ont des docstrings
-- [ ] Ajouter des commentaires pour les parties complexes
-- [ ] Documenter les fonctions et classes
-- [ ] Generer une documentation API (optionnel: Sphinx)
+- [X] Verifier que tous les scripts ont des docstrings
+- [X] Ajouter des commentaires pour les parties complexes
+- [X] Documenter les fonctions et classes
+- Notes : docstrings presents sur toutes les fonctions/classes de clean_data.py, vectorize_data.py, create_faiss_index.py, rag_system.py, evaluate_rag.py. Module-level docstrings presents. Phase 6.3 deja couverte.
 
 
 ---

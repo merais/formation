@@ -5,7 +5,7 @@
 **Date de début** : 03/02/2026  
 **Date de derniere mise a jour** : 19/02/2026  
 **Date de fin maximum** : 10/03/2026  
-**Statut:** Phase 5.2 completee - Evaluation Ragas avec MMR (faith=0.764, prec=0.700)  
+**Statut:** Phase 6.2 completee - Rapport technique redige  
 
 ---
 
@@ -131,10 +131,8 @@ P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/
 - **LangChain >= 0.3.19** : Framework pour orchestrer le systeme RAG
 - **LangChain-Community >= 0.3.19** : Extensions communautaires LangChain
 - **LangChain-Mistralai >= 0.2.7** : Integration Mistral avec LangChain
-- **LangChain-Ollama >= 1.0.1** : Integration Ollama local avec LangChain (evaluation RAG)
-- **Mistral AI >= 1.12.0** : SDK pour modeles de langage et embeddings
-- **Ollama** : Serveur d'inference local (mistral:latest) utilise pour l'evaluation Ragas
-- **Faiss-cpu >= 1.13.2** : Base de donnees vectorielle pour la recherche semantique
+- **Mistral AI >= 1.12.0** : SDK pour modeles de langage et embeddings (mistral-small pour la generation, mistral-embed pour les embeddings, mistral-large pour l'evaluation)
+- **Faiss-cpu >= 1.13.2** : Base de donnees vectorielle pour la recherche semantique (IndexFlatIP)
 - **Pandas >= 3.0.0** : Manipulation et analyse de donnees
 - **NumPy >= 2.4.2** : Calculs numeriques et operations matricielles
 - **PyArrow >= 23.0.0** : Lecture/ecriture de fichiers Parquet
@@ -157,7 +155,6 @@ P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/
 - Python 3.11 ou superieur (Python 3.11.9 recommande)
 - Poetry installe sur votre systeme
 - Cle API Mistral AI (inscription gratuite sur https://console.mistral.ai)
-- Cle API Mistral AI
 
 ### Etapes d'installation
 
@@ -271,6 +268,31 @@ poetry run pytest tests/test_01_preprocessing.py -v
 poetry run pytest tests/test_02_vectorstore.py -v
 ```
 
+### 5. Exemples de questions
+
+Voici quelques exemples de questions pour tester le chatbot :
+
+```
+# Evenements par type
+Y a-t-il des expositions a Montpellier ?
+Quels spectacles pour enfants en Occitanie ?
+Festivals de musique en ete en Occitanie
+
+# Evenements par lieu
+Qu'est-ce qui se passe a Carcassonne ce weekend ?
+Evenements a Toulouse ce mois-ci
+Que faire a Nimes en famille ?
+
+# Evenements par critere
+Evenements en plein air en Occitanie
+Activites gratuites a Montpellier
+Spectacles de theatre en octobre
+
+# Questions hors perimetre (le chatbot signale l'absence de donnees)
+Evenements a Paris ?
+Concerts a Lyon ?
+```
+
 ---
 
 ## Perimetre du POC
@@ -284,6 +306,17 @@ poetry run pytest tests/test_02_vectorstore.py -v
   - Base vectorielle : 10,646 embeddings 1024D + index FAISS 
   - Repartition : 7,784 evenements passes + 176 evenements futurs
 - **Source de donnees** : Open Agenda (https://public.opendatasoft.com/explore/dataset/evenements-publics-openagenda)
+
+---
+
+## Limitations connues
+
+- **Perimetre geographique strict** : Le systeme est exclusivement entraine sur des evenements d'Occitanie. Toute question sur une autre region (Paris, Lyon, Bordeaux...) recevra une reponse explicite d'absence de donnees.
+- **Donnees statiques** : La base vectorielle est construite a partir d'un snapshot du 03/02/2026. Les nouveaux evenements publies apres cette date ne sont pas pris en compte. Une mise a jour periodique (hebdomadaire ou mensuelle) du pipeline de build est necessaire en production.
+- **Qualite du context_recall (0.583)** : Le systeme ne recupere pas toujours l'integralite des informations pertinentes, notamment pour les questions tres generiques ("evenements en plein air") qui peuvent couvrir des dizaines de resultats dans la base.
+- **Dependance a l'API Mistral** : Le systeme necessite une connexion internet et une cle API Mistral valide. Aucun mode hors-ligne n'est disponible dans cette version.
+- **Langue** : Le systeme est optimise pour les questions en francais. Les questions en d'autres langues peuvent produire des resultats degrades.
+- **Volume de donnees** : La base couvre ~7,960 evenements. Pour un deploiement national, une strategie de partitionnement geographique de l'index FAISS serait necessaire.
 
 ---
 
@@ -313,7 +346,7 @@ Fichier resultats : `data/evaluation/ragas_results_final.json`
 ### Lancer l'evaluation
 
 ```bash
-# Evaluation complete (17 questions)
+# Evaluation complete (5 questions)
 poetry run python src/evaluation/evaluate_rag.py
 
 # Evaluation rapide (N questions)
@@ -342,7 +375,10 @@ poetry run python src/evaluation/generate_test_dataset.py
 - [FAIT] **Phase 4.5** : Interface de chat Streamlit
 - [FAIT] **Phase 5.1** : Jeu de donnees test Ragas (5 questions ciblees, ground_truths plain text)
 - [FAIT] **Phase 5.2** : Script d'evaluation Ragas + optimisation RAG (4 metriques, mistral-large-latest, prompts FR, MMR, scores : faith=0.764, rel=0.910, prec=0.700, recall=0.583)
-- [TODO] **Phase 6-8** : Documentation et livrables finaux
+- [FAIT] **Phase 6.1** : README complet (limitations, exemples de questions, nettoyage technologies)
+- [FAIT] **Phase 6.2** : Rapport technique (_docs/ABAI_P11_rapport_technique.md, 9 sections)
+- [TODO] **Phase 7** : Presentation PowerPoint (10-15 slides)
+- [TODO] **Phase 8** : Finalisation et depot
 
 ---
 
@@ -361,7 +397,7 @@ poetry run python src/evaluation/generate_test_dataset.py
 6. [FAIT] Code du systeme RAG complet
    - src/rag/rag_system.py (systeme RAG avec LangChain)
    - src/rag/chat_interface.py (interface web Streamlit)
-7. [TODO] Rapport technique (5-10 pages)
+7. [FAIT] Rapport technique (_docs/ABAI_P11_rapport_technique.md)
 8. [TODO] Presentation PowerPoint (10-15 slides)
 9. [FAIT] Logbook detaille (ABAI_P11_X0_tasks_list_logbook.md)
 10. [FAIT] Notebook d'exploration (analyse_dataset.ipynb - 8 sections)
