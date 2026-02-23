@@ -464,7 +464,7 @@
 
 
 ### 6.2 - Documentation technique (Rapport Markdown exportable)
-- [X] Creer le document `_docs/ABAI_P11_rapport_technique.md`
+- [X] Creer le document `_docs/ABAI_P11_rapport_technique.docx`
 - [X] Introduction et contexte du projet
 - [X] Architecture du systeme RAG (schemas pipeline)
 - [X] Choix techniques justifies (Faiss, Mistral, LangChain)
@@ -472,16 +472,12 @@
 - [X] Methodologie de pre-processing
 - [X] Strategie de vectorisation et indexation
 - [X] Resultats du POC (metriques, exemples de reponses)
-- [X] Limitations et ameliorations futures
-- [X] Recommandations pour la version finale
 - [X] Conclusion
 
-**Date de realisation:** 19/02/2026  
+**Date de realisation:** 19/02/2026 — **Finalise le 23/02/2026**  
 **Notes:**
-- Document cree en Markdown (exportable PDF/Word via Pandoc ou VS Code extension)
-- 9 sections, ~10 pages equivalentes
-- Sections couvertes : contexte metier, pipeline complet ASCII, comparatif Faiss vs alternatives, pattern producteur leger/juge lourd, formule MMR, tableau metriques Ragas, analyse par question, exemples de reponses, tableau limitations/impact/cause, 5 recommandations production
-- Fichier : `_docs/ABAI_P11_rapport_technique.md`
+- 7 sections
+- Sections couvertes : contexte metier, pipeline complet, comparatif Faiss vs alternatives, pattern producteur leger/juge lourd, formule MMR, tableau metriques Ragas, analyse par question, exemples de reponses
 
 
 ### 6.3 - Documentation du code

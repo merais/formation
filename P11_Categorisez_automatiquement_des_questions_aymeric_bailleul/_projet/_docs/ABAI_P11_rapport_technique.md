@@ -3,7 +3,6 @@
 **Projet :** Développement d'un assistant de recommandation d'événements culturels  
 **Auteur :** Aymeric Bailleul  
 **Date :** 19/02/2026  
-**Version :** 1.0  
 
 ---
 
@@ -38,49 +37,38 @@ Cette architecture résout le problème des hallucinations des LLM : le modèle 
 
 ### 2.2 Pipeline complet
 
+```mermaid
+flowchart TD
+    A["Source - Open Agenda<br/>913 818 événements<br/>.parquet"]
+    B["Preprocessing<br/>7 960 événements Occitanie"]
+    C["Chunking<br/>10 480 chunks<br/> 250 tokens - 75 overlap"]
+    D["Vectorisation<br/>10 480 embeddings<br/>1024D mistral-embed"]
+    E["Index FAISS<br/>IndexFlatIP<br/>40.94 MB"]
+    F["RAG System<br/>mistral-small-latest<br/>Retriever MMR"]
+    G["Interface Streamlit<br/>localhost:8501"]
+    H["Evaluation Ragas<br/>4 métriques"]
+
+    A --> B --> C --> D --> E --> F --> G
+    F --> H
+
+    style A fill:#4A90D9,color:#fff,stroke:#2c6fad
+    style B fill:#27AE60,color:#fff,stroke:#1e8449
+    style C fill:#27AE60,color:#fff,stroke:#1e8449
+    style D fill:#8E44AD,color:#fff,stroke:#6c3483
+    style E fill:#8E44AD,color:#fff,stroke:#6c3483
+    style F fill:#E67E22,color:#fff,stroke:#ca6f1e
+    style G fill:#E67E22,color:#fff,stroke:#ca6f1e
+    style H fill:#C0392B,color:#fff,stroke:#922b21
 ```
-[Source] Open Agenda Parquet (913 818 événements)
-    │
-    ▼ src/preprocessing/clean_data.py
-[Filtrage + Nettoyage] 7 960 événements Occitanie
-    │  • Filtre géographique : region_label = "Occitanie"
-    │  • Filtre temporel : J-365 à aujourd'hui + futurs
-    │  • Nettoyage HTML descriptions (BeautifulSoup)
-    │  • Création champ text_for_rag (Titre | Description | Lieu...)
-    │
-    ▼ src/preprocessing/chunk_texts.py
-[Chunking] 10 480 chunks
-    │  • Taille : 250 tokens (encodeur cl100k_base)
-    │  • Chevauchement : 75 tokens (30%)
-    │  • Fenêtre glissante, avance de 175 tokens
-    │
-    ▼ src/vectorization/vectorize_data.py
-[Vectorisation] 10 480 embeddings 1024D
-    │  • Modèle : mistral-embed (Mistral AI)
-    │  • Batches de 100, rate limit 1s
-    │  • Durée : ~4 minutes
-    │
-    ▼ src/vectorization/create_faiss_index.py
-[Index FAISS] IndexFlatIP — 40.94 MB
-    │  • Recherche exacte (pas approximée)
-    │  • Inner Product = cosine similarity (vecteurs normalisés)
-    │
-    ▼ src/rag/rag_system.py
-[RAG System] mistral-small-latest
-    │  • Retriever MMR (k=10, fetch_k=20, λ=0.7)
-    │  • Température = 0.0 (réponses déterministes)
-    │  • Prompt strict : basé exclusivement sur le contexte
-    │
-    ▼ src/rag/chat_interface.py
-[Interface] Streamlit (http://localhost:8501)
-    │  • Chat interactif avec historique
-    │  • Affichage des sources consultées
-    │
-    ▼ src/evaluation/evaluate_rag.py
-[Évaluation] Ragas — mistral-large-latest
-       • 4 métriques : faithfulness, answer_relevancy,
-         context_precision, context_recall
-```
+
+Le pipeline transforme **913 818 événements bruts** en un assistant conversationnel en 6 étapes :
+
+1. **Filtrage** → 7 960 événements Occitanie (filtre géographique + temporel + nettoyage HTML)
+2. **Chunking** → 10 480 segments de 250 tokens avec 30% de chevauchement
+3. **Vectorisation** → 10 480 vecteurs 1024D via `mistral-embed`
+4. **Indexation** → index FAISS exact (< 1ms/requête, 40.94 MB)
+5. **RAG** → retriever MMR sélectionne 10 chunks diversifiés → `mistral-small-latest` génère une réponse ancrée dans le contexte
+6. **Interface + Évaluation** → chat Streamlit + scoring Ragas sur 4 métriques
 
 ---
 
@@ -242,54 +230,7 @@ L'évaluation a été conduite sur 5 questions représentatives de la zone Occit
 
 ---
 
-## 7. Limitations et améliorations futures
-
-### 7.1 Limitations actuelles
-
-| Limitation | Impact | Cause |
-|---|---|---|
-| Données statiques (snapshot 03/02/2026) | Les nouveaux événements ne sont pas indexés | Pas de pipeline de mise à jour incrémentale |
-| Périmètre Occitanie uniquement | Questions hors périmètre non traitées | Choix délibéré pour le POC |
-| context_recall = 0.583 | Certaines infos manquent dans les réponses | k=10 insuffisant pour les requêtes très génériques |
-| context_precision = 0.700 | 30% de bruit dans le contexte | MMR imparfait sur les requêtes génériques |
-| Pas de mémoire conversationnelle | Chaque question est indépendante | Non implémenté dans le POC |
-| Dépendance API Mistral | Pas de mode hors-ligne | Architecture choisie pour le POC |
-
-### 7.2 Pistes d'amélioration
-
-**Court terme (production v1) :**
-- **Pipeline de mise à jour incrémentale** : re-vectoriser uniquement les nouveaux événements et mettre à jour l'index FAISS sans reconstruire l'ensemble
-- **Augmenter k** à 15-20 pour les requêtes génériques, adapter dynamiquement selon la complexité de la question
-- **Seuil de similarité** : rejeter les chunks sous 0.65 de cosine pour réduire le bruit
-
-**Moyen terme (production v2) :**
-- **Mémoire conversationnelle** : intégrer un historique de conversation (LangChain `ConversationBufferMemory`) pour le contexte multi-tours
-- **Extension géographique** : partitionnement de l'index FAISS par région pour passer au niveau national
-- **Filtres metadata** : permettre des filtres sur la date, la ville, le type d'événement avant la recherche vectorielle (FAISS `IDSelector`)
-- **Reranking** : ajouter un modèle de reranking (cross-encoder) entre la récupération et la génération pour améliorer context_precision
-
-**Long terme (scalabilité) :**
-- Migration vers une solution vectorielle managée (Weaviate Cloud, Pinecone) pour des millions d'événements
-- Fine-tuning des embeddings sur le corpus événementiel pour améliorer la pertinence domaine
-- Interface multimodale (photos d'événements)
-
----
-
-## 8. Recommandations pour la version finale
-
-1. **Orchestration des mises à jour** : mettre en place un pipeline hebdomadaire (ex: Apache Airflow ou script cron) récupérant les nouveaux événements Open Agenda, les vectorisant et mettant à jour l'index FAISS de façon incrémentale.
-
-2. **Monitoring en production** : logger les paires (question, score_moyen_similarité) pour détecter les dérives de pertinence. Si le score moyen tombe en dessous de 0.6, déclencher une alerte.
-
-3. **A/B testing** : comparer en production le retriever MMR (λ=0.7) avec λ=0.5 (plus de diversité) et λ=0.9 (plus de pertinence pure) sur des cohortes d'utilisateurs.
-
-4. **Cache des requêtes fréquentes** : pour des questions récurrentes ("Que faire ce weekend à Montpellier ?"), mettre en cache les réponses avec un TTL de 24h.
-
-5. **Évaluation continue** : re-lancer l'évaluation Ragas à chaque mise à jour majeure du dataset ou du prompt pour détecter les régressions.
-
----
-
-## 9. Conclusion
+## 7. Conclusion
 
 Ce POC démontre la faisabilité technique d'un assistant RAG appliqué aux événements culturels. La chaîne complète — de la collecte Open Agenda à l'interface Streamlit en passant par la vectorisation FAISS et la génération Mistral — est fonctionnelle et évaluée quantitativement.
 
@@ -298,5 +239,3 @@ Les scores Ragas obtenus (`faithfulness=0.764`, `answer_relevancy=0.910`) valide
 La stack technique retenue — **LangChain + FAISS + Mistral AI** — est pragmatique, sans infrastructure serveur supplémentaire et facilement reproductible, ce qui en fait une base solide pour un déploiement progressif.
 
 ---
-
-*Document généré le 19/02/2026 — Aymeric Bailleul*
