@@ -3,9 +3,6 @@ Tests unitaires pour le module de pre-processing.
 
 Teste les fonctions de nettoyage et de structuration des donnees
 Open Agenda.
-
-Auteur: Aymeric Bailleul
-Date: 09/02/2026
 """
 
 import pytest

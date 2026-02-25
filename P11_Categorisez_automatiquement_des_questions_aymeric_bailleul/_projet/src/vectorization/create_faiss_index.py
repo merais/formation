@@ -21,7 +21,6 @@ import pandas as pd
 import faiss
 from pathlib import Path
 from datetime import datetime
-import json
 
 
 # ============================================================================

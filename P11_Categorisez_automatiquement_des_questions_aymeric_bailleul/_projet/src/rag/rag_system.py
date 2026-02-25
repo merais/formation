@@ -30,7 +30,7 @@ Date: 12/02/2026
 
 import os
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 import numpy as np
 import pandas as pd
 import faiss
@@ -61,7 +61,6 @@ LLM_TOP_P = 1.0  # top_p=1.0 obligatoire avec temperature=0.0 (greedy sampling)
 
 # Configuration du retriever
 RETRIEVER_K = 10  # Nombre de documents à récupérer (5→7→10 : meilleur recall)
-RETRIEVER_SCORE_THRESHOLD = 0.7  # Seuil de similarité minimum
 
 # Configuration des embeddings
 EMBEDDING_MODEL = "mistral-embed"
@@ -240,9 +239,6 @@ class RAGSystem:
         # Charger l'index FAISS
         index = faiss.read_index(str(index_path))
         
-        # Charger les embeddings
-        embeddings_array = np.load(str(embeddings_path))
-        
         # Charger les métadonnées
         metadata_df = pd.read_parquet(metadata_path)
         
@@ -293,7 +289,6 @@ class RAGSystem:
         if self.verbose:
             print(f"\n5. Configuration du retriever...")
             print(f"   - Top K documents: {self.retriever_k}")
-            print(f"   - Seuil de similarité: {RETRIEVER_SCORE_THRESHOLD}")
         
         self.retriever = self.vectorstore.as_retriever(
             search_type="mmr",

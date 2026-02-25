@@ -2,7 +2,8 @@
 
 **Projet:** Developpement d'un assistant pour la recommandation d'evenements culturels
 **Date de demarrage:** 03/02/2026
-**Statut global:** EN COURS
+**Derniere mise a jour:** 25/02/2026
+**Statut global:** EN COURS — Phase 5.2 completee
 
 ---
 
@@ -73,7 +74,6 @@
 - pytest v9.0.2, notebook v7.5.3 (inclut jupyterlab v4.5.3)
 - tiktoken v0.12.0 pour le comptage de tokens
 - pyarrow necessaire pour la lecture de fichiers Parquet
-- Certaines dependances etaient deja presentes (requests, python-dotenv, numpy)
 
 
 ### 1.3 - Gestion des dependances
@@ -110,7 +110,6 @@
 
 **Date de realisation:** 06/02/2026  
 **Notes:**
-- Script tests/tests_environnement.py cree avec tests complets
 - Tous les imports testes : LangChain 1.2.8, LangChain-Mistralai, Faiss, Mistral SDK, Pandas 3.0.0, NumPy 2.4.2, Tiktoken, Pytest 9.0.2
 - API Mistral testee et operationnelle
 - Fonctionnalites Faiss testees (creation index, ajout vecteurs, recherche)
@@ -120,6 +119,7 @@
 ## PHASE 2 - COLLECTE ET PRE-PROCESSING DES DONNEES
 
 ### 2.1- Collecte des donnees
+- [X] Télécharer le dataset : https://public.opendatasoft.com/explore/dataset/evenements-publics-openagenda
 - [X] Dataset complet disponible en format Parquet
 - [X] Fichier source : data/raw/evenements-publics-openagenda.parquet
 
@@ -129,7 +129,7 @@
 
 
 ### 2.2 - Exploration et analyse du dataset Open Agenda
-- [X] Explorer le dataset Open Agenda: https://public.opendatasoft.com/explore/dataset/evenements-publics-openagenda
+- [X] Explorer le dataset Open Agenda
 - [X] Comprendre la structure des donnees disponibles : **913,818 evenements, 56 colonnes, 905.94 MB**
 - [X] Identifier les champs pertinents : **title_fr, description_fr, longdescription_fr, firstdate_begin, location_*, etc.**
 - [X] Determiner le perimetre geographique : **Occitanie (13 departements)**
@@ -139,7 +139,6 @@
 
 **Date de realisation:** 09/02/2026  
 **Notes:**
-- Analyse complete dans analyses/analyse_dataset.ipynb (Sections 1-7)
 - Perimetre final retenu : Region Occitanie, 7,983 evenements (7,784 passes + 199 futurs)
 - Completude excellente : title_fr 100%, description_fr 99.49%, dates 100%
 - 5 colonnes vides identifiees (contributor_*, category)
@@ -156,7 +155,6 @@
 - [x] Ajouter des docstrings au script
 
 **Notes:**
-- Script complet avec 9 fonctions modulaires et docstrings detaillees
 - Fonctions principales: `load_raw_data()`, `filter_by_region_and_time()`, `remove_empty_columns()`, `clean_html()`, `clean_html_descriptions()`, `create_rag_text_field()`, `verify_data_quality()`, `save_cleaned_data()`, `main()`
 - Nettoyage HTML avec regex et unescape pour decoder les entites
 - Creation d'un champ `text_for_rag` consolidant titre, descriptions, keywords et lieu
@@ -275,7 +273,6 @@
 
 **Date de realisation:** 11/02/2026  
 **Notes:**
-- Tous les tests passes: 27/27
 - Categories de tests: structure (3), qualite embeddings (3), metadonnees (4), index FAISS (3), recherche similarite (4), coherence (4), couverture (2), performance (3), integration (2)
 - Tests de qualite: embeddings normalises (norme=1.0), pas de NaN/Inf, dimensions correctes (10646, 1024)
 - Tests de recherche: similarite fonctionnelle, scores coherents (0.84-1.0), batch processing valide
@@ -295,7 +292,6 @@
 - Orchestration de 4 etapes: nettoyage, chunking, vectorisation, indexation
 - Verification des prerequis: donnees brutes, .env, scripts, Python
 - Logs detailles pour chaque etape avec progression ETA
-- Test complet reussi: 4/4 etapes
 - Statistiques finales: 7,960 evenements -> 10,646 chunks -> 10,646 embeddings -> index 41.59 MB
 - Gestion des erreurs: arret si echec, retry logic API
 - Fichiers generes verifies: 140.64 MB total (clean, chunks, embeddings, metadata, index, configs)
@@ -334,10 +330,10 @@
 - VectorStore FAISS LangChain cree a partir de l'index existant (10,646 documents)
 - Conversion metadata Parquet -> Documents LangChain avec page_content et metadata
 - Retriever configure: search_type="similarity", top_k=5 documents
-- Seuil de similarite: 0.7 (ajustable)
+- Seuil de similarite: 0.7
 - Test fonctionnel: recuperation de 5 documents pertinents pour "concerts Toulouse"
 - Documents recuperes contiennent: title_fr, firstdate_begin, location_city, location_region, uid, chunk_index
-- Integration transparente avec l'index FAISS pre-calcule (pas de re-vectorisation)
+- Integration transparente avec l'index FAISS pre-calcule
 
 
 ### 4.3 - Creation de la chaine RAG
@@ -349,7 +345,6 @@
 
 **Date de realisation:** 12/02/2026  
 **Notes:**
-- Chaine RAG complete implementee dans _build_rag_chain()
 - Template de prompt structure: instructions + contexte formate + question utilisateur
 - Instructions LLM: reponses claires, mentions dates/lieux, suggestions alternatives, factuel uniquement
 - Retriever integre avec fonction format_docs() pour formater le contexte
@@ -360,17 +355,15 @@
 - Format de sortie: dictionnaire {question, answer, sources} avec metadonnees detaillees
 
 
-### 4.5 - Interface de chat simple
+### 4.4 - Interface de chat simple
 - [x] Creer un script `src/rag/chat_interface.py`
 - [x] Implementer une interface web Streamlit
-- [x] Afficher les sources (evenements utilises)
+- [x] Afficher les sources
 - [x] Ajouter des statistiques et aide dans la sidebar
 - [x] Tester l'interface avec plusieurs scenarios
 
 **Date de realisation:** 12/02/2026  
 **Notes:**
-- Interface web avec Streamlit
-- Script src/rag/chat_interface.py cree
 - Fonctionnalites implementees:
   - Gestion de l'historique de conversation (st.session_state.messages)
   - Affichage des messages en bulles de chat (st.chat_message)
@@ -386,9 +379,53 @@
 
 ---
 
-## PHASE 5 - EVALUATION DU SYSTEME
+## PHASE 5 - FINALISATION ET DEPOT
 
-### 5.1 - Creation du jeu de donnees test
+### 5.1 - Pipeline de tests complet
+- [X] Creer le fichier `tests/test_03_chunking.py` (tests unitaires chunk_texts.py)
+- [X] Creer le fichier `tests/test_04_rag_system.py` (tests unitaires rag_system.py)
+- [X] Executer la suite complete et verifier que tous les tests passent
+
+**Date de realisation:** 25/02/2026  
+**Notes:**
+- test_03_chunking.py : 42 tests
+  - TestCountTokens (6 tests) : valeurs normales, vide, None, nan, comparaison, type
+  - TestSplitTextIntoChunks (11 tests) : court/long/vide/None/nan, types, taille, overlap, custom
+  - TestCreateChunksDataframe (11 tests) : retour DataFrame, colonnes, metadata, ValueError, long event
+  - TestVerifyChunksQuality (6 tests) : dict, cles, total_chunks, unique_events, stats tokens
+  - TestChunkingIntegration (4 tests) : pipeline complet, idempotency, donnees reelles (skip si absent)
+  - TestConstants (4 tests) : CHUNK_SIZE > 0, CHUNK_OVERLAP < CHUNK_SIZE, encodage valide
+  - Bug documente : ZeroDivisionError dans create_chunks_dataframe() quand tous les textes sont vides
+- test_04_rag_system.py : 26 tests — sans appel API (mocks complets)
+  - TestRAGSystemInit (3 tests) : ValueError sans API key, FileNotFoundError sans index, attributs post-init
+  - TestRAGSystemQuery (10 tests) : retour dict, cles requises, question preservee, types, sources, uid, multi-sources
+  - TestRAGConstants (7 tests) : LLM_MODEL, temperature, max_tokens, k, dimension, embedding_model, top_p
+  - TestFormatDocs (2 tests) : location = ville + region, chunk_index present
+  - TestQueryWithDetails (2 tests) : num_sources, content + metadata
+  - TestRAGIntegration (2 tests) : query + query_with_details successifs, queries independantes
+  - Strategie mock : rag_chain remplace par MagicMock() (RunnableSequence Pydantic ne supporte pas l'assignation d'attributs)
+- Resultats : **120/120 tests PASSED** (3 + 22 + 27 + 42 + 26)
+
+### 5.2 - Revue du code
+- [X] Verifier la qualite du code (PEP8 pour Python)
+- [X] Supprimer le code mort
+- [X] Verifier les imports inutilises
+- [X] Optimiser les performances si necessaire
+
+**Date de realisation:** 25/02/2026  
+**Notes:**
+- clean_data.py : supprime `import numpy as np` (inutilise), corrige typo "ERRERUR" → "ERREUR"
+- chunk_texts.py : supprime `import numpy as np` (inutilise) et `Tuple` de typing (inutilise)
+- create_faiss_index.py : supprime `import json` (inutilise, config ecrite en texte brut)
+- rag_system.py : supprime `Optional` de typing (inutilise), supprime variable morte `embeddings_array = np.load(...)` (chargee mais jamais utilisee), supprime constante morte `RETRIEVER_SCORE_THRESHOLD = 0.7` (retriever de type MMR, pas score_threshold)
+- Aucune regression : 120/120 tests PASSED apres corrections
+
+
+---
+
+## PHASE 6 - EVALUATION DU SYSTEME
+
+### 6.1 - Creation du jeu de donnees test
 - [X] Creer le fichier `data/evaluation/test_dataset_ragas.json`
 - [X] Selectionner 5 questions representatives et ciblees (Occitanie)
 - [X] Generer les reponses (answer) via le pipeline RAG complet
@@ -401,11 +438,11 @@
 - Format: JSON avec 4 champs par entree (question, answer, contexts, ground_truth)
 - 5 questions ciblees Occitanie : expositions Montpellier, spectacles enfants, festivals ete, Carcassonne weekend, evenements plein air
 - 10 contextes (chunks FAISS, k=10) par question
-- Ground_truth rediges en style narratif court, texte simple, pour coller au style de reponse du modele
+- Ground_truth rediges en style narratif court, texte simple
 - Fichier : data/evaluation/test_dataset_ragas.json
 
 
-### 5.2 - Script d'evaluation
+### 6.2 - Script d'evaluation
 - [X] Creer le script `src/evaluation/evaluate_rag.py`
 - [X] Charger les donnees de test depuis test_dataset_ragas.json
 - [X] Formater le dataset pour Ragas avec `datasets.Dataset`
@@ -416,7 +453,6 @@
 
 **Date de realisation:** 19/02/2026  
 **Notes:**
-- Script structure en 7 fonctions modulaires (conforme cours OC chapitre 4 partie 4)
 - Modele d'evaluation : `mistral-large-latest` (temperature=0.1, via Mistral API)
 - Embeddings d'evaluation : `mistral-embed` (via Mistral API, MistralAIEmbeddings)
 - Import : `langchain_mistralai.ChatMistralAI` et `langchain_mistralai.MistralAIEmbeddings`
@@ -433,18 +469,18 @@
 - RunConfig : max_workers=1, timeout=120s, max_retries=3, max_wait=60s
 - Variable d'environnement MAX_EVAL_QUESTIONS pour limiter le nombre de questions (tests)
 - Scores finaux (5 questions, 19/02/2026, mistral-large-latest) :
-  - faithfulness     : 0.764
-  - answer_relevancy : 0.910
-  - context_precision: 0.700
-  - context_recall   : 0.583
-- Fichier resultats : data/evaluation/ragas_results_final.json
+  - faithfulness     : 0.730 
+  - answer_relevancy : 0.910 
+  - context_precision: 0.678 
+  - context_recall   : 0.650 
+  - Fichier resultats : data/evaluation/ragas_results_20260225_110004.json
 
 
 ---
 
-## PHASE 6 - DOCUMENTATION
+## PHASE 7 - DOCUMENTATION
 
-### 6.1 - README.md complet
+### 7.1 - README.md complet
 - [X] Rediger la presentation du projet
 - [X] Decrire les objectifs du POC
 - [X] Documenter l'architecture du systeme
@@ -452,18 +488,14 @@
 - [X] Fournir les instructions d'installation
 - [X] Expliquer comment reproduire le projet
 - [X] Ajouter des exemples d'utilisation
-- [X] Documenter les limitations connues
 
 **Date de realisation:** 19/02/2026  
 **Notes:**
 - Section "Limitations connues" ajoutee : perimetre geographique, donnees statiques, context_recall, dependance API, langue, volume
 - Section "Exemples de questions" ajoutee dans Utilisation : 4 categories (type, lieu, critere, hors perimetre)
-- Technologies : suppression des references Ollama/LangChain-Ollama (non utilises dans la version finale)
-- Prerequis : suppression du doublon "Cle API Mistral AI"
-- Etat d'avancement : decoupage Phase 6-8 en etapes distinctes
 
 
-### 6.2 - Documentation technique (Rapport Markdown exportable)
+### 7.2 - Documentation technique (Rapport Markdown exportable)
 - [X] Creer le document `_docs/ABAI_P11_rapport_technique.docx`
 - [X] Introduction et contexte du projet
 - [X] Architecture du systeme RAG (schemas pipeline)
@@ -476,44 +508,50 @@
 
 **Date de realisation:** 19/02/2026 — **Finalise le 23/02/2026**  
 **Notes:**
-- 7 sections
-- Sections couvertes : contexte metier, pipeline complet, comparatif Faiss vs alternatives, pattern producteur leger/juge lourd, formule MMR, tableau metriques Ragas, analyse par question, exemples de reponses
+- Sections couvertes : contexte metier, pipeline complet, comparatif Faiss vs alternatives, pattern producteur leger/juge lourd, formule MMR, tableau metriques Ragas, analyse par question
 
 
-### 6.3 - Documentation du code
+### 7.3 - Documentation du code
 - [X] Verifier que tous les scripts ont des docstrings
 - [X] Ajouter des commentaires pour les parties complexes
 - [X] Documenter les fonctions et classes
-- Notes : docstrings presents sur toutes les fonctions/classes de clean_data.py, vectorize_data.py, create_faiss_index.py, rag_system.py, evaluate_rag.py. Module-level docstrings presents. Phase 6.3 deja couverte.
+- Notes : docstrings presents sur toutes les fonctions/classes de clean_data.py, vectorize_data.py, create_faiss_index.py, rag_system.py, evaluate_rag.py. Module-level docstrings presents.
 
 
 ---
 
-## PHASE 7 - PREPARATION DE LA SOUTENANCE
+## PHASE 8 - PREPARATION DE LA SOUTENANCE
 
-### 7.1 - Presentation PowerPoint
-- [ ] Creer le fichier `docs/presentation_P11.pptx`
-- [ ] Slide 1: Page de titre
-- [ ] Slide 2-3: Contexte et problematique
-- [ ] Slide 4-5: Architecture du systeme RAG
-- [ ] Slide 6-7: Choix techniques (Faiss, Mistral, LangChain)
-- [ ] Slide 8-9: Methodologie (collecte, pre-processing, vectorisation)
-- [ ] Slide 10-11: Resultats du POC (metriques, exemples)
-- [ ] Slide 12-13: Demo live et cas d'usage
-- [ ] Slide 14: Limitations et ameliorations
-- [ ] Slide 15: Conclusion et recommandations
-- [ ] Verifier que la presentation fait entre 10 et 15 slides
-- [ ] Chronometrer la presentation (15 minutes +/- 5)
+### 8.1 - Presentation PowerPoint
+- [X] Creer le fichier `_docs/ABAI_P11_presentation.pptx`
+- [X] Slide 1: Page de titre
+- [X] Slide 2-3: Contexte et problematique
+- [X] Slide 4 : Pipeline complet
+- [X] Slide 5 : Le RAG
+- [X] Slide 6-7: Choix techniques (Faiss, Mistral, LangChain)
+- [X] Slide 8-9: Methodologie (collecte, pre-processing, vectorisation)
+- [X] Slide 10: Construction du systeme RAG
+- [X] Slide 11: Évaluation Ragas
+- [X] Slide 12: Interface Streamlit
+- [X] Slide 13: Demo
+- [X] Slide 14: Conclusion
+- [X] Verifier que la presentation fait entre 10 et 15 slides
+- [X] Chronometrer la presentation (15 minutes +/- 5)
 
+**Date de realisation:** 23/02/2026  
+**Notes:**
+- 14 slides vulgarisees avec langage accessible (non-technique)
+- Trame de reference : `_docs/ABAI_P11_presentation_trame.md`
+- Fichier genere : `_docs/ABAI_P11_presentation.pptx`
 
-### 7.2 - Preparation de la demo live
+### 8.2 - Preparation de la demo live
 - [ ] Preparer un script de demo
 - [ ] Selectionner 3-5 questions representatives
 - [ ] Tester la demo en conditions reelles
 - [ ] Preparer un plan B en cas de probleme technique
 - [ ] Verifier que l'environnement est pret
 
-### 7.3 - Preparation aux questions de la discussion
+### 8.3 - Preparation aux questions de la discussion
 - [ ] Preparer la reponse: Comment Faiss optimise les recherches?
 - [ ] Preparer la reponse: Limitations de Faiss pour grandes quantites?
 - [ ] Preparer la reponse: Pourquoi choisir LangChain?
@@ -521,32 +559,13 @@
 - [ ] Preparer la reponse: Comment detecter les derives de performance?
 - [ ] Preparer la reponse: Indicateurs de performance en production?
 
-
-### 7.4 - Repetition de la soutenance
+### 8.4 - Repetition de la soutenance
 - [ ] Faire une repetition complete (30 minutes)
 - [ ] Chronometrer chaque partie
 - [ ] Ajuster si necessaire
 - [ ] Solliciter un feedback externe
 
-
----
-
-## PHASE 8 - FINALISATION ET DEPOT
-
-### 8.1 - Pipeline de tests complet
-- [ ] Executer tous les tests unitaires
-- [ ] Corriger les eventuels bugs
-- [ ] Verifier que tous les tests passent
-
-
-### 8.2 - Revue du code
-- [ ] Verifier la qualite du code (PEP8 pour Python)
-- [ ] Supprimer le code mort
-- [ ] Verifier les imports inutilises
-- [ ] Optimiser les performances si necessaire
-
-
-### 8.3 - Verification des livrables
+### 8.5 - Verification des livrables
 - [ ] Livrable 1: README.md complet
 - [ ] Livrable 2: Gestion des dependances (requirements.txt ou pyproject.toml)
 - [ ] Livrable 3: Scripts de pre-processing avec docstrings
@@ -556,8 +575,7 @@
 - [ ] Livrable 7: Rapport technique (5-10 pages)
 - [ ] Livrable 8: Presentation PowerPoint (10-15 slides)
 
-
-### 8.4 - Preparation du depot
+### 8.6 - Preparation du depot
 - [ ] Creer le dossier de depot: `Categorisez_automatiquement_des_questions_bailleul_aymeric`
 - [ ] Organiser les livrables selon la nomenclature:
   - `bailleul_aymeric_1_readme_022026`
@@ -569,12 +587,12 @@
 - [ ] Verifier la taille du ZIP
 - [ ] Tester l'extraction du ZIP
 
-
-### 8.5 - Depot sur la plateforme
+### 8.7 - Depot sur la plateforme
 - [ ] Se connecter a la plateforme OpenClassrooms
 - [ ] Deposer le fichier ZIP
 - [ ] Verifier que le depot est complet
 - [ ] Prendre une capture d'ecran de confirmation
+
 
 ---
 
@@ -597,7 +615,7 @@
 - Version LangChain-Core: 1.2.12
 - Version Faiss: 1.13.2 (CPU)
 - Version Mistral SDK: 1.12.0
-- Version Pandas: 3.0.1
+- Version Pandas: 2.3.3
 - Version NumPy: 2.4.2
 - Version PyArrow: 23.0.0
 - Version Tiktoken: 0.12.0
@@ -607,19 +625,19 @@
 - Version Datasets: 4.5.0
 - Version Nest-asyncio: 1.6.0
 - Modele Mistral Embeddings: mistral-embed (1024 dimensions, production)
-- Modele Mistral LLM (production): mistral-small-latest (temperature=0.1)
+- Modele Mistral LLM (production): mistral-small-latest (temperature=0.0)
 - Modele LLM (evaluation Ragas): mistral-large-latest (temperature=0.1, via Mistral API)
 - Modele Embeddings (evaluation Ragas): mistral-embed (via Mistral API, MistralAIEmbeddings)
 - Type d'index Faiss: IndexFlatIP (recherche exacte, Inner Product)
-- Taille index Faiss: 41.70 MB pour 10,646 vecteurs
+- Taille index Faiss: 40.48 MB pour 10,363 vecteurs
 - Temps creation index: 0.39 secondes
 - Batch size vectorisation: 100 chunks
 - Rate limit vectorisation: 1.0s entre batches
-- Temps vectorisation: 3.95 minutes pour 10,646 chunks
+- Temps vectorisation: 3.95 minutes pour 10,363 chunks
 - Taille des chunks: 250 tokens
 - Overlap entre chunks: 75 tokens (30%)
 - Encodage tokens: cl100k_base (compatible Mistral)
-- Nombre total de chunks: 10,646
+- Nombre total de chunks: 10,363
 - Moyenne chunks/evenement: 1.34
 - Nombre de documents recuperes (k): 10 (RETRIEVER_K dans rag_system.py, augmente de 7 a 10)
 - Seuil de similarite: 0.7 (RETRIEVER_SCORE_THRESHOLD dans rag_system.py, defini mais non applique avec MMR)

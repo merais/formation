@@ -3,9 +3,8 @@
 **Projet:** Developpement d'un assistant pour la recommandation d'evenements culturels  
 **Auteur:** Aymeric Bailleul  
 **Date de début** : 03/02/2026  
-**Date de derniere mise a jour** : 19/02/2026  
+**Date de derniere mise a jour** : 25/02/2026  
 **Date de fin maximum** : 10/03/2026  
-**Statut:** Phase 6.2 completee - Rapport technique redige  
 
 ---
 
@@ -83,15 +82,15 @@ P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/
 ├── _projet/
 │   ├── data/                      # Donnees du projet
 │   │   ├── RAW/                   # Donnees brutes Open Agenda (905 MB, 913K evenements)
-│   │   ├── processed/             # Donnees nettoyees (7,960 evenements Occitanie)
-│   │   │   ├── evenements_occitanie_clean.parquet (9.32 MB)
-│   │   │   └── evenements_chunks.parquet (3.28 MB, 10,646 chunks)
+│   │   ├── processed/             # Donnees nettoyees (evenements Occitanie)
+│   │   │   ├── evenements_occitanie_clean.parquet (9.09 MB)
+│   │   │   └── evenements_chunks.parquet (3.20 MB, 10,363 chunks)
 │   │   ├── evaluation/            # Donnees et resultats d'evaluation
 │   │   │   └── test_dataset_ragas.json (5 questions annotees, plain text)
-│   │   └── vectorstore/           # Base vectorielle FAISS (140.64 MB)
-│   │       ├── embeddings.npy      (83.17 MB, 10,646 vecteurs 1024D)
-│   │       ├── metadata.parquet    (3.28 MB)
-│   │       ├── faiss_index.bin     (41.59 MB, IndexFlatIP)
+│   │   └── vectorstore/           # Base vectorielle FAISS
+│   │       ├── embeddings.npy      (80.96 MB, 10,363 vecteurs 1024D)
+│   │       ├── metadata.parquet    (3.20 MB)
+│   │       ├── faiss_index.bin     (40.48 MB, IndexFlatIP)
 │   │       ├── config.txt
 │   │       └── index_config.txt
 │   ├── src/                       # Code source
@@ -108,9 +107,11 @@ P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/
 │   │   │   └── evaluate_rag.py    # Script Ragas (4 metriques)
 │   │   └── build_vectorstore.py   # Orchestrateur pipeline complet
 │   ├── tests/                     # Tests unitaires
-│   │   ├── test_00_environnement.py # Tests de configuration (8/8)
+│   │   ├── test_00_environnement.py  # Tests de configuration (3/3)
 │   │   ├── test_01_preprocessing.py  # Tests du preprocessing (22/22)
-│   │   └── test_02_vectorstore.py    # Tests base vectorielle (27/27)
+│   │   ├── test_02_vectorstore.py    # Tests base vectorielle (27/27)
+│   │   ├── test_03_chunking.py       # Tests du chunking (42/42)
+│   │   └── test_04_rag_system.py     # Tests du systeme RAG (26/26)
 │   ├── analyses/                  # Notebooks d'exploration
 │   │   └── analyse_dataset.ipynb  # Analyse complete du dataset
 │   ├── _docs/                     # Documentation du projet
@@ -133,7 +134,7 @@ P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/
 - **LangChain-Mistralai >= 0.2.7** : Integration Mistral avec LangChain
 - **Mistral AI >= 1.12.0** : SDK pour modeles de langage et embeddings (mistral-small pour la generation, mistral-embed pour les embeddings, mistral-large pour l'evaluation)
 - **Faiss-cpu >= 1.13.2** : Base de donnees vectorielle pour la recherche semantique (IndexFlatIP)
-- **Pandas >= 3.0.0** : Manipulation et analyse de donnees
+- **Pandas >= 2.3.0** : Manipulation et analyse de donnees 
 - **NumPy >= 2.4.2** : Calculs numeriques et operations matricielles
 - **PyArrow >= 23.0.0** : Lecture/ecriture de fichiers Parquet
 - **Streamlit >= 1.54.0** : Framework pour interface web interactive
@@ -225,7 +226,7 @@ poetry run python src/build_vectorstore.py
 # 2. Decoupage en chunks (chunk_texts.py)
 # 3. Vectorisation Mistral (vectorize_data.py)
 # 4. Creation index FAISS (create_faiss_index.py)
-# Duree totale : ~4-5 minutes pour 10,646 chunks
+# Duree totale : ~4-5 minutes pour 10,363 chunks
 
 # Option 2 : Etapes manuelles
 poetry run python src/vectorization/vectorize_data.py     # Vectorisation
@@ -255,17 +256,23 @@ poetry run streamlit run src/rag/chat_interface.py
 # IMPORTANT : Toujours executer depuis le repertoire _projet avec venv active
 cd P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/_projet
 
-# Tous les tests
+# Tous les tests (120/120)
 poetry run pytest tests/ -v --disable-warnings
 
-# Tests de l'environnement
+# Tests de l'environnement (3 tests)
 poetry run pytest tests/test_00_environnement.py -v
 
-# Tests du preprocessing
+# Tests du preprocessing (22 tests)
 poetry run pytest tests/test_01_preprocessing.py -v
 
-# Tests de la base vectorielle
+# Tests de la base vectorielle (27 tests)
 poetry run pytest tests/test_02_vectorstore.py -v
+
+# Tests du chunking (42 tests)
+poetry run pytest tests/test_03_chunking.py -v
+
+# Tests du systeme RAG - sans appel API (26 tests)
+poetry run pytest tests/test_04_rag_system.py -v
 ```
 
 ### 5. Exemples de questions
@@ -301,10 +308,8 @@ Concerts a Lyon ?
 - **Periode** : 1 an en arriere (depuis le 09/02/2025) + tous evenements futurs
 - **Volume de donnees** : 
   - Dataset brut : 913,818 evenements
-  - Dataset nettoye : 7,960 evenements Occitanie
-  - Dataset chunks : 10,646 chunks (250 tokens/chunk, overlap 75 tokens)
-  - Base vectorielle : 10,646 embeddings 1024D + index FAISS 
-  - Repartition : 7,784 evenements passes + 176 evenements futurs
+  - Dataset chunks : 10,363 chunks (250 tokens/chunk, overlap 75 tokens) — recalcul filtre temporel 25/02/2026
+  - Base vectorielle : 10,363 embeddings 1024D + index FAISS (40.48 MB)
 - **Source de donnees** : Open Agenda (https://public.opendatasoft.com/explore/dataset/evenements-publics-openagenda)
 
 ---
@@ -313,7 +318,7 @@ Concerts a Lyon ?
 
 - **Perimetre geographique strict** : Le systeme est exclusivement entraine sur des evenements d'Occitanie. Toute question sur une autre region (Paris, Lyon, Bordeaux...) recevra une reponse explicite d'absence de donnees.
 - **Donnees statiques** : La base vectorielle est construite a partir d'un snapshot du 03/02/2026. Les nouveaux evenements publies apres cette date ne sont pas pris en compte. Une mise a jour periodique (hebdomadaire ou mensuelle) du pipeline de build est necessaire en production.
-- **Qualite du context_recall (0.583)** : Le systeme ne recupere pas toujours l'integralite des informations pertinentes, notamment pour les questions tres generiques ("evenements en plein air") qui peuvent couvrir des dizaines de resultats dans la base.
+- **Qualite du context_recall (0.650)** : Le systeme ne recupere pas toujours l'integralite des informations pertinentes, notamment pour les questions tres generiques ("evenements en plein air") qui peuvent couvrir des dizaines de resultats dans la base.
 - **Dependance a l'API Mistral** : Le systeme necessite une connexion internet et une cle API Mistral valide. Aucun mode hors-ligne n'est disponible dans cette version.
 - **Langue** : Le systeme est optimise pour les questions en francais. Les questions en d'autres langues peuvent produire des resultats degrades.
 - **Volume de donnees** : La base couvre ~7,960 evenements. Pour un deploiement national, une strategie de partitionnement geographique de l'index FAISS serait necessaire.
@@ -330,16 +335,16 @@ Dataset : `data/evaluation/test_dataset_ragas.json` (5 questions, ground_truths 
 Modele d'evaluation : `mistral-large-latest` (temperature=0.1)  
 Embeddings d'evaluation : `mistral-embed`  
 Configuration RAG : k=10, MMR (fetch_k=20, lambda=0.7), temperature=0.0, prompt strict  
-Prompts Ragas : traduits en francais sauf context_precision (natif anglais)  
-Date : 19/02/2026  
-Fichier resultats : `data/evaluation/ragas_results_final.json`
+Prompts Ragas : traduits en francais sauf context_precision (natif anglais)
 
-| Metrique | Description | Score |
-|---|---|---|
-| `faithfulness` | La reponse est-elle fidele au contexte ? (anti-hallucination) | **0.764** |
-| `answer_relevancy` | La reponse repond-elle a la question ? | **0.910** |
-| `context_precision` | Le contexte recupere est-il exempt de bruit ? | **0.700** |
-| `context_recall` | Toutes les infos necessaires ont-elles ete recuperees ? | **0.583** |
+| Metrique | Description | Run 1 (19/02) | Run 2 (25/02 matin) | Run 3 (25/02 soir) |
+|---|---|---|---|---|
+| `faithfulness` | La reponse est-elle fidele au contexte ? | **0.730** | stable | **0.802** |
+| `answer_relevancy` | La reponse repond-elle a la question ? | **0.910** | stable | **0.911** |
+| `context_precision` | Le contexte recupere est-il exempt de bruit ? | **0.678** | stable | **0.550** |
+| `context_recall` | Toutes les infos necessaires ont-elles ete recuperees ? | **0.650** | stable | **0.650** |
+
+Run 2 valide la stabilite apres Phase 5.2 (suppression code mort). Run 3 montre une progression de faithfulness (+0.072) a parametres identiques.
 
 > Le retriever utilise MMR (Maximal Marginal Relevance) pour diversifier les chunks recuperes et reduire les quasi-doublons issus du meme evenement. Le dataset de test couvre 5 questions representatives de la zone Occitanie : expositions, spectacles enfants, festivals, evenements locaux et plein air.
 
@@ -365,26 +370,29 @@ poetry run python src/evaluation/generate_test_dataset.py
 - [FAIT] **Phase 2.3** : Script de nettoyage clean_data.py (9 fonctions documentees)
 - [FAIT] **Phase 2.4** : Structuration des donnees (48 colonnes finales)
 - [FAIT] **Phase 2.5** : Tests unitaires preprocessing (22/22 tests PASSED)
-- [FAIT] **Phase 2.6** : Chunking des textes (10,646 chunks crees, 250 tokens/chunk)
-- [FAIT] **Phase 3.1** : Vectorisation avec Mistral Embeddings (10,646 embeddings 1024D, 3.95 min)
-- [FAIT] **Phase 3.2** : Creation de l'index FAISS (IndexFlatIP, 41.70 MB, 0.39 sec)
+- [FAIT] **Phase 2.6** : Chunking des textes (10,363 chunks, 250 tokens/chunk, overlap 75 tokens)
+- [FAIT] **Phase 3.1** : Vectorisation avec Mistral Embeddings (10,363 embeddings 1024D, ~3.87 min)
+- [FAIT] **Phase 3.2** : Creation de l'index FAISS (IndexFlatIP, 40.48 MB)
 - [FAIT] **Phase 3.3** : Tests vectorisation et FAISS (27/27 tests PASSED)
-- [FAIT] **Phase 3.4** : Script de reconstruction complete (build_vectorstore.py, 4m 37s)
+- [FAIT] **Phase 3.4** : Script de reconstruction complete (build_vectorstore.py, ~4m 40s)
 - [FAIT] **Phase 4.1-4.3** : Systeme RAG avec LangChain
-- [FAIT] **Phase 4.4** : Tests et optimisation du RAG
 - [FAIT] **Phase 4.5** : Interface de chat Streamlit
-- [FAIT] **Phase 5.1** : Jeu de donnees test Ragas (5 questions ciblees, ground_truths plain text)
-- [FAIT] **Phase 5.2** : Script d'evaluation Ragas + optimisation RAG (4 metriques, mistral-large-latest, prompts FR, MMR, scores : faith=0.764, rel=0.910, prec=0.700, recall=0.583)
-- [FAIT] **Phase 6.1** : README complet (limitations, exemples de questions, nettoyage technologies)
-- [FAIT] **Phase 6.2** : Rapport technique (_docs/ABAI_P11_rapport_technique.md, 9 sections)
-- [TODO] **Phase 7** : Presentation PowerPoint (10-15 slides)
-- [TODO] **Phase 8** : Finalisation et depot
+- [FAIT] **Phase 5.1** : Pipeline de tests complet — 120/120 tests PASSED
+- [FAIT] **Phase 5.2** : Revue du code (imports inutilises supprimes, code mort retire, typo corrigee — 120/120 toujours PASSED)
+- [FAIT] **Phase 6.1** : Jeu de donnees test Ragas (5 questions ciblees, ground_truths plain text)
+- [FAIT] **Phase 6.2** : Script d'evaluation Ragas (4 metriques, mistral-large-latest, prompts FR, MMR)
+- [FAIT] **Phase 7.1** : README complet (limitations, exemples de questions, metriques mises a jour)
+- [FAIT] **Phase 7.2** : Rapport technique (_docs/ABAI_P11_rapport_technique.md, 9 sections)
+- [FAIT] **Phase 7.3** : Documentation du code (docstrings toutes fonctions/classes)
+- [FAIT] **Phase 8.1** : Presentation PowerPoint vulgarisee (16 slides, _docs/ABAI_P11_presentation.pptx — finalise 25/02/2026)
+- [FAIT] **Phase 8.2** : Demo live testee (interface Streamlit, bug RETRIEVER_SCORE_THRESHOLD corrige, demo validee 25/02/2026)
+- [TODO] **Phase 8.3-8.7** : Questions jury, repetition, verification livrables, depot
 
 ---
 
 ## Livrables
 
-1. [FAIT] README.md (ce fichier, mise a jour 19/02/2026)
+1. [FAIT] README.md (ce fichier, mise a jour 25/02/2026)
 2. [FAIT] Gestion des dependances (pyproject.toml, requirements.txt)
 3. [FAIT] Scripts de pre-processing avec docstrings
    - src/preprocessing/clean_data.py
@@ -393,12 +401,12 @@ poetry run python src/evaluation/generate_test_dataset.py
    - src/vectorization/vectorize_data.py
    - src/vectorization/create_faiss_index.py
    - src/build_vectorstore.py
-5. [FAIT] Tests unitaires avec pytest (57/57 tests PASSED : 8 environnement + 22 preprocessing + 27 vectorstore)
+5. [FAIT] Tests unitaires avec pytest (120/120 tests PASSED : 3 environnement + 22 preprocessing + 27 vectorstore + 42 chunking + 26 RAG system)
 6. [FAIT] Code du systeme RAG complet
    - src/rag/rag_system.py (systeme RAG avec LangChain)
    - src/rag/chat_interface.py (interface web Streamlit)
 7. [FAIT] Rapport technique (_docs/ABAI_P11_rapport_technique.md)
-8. [TODO] Presentation PowerPoint (10-15 slides)
+8. [FAIT] Presentation PowerPoint (14 slides vulgarisee, _docs/ABAI_P11_presentation.pptx)
 9. [FAIT] Logbook detaille (ABAI_P11_X0_tasks_list_logbook.md)
 10. [FAIT] Notebook d'exploration (analyse_dataset.ipynb - 8 sections)
 

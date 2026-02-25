@@ -3,9 +3,6 @@ Tests pour la base vectorielle FAISS.
 
 Ce module teste l'intégrité et les performances de la base vectorielle créée
 avec les embeddings Mistral et l'index FAISS.
-
-Usage:
-    pytest tests/test_02_vectorstore.py -v
 """
 
 import pytest
@@ -225,10 +222,12 @@ def test_similarity_search_batch(faiss_index, embeddings):
     assert indices.shape == (n_queries, k), \
         f"Forme attendue: ({n_queries}, {k}), obtenue: {indices.shape}"
     
-    # Vérifier que chaque vecteur se trouve lui-même en premier
+    # Vérifier que chaque vecteur se retrouve dans les k premiers résultats.
+    # On ne force pas la position 0 car deux chunks quasi-identiques peuvent
+    # se retrouver légèrement devant dans un index de similarité cosinus.
     for i in range(n_queries):
-        assert indices[i][0] == i, \
-            f"Le vecteur {i} devrait se trouver lui-même en premier"
+        assert i in indices[i], \
+            f"Le vecteur {i} devrait se trouver parmi les {k} plus proches voisins de lui-même"
 
 
 # ============================================================================

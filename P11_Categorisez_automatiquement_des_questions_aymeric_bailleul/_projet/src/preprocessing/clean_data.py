@@ -13,7 +13,6 @@ Date: 09/02/2026
 """
 
 import pandas as pd
-import numpy as np
 from pathlib import Path
 import re
 from html import unescape
@@ -341,7 +340,7 @@ def main():
         return df_clean, metrics
         
     except Exception as e:
-        print(f"\nERRERUR: {str(e)}")
+        print(f"\nERREUR: {str(e)}")
         raise
 
 

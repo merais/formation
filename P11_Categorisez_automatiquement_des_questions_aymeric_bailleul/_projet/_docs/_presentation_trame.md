@@ -1,11 +1,5 @@
-"""Écrit la trame PowerPoint vulgarisée dans ABAI_P11_presentation_trame.md"""
-import pathlib
-
-TRAME = pathlib.Path(__file__).parent / "ABAI_P11_presentation_trame.md"
-
-content = """\
 # Trame PowerPoint — P11 RAG Chatbot Puls-Events
-**15 slides · Style gris/anthracite · ~15 minutes**
+**16 slides · Style gris/anthracite · ~15 minutes**
 
 ---
 
@@ -69,6 +63,9 @@ Un modèle de langage (LLM) peut répondre à n'importe quelle question, mais il
 - Aucune information inventée : le modèle ne peut répondre qu'avec ce qu'on lui fournit
 - Les réponses sont traçables : on sait quels passages ont servi
 - Le système répond "je ne sais pas" si l'info n'existe pas dans la base
+
+**LangChain — le chef d'orchestre :**
+LangChain enchaîne toutes les étapes (embedding → recherche FAISS → formatage du prompt → appel LLM) en une seule chaîne d'appel, sans qu'on ait à câbler manuellement chaque transition. C'est lui qui "colle" les briques ensemble.
 
 **Stack technique :** LangChain (orchestration) + FAISS (recherche) + Mistral AI (LLM)
 
@@ -173,7 +170,46 @@ La recherche simple peut retourner plusieurs blocs du même événement. Le MMR 
 
 ---
 
-## Slide 10 — Résultats Ragas : métriques globales
+## Slide 10 — Construction du système RAG
+
+**Titre :** Comment le RAG est-il construit concrètement ?
+
+**Ce qui se passe quand l'utilisateur pose une question :**
+
+```
+Question utilisateur
+       ↓
+[Embedding] → vecteur 1024D via mistral-embed
+       ↓
+[FAISS] → recherche des 20 vecteurs les plus proches (k_fetch=20)
+       ↓
+[MMR] → sélection de 10 blocs diversifiés parmi les 20 (k=10, λ=0.7)
+       ↓
+[Prompt] → blocs injectés dans un template structuré
+       ↓
+[LLM] → (k_fetch=20)
+
+       ↓
+Réponse + sources citées
+```
+
+**Les paramètres clés du système :**
+
+| Paramètre | Valeur | Rôle |
+|---|---|---|
+| Modèle embedding | mistral-embed | Transforme question et chunks en vecteurs 1024D |
+| Modèle LLM | mistral-small-latest | Génère la réponse finale |
+| k (blocs retournés) | 10 | Nombre de passages fournis au LLM |
+| fetch_k | 20 | Candidats FAISS avant filtrage MMR |
+| lambda_mult | 0.7 | Équilibre pertinence/diversité (70%/30%) |
+| temperature | 0.0 | Réponses déterministes, pas aléatoires |
+
+**Le prompt — ce que le LLM reçoit vraiment :**
+Le système injecte une instruction explicite : *"Réponds uniquement avec les informations du contexte fourni. Si l'information n'est pas disponible, dis-le clairement."* C'est ce qui empêche les hallucinations.
+
+---
+
+## Slide 11 — Résultats Ragas : métriques globales
 
 **Titre :** Évaluation objective — le framework Ragas
 
@@ -194,7 +230,7 @@ Le système répond bien aux questions (answer_relevancy élevé) et n'invente p
 
 ---
 
-## Slide 11 — Résultats Ragas : analyse par question
+## Slide 12 — Résultats Ragas : analyse par question
 
 **Titre :** Ce que les scores révèlent question par question
 
@@ -214,7 +250,7 @@ Le système répond bien aux questions (answer_relevancy élevé) et n'invente p
 
 ---
 
-## Slide 12 — Démo : exemples de réponses
+## Slide 13 — Démo : exemples de réponses
 
 **Titre :** Le système en action — deux cas réels
 
@@ -234,7 +270,7 @@ Le système ne cherche pas à inventer : il reconnaît les limites de ce qu'il s
 
 ---
 
-## Slide 13 — Interface Streamlit
+## Slide 14 — Interface Streamlit
 
 **Titre :** L'interface utilisateur — un chat dans le navigateur
 
@@ -256,7 +292,7 @@ Une interface de type "chat" accessible directement dans le navigateur, sans ins
 
 ---
 
-## Slide 14 — Limitations et améliorations
+## Slide 15 — Limitations et améliorations
 
 **Titre :** Ce POC a des limites — et c'est normal
 
@@ -274,7 +310,7 @@ Un POC, par définition, n'est pas une version production. Il sert à valider un
 
 ---
 
-## Slide 15 — Conclusion
+## Slide 16 — Conclusion
 
 **Titre :** Bilan — ce que ce POC prouve
 
@@ -293,7 +329,3 @@ Passer d'un snapshot statique à un pipeline de mises à jour incrémentales, et
 
 ---
 *Aymeric Bailleul — P11 Data Engineer — OpenClassrooms — Février 2026*
-"""
-
-TRAME.write_text(content, encoding="utf-8")
-print(f"OK — {len(content)} chars, {content.count('## Slide')} slides")
