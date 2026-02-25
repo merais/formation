@@ -116,9 +116,15 @@ P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/
 │   │   └── analyse_dataset.ipynb  # Analyse complete du dataset
 │   ├── _docs/                     # Documentation du projet
 │   │   └── ABAI_P11_X0_tasks_list_logbook.md
+│   ├── logs/                      # Logs d'execution
+│   │   ├── setup/                 # Logs horodates du pipeline de build
+│   │   └── tests/                 # Logs horodates de la suite de tests
 │   ├── README.md                  # Ce fichier
 │   ├── pyproject.toml             # Configuration Poetry
-│   └── requirements.txt           # Dependances Python
+│   ├── requirements.txt           # Dependances Python
+│   ├── setup_rag_from_scratch.bat # Installation et build complet (Windows)
+│   ├── launch_rag_interface.bat   # Lanceur interface Streamlit (Windows)
+│   └── test_rag_system.bat        # Execution de la suite de tests (Windows)
 ├── _cours/                        # Materiel de cours
 └── desktop.ini
 ```
@@ -157,13 +163,29 @@ P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/
 - Poetry installe sur votre systeme
 - Cle API Mistral AI (inscription gratuite sur https://console.mistral.ai)
 
+### Demarrage rapide (Windows — scripts .bat)
+
+Trois scripts sont disponibles a la racine du projet pour simplifier l'utilisation sous Windows :
+
+| Script | Role |
+|---|---|
+| `setup_rag_from_scratch.bat` | Installation complete : cree le `.venv`, configure le `.env`, telecharge le dataset si absent, lance le pipeline de build |
+| `launch_rag_interface.bat` | Lance l'interface Streamlit en double-cliquant |
+| `test_rag_system.bat` | Execute la suite de 120 tests et sauvegarde un log horodate dans `logs/tests/` |
+
+**Premier lancement :**
+1. S'assurer que Python 3.11+ et Poetry sont dans le PATH
+2. Double-cliquer sur `setup_rag_from_scratch.bat`
+3. Suivre les instructions interactives (installation .venv, saisie cle API)
+4. Une fois le build termine, double-cliquer sur `launch_rag_interface.bat`
+
+> Le script `setup_rag_from_scratch.bat` detecte automatiquement un vectorstore existant et demande confirmation avant tout re-build (evite les appels API Mistral superflus).
+
+### Installation manuelle (toutes plateformes)
+
 ### Etapes d'installation
 
-1. Cloner le repository (ou extraire l'archive)
-
-```bash
-cd P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/_projet
-```
+1. Se placer dans le dossier du projet
 
 2. Creer et activer l'environnement virtuel avec Poetry
 
@@ -236,7 +258,9 @@ poetry run python src/vectorization/create_faiss_index.py # Indexation
 ### 3. Lancer le chatbot Streamlit
 
 ```bash
-# Lancer l'interface web interactive
+# Option Windows : double-cliquer sur launch_rag_interface.bat
+
+# Option manuelle
 poetry run streamlit run src/rag/chat_interface.py
 
 # L'interface s'ouvre automatiquement dans votre navigateur
@@ -253,8 +277,10 @@ poetry run streamlit run src/rag/chat_interface.py
 ### 4. Executer les tests
 
 ```bash
+# Option Windows : double-cliquer sur test_rag_system.bat
+# (log horodate sauvegarde dans logs/tests/)
+
 # IMPORTANT : Toujours executer depuis le repertoire _projet avec venv active
-cd P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/_projet
 
 # Tous les tests (120/120)
 poetry run pytest tests/ -v --disable-warnings
@@ -314,17 +340,6 @@ Concerts a Lyon ?
 
 ---
 
-## Limitations connues
-
-- **Perimetre geographique strict** : Le systeme est exclusivement entraine sur des evenements d'Occitanie. Toute question sur une autre region (Paris, Lyon, Bordeaux...) recevra une reponse explicite d'absence de donnees.
-- **Donnees statiques** : La base vectorielle est construite a partir d'un snapshot du 03/02/2026. Les nouveaux evenements publies apres cette date ne sont pas pris en compte. Une mise a jour periodique (hebdomadaire ou mensuelle) du pipeline de build est necessaire en production.
-- **Qualite du context_recall (0.650)** : Le systeme ne recupere pas toujours l'integralite des informations pertinentes, notamment pour les questions tres generiques ("evenements en plein air") qui peuvent couvrir des dizaines de resultats dans la base.
-- **Dependance a l'API Mistral** : Le systeme necessite une connexion internet et une cle API Mistral valide. Aucun mode hors-ligne n'est disponible dans cette version.
-- **Langue** : Le systeme est optimise pour les questions en francais. Les questions en d'autres langues peuvent produire des resultats degrades.
-- **Volume de donnees** : La base couvre ~7,960 evenements. Pour un deploiement national, une strategie de partitionnement geographique de l'index FAISS serait necessaire.
-
----
-
 ## Evaluation
 
 Le systeme est evalue avec le framework **Ragas** sur un jeu de 5 questions annotees manuellement (`data/evaluation/test_dataset_ragas.json`).
@@ -343,8 +358,6 @@ Prompts Ragas : traduits en francais sauf context_precision (natif anglais)
 | `answer_relevancy` | La reponse repond-elle a la question ? | **0.910** | stable | **0.911** |
 | `context_precision` | Le contexte recupere est-il exempt de bruit ? | **0.678** | stable | **0.550** |
 | `context_recall` | Toutes les infos necessaires ont-elles ete recuperees ? | **0.650** | stable | **0.650** |
-
-Run 2 valide la stabilite apres Phase 5.2 (suppression code mort). Run 3 montre une progression de faithfulness (+0.072) a parametres identiques.
 
 > Le retriever utilise MMR (Maximal Marginal Relevance) pour diversifier les chunks recuperes et reduire les quasi-doublons issus du meme evenement. Le dataset de test couvre 5 questions representatives de la zone Occitanie : expositions, spectacles enfants, festivals, evenements locaux et plein air.
 
@@ -409,5 +422,9 @@ poetry run python src/evaluation/generate_test_dataset.py
 8. [FAIT] Presentation PowerPoint (14 slides vulgarisee, _docs/ABAI_P11_presentation.pptx)
 9. [FAIT] Logbook detaille (ABAI_P11_X0_tasks_list_logbook.md)
 10. [FAIT] Notebook d'exploration (analyse_dataset.ipynb - 8 sections)
+11. [FAIT] Scripts de deploiement Windows
+    - setup_rag_from_scratch.bat (installation et build complet)
+    - launch_rag_interface.bat (lanceur Streamlit)
+    - test_rag_system.bat (suite de tests avec log horodate)
 
 ---

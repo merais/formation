@@ -25,6 +25,12 @@ from pathlib import Path
 from datetime import datetime
 import time
 
+# Forcer UTF-8 sur stdout/stderr (evite UnicodeEncodeError sur Windows cp1252)
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
+
 
 # ============================================================================
 # CONSTANTES

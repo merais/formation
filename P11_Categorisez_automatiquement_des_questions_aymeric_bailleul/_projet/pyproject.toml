@@ -6,7 +6,7 @@ authors = [
     {name = "Aymeric Bailleul"}
 ]
 readme = "README.md"
-requires-python = ">=3.11.0"
+requires-python = ">=3.11.0,<3.15"
 dependencies = [
     "langchain>=0.3.19",
     "langchain-community>=0.3.19",
