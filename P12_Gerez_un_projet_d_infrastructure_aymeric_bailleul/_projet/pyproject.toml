@@ -1,0 +1,28 @@
+[project]
+name = "p12-gerez-un-projet-d-infrastructure"
+version = "0.1.0"
+description = "P12 – Gérez un projet d'infrastructure | OpenClassrooms Data Engineer"
+authors = [{ name = "Aymeric Bailleul" }]
+requires-python = ">=3.14"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "black",
+    "ruff",
+    "pytest",
+    "python-dotenv",
+]
+
+[tool.uv]
+package = false
+link-mode = "copy"
+
+[tool.black]
+line-length = 88
+
+[tool.ruff]
+line-length = 88
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
