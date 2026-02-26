@@ -96,7 +96,7 @@ MAX_QUESTIONS = os.getenv("MAX_EVAL_QUESTIONS")
 MAX_QUESTIONS = int(MAX_QUESTIONS) if MAX_QUESTIONS else None
 
 # Configuration du timeout et du parallélisme pour Ragas
-# max_workers=4  : 4 workers en parallèle (Mistral API, rate limit géré par max_wait)
+# max_workers=1  : 1 worker en parallèle (Mistral API, rate limit géré par max_wait)
 # timeout=120    : 2 minutes max par opération
 # max_retries=3  : 3 tentatives en cas d'erreur réseau
 # max_wait=60    : 60s max entre les tentatives (backoff API)
@@ -310,8 +310,8 @@ def run_evaluation(
 
     Args:
         evaluation_dataset : Dataset Ragas
-        eval_llm           : LLM Ollama pour juger les métriques
-        eval_embeddings    : Embeddings Ollama pour les comparaisons sémantiques
+        eval_llm           : LLM Mistral pour juger les métriques
+        eval_embeddings    : Embeddings Mistral pour les comparaisons sémantiques
 
     Returns:
         DataFrame Pandas avec les scores par question et par métrique
@@ -421,11 +421,11 @@ def main():
         # 2. Formater pour Ragas
         evaluation_dataset = build_ragas_dataset(evaluation_data)
 
-        # 3. Initialiser LLM et embeddings (Ollama local, pas de clé API)
-        ollama_llm, ollama_embeddings = initialize_models()
+        # 3. Initialiser LLM et embeddings Mistral API
+        mistral_llm, mistral_embeddings = initialize_models()
 
         # 4. Lancer l'évaluation
-        results_df = run_evaluation(evaluation_dataset, eval_llm=ollama_llm, eval_embeddings=ollama_embeddings)
+        results_df = run_evaluation(evaluation_dataset, eval_llm=mistral_llm, eval_embeddings=mistral_embeddings)
 
         # 5. Afficher et sauvegarder
         display_results(results_df)

@@ -545,25 +545,33 @@
 - Fichier genere : `_docs/ABAI_P11_presentation.pptx`
 
 ### 8.2 - Preparation de la demo live
-- [ ] Preparer un script de demo
-- [ ] Selectionner 3-5 questions representatives
-- [ ] Tester la demo en conditions reelles
-- [ ] Preparer un plan B en cas de probleme technique
-- [ ] Verifier que l'environnement est pret
+- [X] Preparer un script de demo
+- [X] Selectionner 3-5 questions representatives
+- [X] Tester la demo en conditions reelles
+- [X] Preparer un plan B en cas de probleme technique
+- [X] Verifier que l'environnement est pret
 
 ### 8.3 - Preparation aux questions de la discussion
-- [ ] Preparer la reponse: Comment Faiss optimise les recherches?
-- [ ] Preparer la reponse: Limitations de Faiss pour grandes quantites?
-- [ ] Preparer la reponse: Pourquoi choisir LangChain?
-- [ ] Preparer la reponse: Methodes de garantie de qualite des donnees?
-- [ ] Preparer la reponse: Comment detecter les derives de performance?
-- [ ] Preparer la reponse: Indicateurs de performance en production?
+- [X] Preparer la reponse: Comment Faiss optimise les recherches?
+  - IndexFlatIP calcule le produit scalaire entre la requete et les 10 363 vecteurs normalises (1024D). Equivalent a la similarite cosinus. Recherche exacte en ~0.02ms car tout tient en RAM. A cette echelle, pas besoin d'index approximatif (IVF/HNSW).
+- [X] Preparer la reponse: Limitations de Faiss pour grandes quantites?
+  - Tout en RAM (41 MB pour 10k vecteurs -> ~4 GB pour 1M). Recherche exhaustive O(n*d), non scalable. Pas de mise a jour incrementale (rebuild complet). Pas de filtrage natif par metadonnee. Solution production : Pinecone, Milvus, ou FAISS IVFFlat.
+- [X] Preparer la reponse: Pourquoi choisir LangChain?
+  - Interface unifiee FAISS + Mistral LLM + Embeddings. Pipeline RAG declaratif avec l'operateur |. MMR integre pour reduire les chunks redondants. Facilite le changement de composants sans refactoring. Integration native Ragas (evaluation) et Streamlit (interface).
+- [X] Preparer la reponse: Methodes de garantie de qualite des donnees?
+  - Filtrage geographique (13 departements Occitanie) et temporel (1 an). Nettoyage HTML + deduplication par UID. Verification normes embeddings (= 1.0, pas de NaN). 120 tests pytest unitaires et d'integration. Evaluation Ragas sur 5 questions representatives.
+- [X] Preparer la reponse: Comment detecter les derives de performance?
+  - Surveiller la baisse des scores de similarite FAISS (data drift) et des metriques Ragas vs baseline (0.73 / 0.91 / 0.68 / 0.65). Rejouer evaluate_rag.py periodiquement. Alerte si chute > 10%. Feedback utilisateur dans Streamlit.
+- [X] Preparer la reponse: Indicateurs de performance en production?
+  - Latence FAISS < 100ms, reponse LLM < 5s. Metriques Ragas : faithfulness >= 0.65, answer_relevancy >= 0.80. Taux d'erreur API < 1%. Taux de satisfaction utilisateur. Couverture temporelle de l'index (declencheur de rebuild hebdomadaire).
+
+**Date de realisation:** 26/02/2026
 
 ### 8.4 - Repetition de la soutenance
-- [ ] Faire une repetition complete (30 minutes)
-- [ ] Chronometrer chaque partie
-- [ ] Ajuster si necessaire
-- [ ] Solliciter un feedback externe
+- [X] Faire une repetition complete (30 minutes)
+- [X] Chronometrer chaque partie
+- [X] Ajuster si necessaire
+- [X] Solliciter un feedback externe
 
 ### 8.5 - Verification des livrables
 - [ ] Livrable 1: README.md complet

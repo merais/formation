@@ -29,8 +29,10 @@ Date: 12/02/2026
 """
 
 import os
+import re
 from pathlib import Path
 from typing import List, Dict, Any
+from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 import faiss
@@ -65,6 +67,25 @@ RETRIEVER_K = 10  # Nombre de documents à récupérer (5→7→10 : meilleur re
 # Configuration des embeddings
 EMBEDDING_MODEL = "mistral-embed"
 EMBEDDING_DIMENSION = 1024
+
+# Expressions temporelles déclenchant le filtrage par date
+TEMPORAL_PATTERNS = re.compile(
+    r"\b(en ce moment|actuellement|ce week-?end|cette semaine|ce mois|aujourd'?hui"
+    r"|demain|prochainement|bient[ôo]t|ces jours|ce soir|la semaine prochaine"
+    r"|mois prochain|en cours)\b",
+    re.IGNORECASE,
+)
+
+# Mapping mois français → numéro
+FR_MONTHS = {
+    "janvier": 1, "février": 2, "fevrier": 2, "mars": 3, "avril": 4,
+    "mai": 5, "juin": 6, "juillet": 7, "août": 8, "aout": 8,
+    "septembre": 9, "octobre": 10, "novembre": 11, "décembre": 12, "decembre": 12,
+}
+MONTH_PATTERN = re.compile(
+    r"\b(" + "|".join(FR_MONTHS.keys()) + r")\b", re.IGNORECASE
+)
+YEAR_PATTERN = re.compile(r"\b(20\d{2})\b")
 
 
 # ============================================================================
@@ -312,18 +333,25 @@ class RAGSystem:
         # Template du prompt
         # IMPORTANT : "suggère des alternatives proches" a été retiré — il poussait le LLM
         # à sortir du contexte (hallucinations + answer_relevancy = 0 sur questions hors-zone).
-        template = """Tu es un assistant spécialisé dans la recommandation d'événements culturels en Occitanie.
+        # Injecter la date du jour pour que le LLM puisse interpréter
+        # les requêtes temporelles ("en ce moment", "ce weekend", etc.)
+        today = datetime.now().strftime("%d/%m/%Y")
+
+        template = f"""Tu es un assistant spécialisé dans la recommandation d'événements culturels en Occitanie.
+            La date du jour est le {today}.
             Utilise UNIQUEMENT les informations du CONTEXTE ci-dessous pour répondre.
             INTERDICTION ABSOLUE d'utiliser tes connaissances générales ou d'inventer des informations.
 
             CONTEXTE (Événements pertinents):
-            {context}
+            {{context}}
 
             QUESTION:
-            {question}
+            {{question}}
 
             INSTRUCTIONS STRICTES:
             - Base ta réponse EXCLUSIVEMENT sur les événements du CONTEXTE fourni
+            - Utilise la date du jour ({today}) pour interpréter les expressions temporelles
+              comme "en ce moment", "ce weekend", "prochainement", "cette semaine", etc.
             - Mentionne les événements spécifiques avec leurs dates et lieux exacts
             - Si plusieurs événements correspondent, liste-les tous
             - Si aucun événement du contexte ne correspond exactement à la question, réponds UNIQUEMENT :
@@ -335,37 +363,154 @@ class RAGSystem:
 
             RÉPONSE:"""
         
-        prompt = ChatPromptTemplate.from_template(template)
+        self._prompt = ChatPromptTemplate.from_template(template)
         
-        # Fonction pour formater les documents
-        def format_docs(docs: List[Document]) -> str:
-            """Formate les documents récupérés pour le contexte."""
-            formatted = []
-            for i, doc in enumerate(docs, 1):
-                meta = doc.metadata
-                formatted.append(
-                    f"\nÉvénement {i}:\n"
-                    f"Titre: {meta.get('title_fr', 'N/A')}\n"
-                    f"Date: {meta.get('firstdate_begin', 'N/A')}\n"
-                    f"Lieu: {meta.get('location_city', 'N/A')}, {meta.get('location_region', 'N/A')}\n"
-                    f"Description: {doc.page_content[:300]}..."
-                )
-            return "\n".join(formatted)
-        
-        # Construire la chaîne RAG
+        # Construire la chaîne RAG (parcours standard, sans filtrage temporel)
         self.rag_chain = (
-            {"context": self.retriever | format_docs, "question": RunnablePassthrough()}
-            | prompt
+            {"context": self.retriever | self._format_docs, "question": RunnablePassthrough()}
+            | self._prompt
             | self.llm
             | StrOutputParser()
         )
         
         if self.verbose:
             print(f"   [OK] Chaîne RAG construite")
-    
+
+    # ────────────────────────────────────────────────────────────────────────
+    # HELPERS : formatage des docs et filtrage temporel
+    # ────────────────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _format_docs(docs: List[Document]) -> str:
+        """Formate les documents récupérés pour le contexte LLM."""
+        formatted = []
+        for i, doc in enumerate(docs, 1):
+            meta = doc.metadata
+            formatted.append(
+                f"\nÉvénement {i}:\n"
+                f"Titre: {meta.get('title_fr', 'N/A')}\n"
+                f"Date: {meta.get('firstdate_begin', 'N/A')}\n"
+                f"Lieu: {meta.get('location_city', 'N/A')}, {meta.get('location_region', 'N/A')}\n"
+                f"Description: {doc.page_content[:300]}..."
+            )
+        return "\n".join(formatted)
+
+    def _is_temporal_query(self, question: str) -> bool:
+        """Détecte si la question contient une expression temporelle."""
+        return bool(TEMPORAL_PATTERNS.search(question))
+
+    def _compute_temporal_window(self, question: str):
+        """
+        Calcule la fenêtre temporelle [start, end] à partir de la question.
+
+        Heuristiques :
+           - "mois prochain" → [1er du mois suivant, dernier jour du mois suivant]
+           - "en ce moment" / "actuellement" / "cette semaine" → [today-7j, today+30j]
+           - "ce weekend" → [samedi, dimanche de cette semaine]
+           - mois + année explicites ("mars 2026") → [1er-dernier du mois]
+           - année seule ("2026") → [1er janv – 31 déc]
+        """
+        now = datetime.now()
+        q = question.lower()
+
+        # Mois + année explicites ("mars 2026")
+        m_month = MONTH_PATTERN.search(q)
+        m_year = YEAR_PATTERN.search(q)
+        if m_month and m_year:
+            month_num = FR_MONTHS[m_month.group(1).lower()]
+            year_num = int(m_year.group(1))
+            start = datetime(year_num, month_num, 1)
+            # Dernier jour du mois
+            if month_num == 12:
+                end = datetime(year_num + 1, 1, 1) - timedelta(days=1)
+            else:
+                end = datetime(year_num, month_num + 1, 1) - timedelta(days=1)
+            return start, end
+
+        # "mois prochain"
+        if "mois prochain" in q:
+            month = now.month + 1 if now.month < 12 else 1
+            year = now.year if now.month < 12 else now.year + 1
+            start = datetime(year, month, 1)
+            if month == 12:
+                end = datetime(year + 1, 1, 1) - timedelta(days=1)
+            else:
+                end = datetime(year, month + 1, 1) - timedelta(days=1)
+            return start, end
+
+        # "ce weekend"
+        if re.search(r"ce week-?end", q, re.IGNORECASE):
+            days_until_sat = (5 - now.weekday()) % 7
+            saturday = now + timedelta(days=days_until_sat)
+            sunday = saturday + timedelta(days=1)
+            return saturday.replace(hour=0, minute=0), sunday.replace(hour=23, minute=59)
+
+        # "la semaine prochaine"
+        if "semaine prochaine" in q:
+            days_until_mon = (7 - now.weekday()) % 7 or 7
+            monday = now + timedelta(days=days_until_mon)
+            sunday = monday + timedelta(days=6)
+            return monday.replace(hour=0, minute=0), sunday.replace(hour=23, minute=59)
+
+        # "année seule" ("2026" sans mois)
+        if m_year and not m_month:
+            year_num = int(m_year.group(1))
+            return datetime(year_num, 1, 1), datetime(year_num, 12, 31)
+
+        # Défaut pour expressions vagues ("en ce moment", "actuellement", "prochainement", etc.)
+        return now - timedelta(days=7), now + timedelta(days=30)
+
+    def _get_temporal_docs(
+        self, question: str, max_docs: int = 10
+    ) -> List[Document]:
+        """
+        Récupère des documents filtrés par date.
+
+        1. Cherche dans le vectorstore un grand nombre de candidats sémantiques
+        2. Filtre par date metadata dans la fenêtre temporelle
+        3. Retourne au max `max_docs` résultats
+        """
+        start, end = self._compute_temporal_window(question)
+
+        # Récupérer un large pool sémantique
+        all_docs = self.vectorstore.similarity_search(question, k=200)
+
+        # Filtrer par date
+        filtered = []
+        for doc in all_docs:
+            raw_date = doc.metadata.get("firstdate_begin")
+            if raw_date is None:
+                continue
+            try:
+                dt = pd.Timestamp(str(raw_date))
+                if dt.tz is not None:
+                    dt = dt.tz_localize(None)
+                if start <= dt.to_pydatetime() <= end:
+                    filtered.append(doc)
+            except Exception:
+                continue
+
+        return filtered[:max_docs]
+
+    def _generate_from_docs(
+        self, question: str, docs: List[Document]
+    ) -> str:
+        """Génère une réponse à partir d'une liste de docs (sans passer par le retriever)."""
+        context_str = self._format_docs(docs)
+        chain = self._prompt | self.llm | StrOutputParser()
+        return chain.invoke({"context": context_str, "question": question})
+
+    # ────────────────────────────────────────────────────────────────────────
+    # MÉTHODES PUBLIQUES
+    # ────────────────────────────────────────────────────────────────────────
+
     def query(self, question: str) -> Dict[str, Any]:
         """
         Interroge le système RAG avec une question et retourne la réponse.
+        
+        Si la question contient une expression temporelle, le système
+        récupère un large pool de candidats sémantiques puis filtre par date
+        avant d'envoyer au LLM. Sinon, la chaîne RAG standard est utilisée.
         
         Args:
             question: Question de l'utilisateur
@@ -375,18 +520,17 @@ class RAGSystem:
                 - answer: Réponse générée par le LLM
                 - sources: Liste des documents sources utilisés
                 - question: Question originale
-                
-        Example:
-            >>> response = rag.query("Concerts à Toulouse ce weekend")
-            >>> print(response["answer"])
-            >>> for source in response["sources"]:
-            >>>     print(f"- {source['title']} ({source['date']})")
         """
-        # Récupérer les documents pertinents
-        docs = self.retriever.invoke(question)
-        
-        # Générer la réponse
-        answer = self.rag_chain.invoke(question)
+        is_temporal = self._is_temporal_query(question)
+
+        if is_temporal:
+            # Parcours temporel : récupérer un large pool puis filtrer par date
+            docs = self._get_temporal_docs(question, max_docs=self.retriever_k)
+            answer = self._generate_from_docs(question, docs)
+        else:
+            # Parcours standard : chaîne RAG classique
+            docs = self.retriever.invoke(question)
+            answer = self.rag_chain.invoke(question)
         
         # Formater les sources
         sources = []
@@ -407,7 +551,8 @@ class RAGSystem:
     
     def query_with_details(self, question: str) -> Dict[str, Any]:
         """
-        Version détaillée de query() avec plus d'informations de débogage.
+        Version détaillée de query() avec logs de débogage.
+        Utilisée par l'interface Streamlit (chat_interface.py).
         
         Args:
             question: Question de l'utilisateur
@@ -419,9 +564,16 @@ class RAGSystem:
         print(f"QUESTION: {question}")
         print(f"{'='*80}\n")
         
-        # Récupérer les documents avec scores
-        docs = self.retriever.invoke(question)
-        
+        is_temporal = self._is_temporal_query(question)
+
+        if is_temporal:
+            start, end = self._compute_temporal_window(question)
+            print(f"[TEMPORAL] Requête temporelle détectée")
+            print(f"   Fenêtre : {start.strftime('%d/%m/%Y')} → {end.strftime('%d/%m/%Y')}\n")
+            docs = self._get_temporal_docs(question, max_docs=self.retriever_k)
+        else:
+            docs = self.retriever.invoke(question)
+
         print(f"Documents récupérés: {len(docs)}\n")
         for i, doc in enumerate(docs, 1):
             meta = doc.metadata
@@ -432,7 +584,10 @@ class RAGSystem:
         
         # Générer la réponse
         print("Génération de la réponse...\n")
-        answer = self.rag_chain.invoke(question)
+        if is_temporal:
+            answer = self._generate_from_docs(question, docs)
+        else:
+            answer = self.rag_chain.invoke(question)
         
         print(f"{'='*80}")
         print("RÉPONSE:")
