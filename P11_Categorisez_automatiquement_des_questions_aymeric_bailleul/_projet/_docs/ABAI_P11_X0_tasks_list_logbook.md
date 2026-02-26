@@ -574,32 +574,32 @@
 - [X] Solliciter un feedback externe
 
 ### 8.5 - Verification des livrables
-- [ ] Livrable 1: README.md complet
-- [ ] Livrable 2: Gestion des dependances (requirements.txt ou pyproject.toml)
-- [ ] Livrable 3: Scripts de pre-processing avec docstrings
-- [ ] Livrable 4: Scripts de vectorisation avec docstrings
-- [ ] Livrable 5: Tests unitaires avec pytest
-- [ ] Livrable 6: Code du systeme RAG
-- [ ] Livrable 7: Rapport technique (5-10 pages)
-- [ ] Livrable 8: Presentation PowerPoint (10-15 slides)
+- [X] Livrable 1: README.md complet
+- [X] Livrable 2: Gestion des dependances (requirements.txt ou pyproject.toml)
+- [X] Livrable 3: Scripts de pre-processing avec docstrings
+- [X] Livrable 4: Scripts de vectorisation avec docstrings
+- [X] Livrable 5: Tests unitaires avec pytest
+- [X] Livrable 6: Code du systeme RAG
+- [X] Livrable 7: Rapport technique (5-10 pages)
+- [X] Livrable 8: Presentation PowerPoint (10-15 slides)
 
 ### 8.6 - Preparation du depot
-- [ ] Creer le dossier de depot: `Categorisez_automatiquement_des_questions_bailleul_aymeric`
-- [ ] Organiser les livrables selon la nomenclature:
+- [X] Creer le dossier de depot: `Categorisez_automatiquement_des_questions_bailleul_aymeric`
+- [X] Organiser les livrables selon la nomenclature:
   - `bailleul_aymeric_1_readme_022026`
   - `bailleul_aymeric_2_gestion_022026`
   - `bailleul_aymeric_3_scripts_022026`
   - `bailleul_aymeric_4_rapport_technique_022026`
   - `bailleul_aymeric_5_presentation_022026`
-- [ ] Creer le fichier ZIP final
-- [ ] Verifier la taille du ZIP
-- [ ] Tester l'extraction du ZIP
+- [X] Creer le fichier ZIP final
+- [X] Verifier la taille du ZIP
+- [X] Tester l'extraction du ZIP
 
 ### 8.7 - Depot sur la plateforme
-- [ ] Se connecter a la plateforme OpenClassrooms
-- [ ] Deposer le fichier ZIP
-- [ ] Verifier que le depot est complet
-- [ ] Prendre une capture d'ecran de confirmation
+- [X] Se connecter a la plateforme OpenClassrooms
+- [X] Deposer le fichier ZIP
+- [X] Verifier que le depot est complet
+- [X] Prendre une capture d'ecran de confirmation
 
 
 ---
