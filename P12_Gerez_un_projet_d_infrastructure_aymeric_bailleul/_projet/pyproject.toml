@@ -12,6 +12,7 @@ dev = [
     "ruff",
     "pytest",
     "python-dotenv",
+    "openpyxl>=3.1.5",
 ]
 
 [tool.uv]
