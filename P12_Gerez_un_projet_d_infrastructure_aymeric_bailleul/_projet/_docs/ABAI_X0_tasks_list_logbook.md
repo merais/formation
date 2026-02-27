@@ -135,29 +135,36 @@ _projet/
 
 ## Liste des tâches
 
-### Legende des statuts
-
-- `[ ]` : à faire
-- `[~]` : en cours
-- `[x]` : terminé
-
 ---
 
 ### Phase 0 – Initialisation du projet
 
-- [x] Créer l'environnement virtuel avec uv (Python 3.14)
-- [x] Configurer `pyproject.toml` pour uv
-- [x] Lire et comprendre le contexte et la note de cadrage
-- [x] Explorer les données RAW
-- [x] Définir l'architecture et les choix techniques
-- [x] Créer ce fichier de suivi (`ABAI_X0_tasks_list_logbook.md`)
-- [ ] Créer le `docker-compose.yml` pour PostgreSQL
+- [X] Créer l'environnement virtuel avec uv (Python 3.14)
+- [X] Configurer `pyproject.toml` pour uv
+- [X] Lire et comprendre le contexte et la note de cadrage
+- [X] Explorer les données RAW
+- [X] Définir l'architecture et les choix techniques
+- [X] Créer ce fichier de suivi (`ABAI_X0_tasks_list_logbook.md`)
+- [X] Créer le `docker-compose.yml` pour PostgreSQL
+- [X] Créer le notebook d'analyse exploratoire (`analyses/ABAI_P12_analyse_exploratoire_data.ipynb`)
+  - [X] Chargement et aperçu des données RH (161 salariés, 11 colonnes) et Sport (161 lignes, 2 colonnes)
+  - [X] Structure, types, statistiques descriptives
+  - [X] Analyse des valeurs manquantes : 66 NaN (41 %) dans « Pratique d'un sport »
+  - [X] Détection des doublons : aucun
+  - [X] Distributions numériques (salaire : 25 570 – 74 990, CP : 25 – 29)
+  - [X] Distributions catégorielles (5 BU, 4 modes de déplacement, 15 sports)
+  - [X] Analyse croisée RH x Sport
+  - [X] Détection valeurs aberrantes (IQR) : aucune
+  - [X] Nettoyage : types, NaN → « Non déclaré », standardisation chaînes
+  - [X] Anonymisation RGPD : suppression Nom, Prénom, Date de naissance
+  - [X] Sélection des 8 colonnes utiles au cas d'usage
+  - [X] Export CSV nettoyés (`rh_clean.csv`, `sport_clean.csv`)
 
 ---
 
 ### Phase 1 – Infrastructure PostgreSQL
 
-- [ ] Lancer le conteneur PostgreSQL via Docker Compose
+- [X] Lancer le conteneur PostgreSQL via Docker Compose (port 5433, postgres:16-alpine)
 - [ ] Créer les schémas `raw`, `staging`, `gold`
 - [ ] Créer les tables du schéma `raw` :
   - [ ] `raw.employes`
@@ -293,4 +300,12 @@ _projet/
 | Date | Action |
 |---|---|
 | 26/02/2026 | Initialisation du projet : uv, pyproject.toml, README, exploration des données RAW, choix d'architecture |
+| 26/02/2026 | Création du `docker-compose.yml`, lancement du conteneur PostgreSQL (port 5433) |
+| 26/02/2026 | Configuration Google Maps API, création `.env` / `.env.example` / `.gitignore` |
+| 27/02/2026 | Passage de Python 3.14 à 3.13 (incompatibilité pandas `gettz`) |
+| 27/02/2026 | Création et exécution du notebook d'analyse exploratoire (16 sections, 20 cellules de code) |
+| 27/02/2026 | Constats principaux : 161 salariés, 66 NaN sport (41 %), 0 doublon, 0 aberrant, typo « Runing » |
+| 27/02/2026 | Nettoyage : types corrigés, NaN → « Non déclaré », standardisation chaînes |
+| 27/02/2026 | Anonymisation RGPD : suppression Nom, Prénom, Date de naissance ; sélection des 8+2 colonnes utiles |
+| 27/02/2026 | Export des CSV nettoyés : `rh_clean.csv` (161×8), `sport_clean.csv` (161×2) |
 
