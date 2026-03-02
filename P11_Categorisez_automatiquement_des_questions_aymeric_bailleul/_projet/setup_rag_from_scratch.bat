@@ -12,6 +12,9 @@ setlocal enabledelayedexpansion
 :: Se placer dans le dossier _projet/
 cd /d "%~dp0"
 
+:: Garantir que poetry (pipx) et pip scripts Python 3.11 sont dans le PATH
+set "PATH=%USERPROFILE%\.local\bin;%APPDATA%\Python\Python311\Scripts;%PATH%"
+
 echo.
 echo ============================================================
 echo  P11 - RAG Chatbot Puls-Events
