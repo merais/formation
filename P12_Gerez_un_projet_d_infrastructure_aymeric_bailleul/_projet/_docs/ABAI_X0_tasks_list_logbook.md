@@ -56,17 +56,27 @@
 
 ## Architecture des données
 
+### Choix RGPD : Option B – Privacy by Design
+
+Les fichiers XLSX (données RH et sportives) contiennent des données personnelles (Nom, Prénom, Date de naissance).
+Conformément au principe de **minimisation des données** (Art. 5.1.c RGPD) et de **privacy by design** (Art. 25 RGPD) :
+
+- Les XLSX font office de **couche raw** (source de vérité, sur disque, jamais copiés en base)
+- Le pipeline lit les XLSX, anonymise et nettoie en mémoire, puis insère directement dans **staging**
+- Seules les données Strava (simulées, sans données personnelles) transitent par le schéma **raw** en base
+- Pour les notifications Slack, Nom/Prénom sont lus à la volée depuis le XLSX (jamais stockés en base)
+
 ```
-Sources
-├── Données+RH.xlsx          → table : employes
-├── Données+Sportive.xlsx    → table : pratiques_declarees
-└── Simulation Strava        → table : activites_strava
+Sources (couche raw = disque)
+├── Données+RH.xlsx          → lu à la volée, anonymisé, inséré dans staging.employes
+├── Données+Sportive.xlsx    → lu à la volée, nettoyé, inséré dans staging.pratiques_declarees
+└── Simulation Strava        → raw.activites_strava (pas de données personnelles)
 
                 ↓
 
 PostgreSQL (Docker)
-├── schema raw       : chargement brut des sources
-├── schema staging   : nettoyage et typage
+├── schema raw       : uniquement activites_strava (données simulées)
+├── schema staging   : employes (8 col anonymisées) + pratiques_declarees + activites_strava
 └── schema gold      : tables métier calculées
     ├── eligibilite_prime
     ├── eligibilite_bien_etre
@@ -78,11 +88,11 @@ Tests qualité (pytest)
 
                 ↓
 
-Mock Slack (JSON log)
+Mock Slack (JSON log – Nom/Prénom lus à la volée depuis XLSX)
 
                 ↓
 
-PowerBI (connexion PostgreSQL)
+PowerBI (connexion PostgreSQL → staging + gold uniquement)
 ```
 
 ---
@@ -158,36 +168,33 @@ _projet/
   - [X] Nettoyage : types, NaN → « Non déclaré », standardisation chaînes
   - [X] Anonymisation RGPD : suppression Nom, Prénom, Date de naissance
   - [X] Sélection des 8 colonnes utiles au cas d'usage
-  - [X] Export CSV nettoyés (`rh_clean.csv`, `sport_clean.csv`)
 
 ---
 
 ### Phase 1 – Infrastructure PostgreSQL
 
 - [X] Lancer le conteneur PostgreSQL via Docker Compose (port 5433, postgres:16-alpine)
-- [ ] Créer les schémas `raw`, `staging`, `gold`
-- [ ] Créer les tables du schéma `raw` :
-  - [ ] `raw.employes`
-  - [ ] `raw.pratiques_declarees`
-  - [ ] `raw.activites_strava`
-- [ ] Créer les tables du schéma `staging` :
-  - [ ] `staging.employes`
-  - [ ] `staging.pratiques_declarees`
-  - [ ] `staging.activites_strava`
-- [ ] Créer les tables du schéma `gold` :
-  - [ ] `gold.eligibilite_prime`
-  - [ ] `gold.eligibilite_bien_etre`
-  - [ ] `gold.impact_financier`
-- [ ] Écrire `src/db/connexion.py` (connexion via `.env`)
-- [ ] Écrire `src/db/init_db.py` (création automatique des schémas et tables)
+- [X] Créer les schémas `raw`, `staging`, `gold`
+- [X] Créer la table du schéma `raw` (uniquement données simulées, aucune donnée personnelle) :
+  - [X] `raw.activites_strava` — 7 colonnes : `id_activite`, `id_salarie`, `date_debut`, `type_sport`, `distance_m`, `duree_s`, `commentaire`
+- [X] Créer les tables du schéma `staging` (premier niveau en base, anonymisé RGPD + nettoyé) :
+  - [X] `staging.employes` — 8 colonnes : `id_salarie`, `departement`, `date_embauche`, `salaire_brut`, `type_contrat`, `nb_jours_cp`, `adresse_domicile`, `moyen_deplacement` (XLSX lu + anonymisé à la volée)
+  - [X] `staging.pratiques_declarees` — 2 colonnes : `id_salarie`, `pratique_sport` (XLSX lu + NaN → "Non déclaré")
+  - [X] `staging.activites_strava` — 7 colonnes : idem raw (données simulées nettoyées)
+- [X] Créer les tables du schéma `gold` :
+  - [X] `gold.eligibilite_prime` — `id_salarie`, `departement`, `moyen_deplacement`, `adresse_domicile`, `distance_km`, `seuil_km`, `est_eligible`, `montant_prime`
+  - [X] `gold.eligibilite_bien_etre` — `id_salarie`, `departement`, `nb_activites_annee`, `est_eligible`, `nb_jours_bien_etre`
+  - [X] `gold.impact_financier` — `departement`, `nb_primes`, `total_primes`, `nb_bien_etre`, `total_jours_bien_etre`
+- [X] Écrire `src/db/connexion.py` (connexion via `.env`, psycopg2-binary + python-dotenv)
+- [X] Écrire `src/db/init_db.py` (création automatique des schémas et tables, option `--reset`)
 
 ---
 
 ### Phase 2 – Ingestion des données sources
 
-- [ ] Écrire `src/ingestion/load_rh.py` (xlsx → `raw.employes`, `raw.pratiques_declarees`)
-- [ ] Écrire `src/ingestion/load_sport.py` (xlsx → `raw.pratiques_declarees`)
-- [ ] Vérifier le chargement (comptage, aperçu)
+- [X] Écrire `src/ingestion/load_rh.py` (XLSX → lecture + anonymisation + insertion dans `staging.employes`, 8 colonnes)
+- [X] Écrire `src/ingestion/load_sport.py` (XLSX → lecture + nettoyage NaN + correction typo "Runing" + insertion dans `staging.pratiques_declarees`, 2 colonnes)
+- [X] Vérifier le chargement (161 employes, 161 pratiques, jointure 161/161, RGPD OK)
 
 ---
 
@@ -206,9 +213,8 @@ _projet/
 ### Phase 4 – Pipeline ETL (Staging → Gold)
 
 - [ ] Écrire `src/transformation/staging.py` :
-  - [ ] Nettoyage des types (dates, entiers, chaînes)
-  - [ ] Gestion des valeurs nulles
-  - [ ] Standardisation des colonnes
+  - [ ] Nettoyage des activités Strava : raw → staging (types, cohérence dates/distances)
+  - [ ] Note : l'anonymisation RH et le nettoyage sport sont réalisés directement dans les scripts d'ingestion (load_rh.py, load_sport.py)
 - [ ] Écrire `src/transformation/distances.py` :
   - [ ] Appel Google Maps API pour calculer la distance domicile-bureau
   - [ ] Fallback haversine si la clé API est absente
@@ -252,10 +258,11 @@ _projet/
 
 - [ ] Écrire `src/notifications/mock_slack.py` :
   - [ ] Générer un message pour chaque activité sportive (format Juliette)
+  - [ ] Utiliser uniquement l'ID salarié (pas de Nom/Prénom – conformité RGPD)
   - [ ] Logger les messages dans `data/exports/slack_messages.json`
   - [ ] Exemples de messages :
-    - "Bravo [Prénom] [Nom] ! Tu viens de courir [X] km en [Y] min !"
-    - "Magnifique [Prénom] [Nom] ! Une randonnée de [X] km terminée !"
+    - "Bravo salarié ID [X] ! Tu viens de courir [X] km en [Y] min !"
+    - "Magnifique salarié ID [X] ! Une randonnée de [X] km terminée !"
 - [ ] Intégrer l'appel au mock dans le pipeline principal
 
 ---
@@ -276,7 +283,7 @@ _projet/
 - [ ] Connecter PowerBI à PostgreSQL (connecteur natif)
 - [ ] Créer les visuels :
   - [ ] Nombre de salariés éligibles à la prime / au bien-être
-  - [ ] Montant total des primes par BU
+  - [ ] Montant total des primes par département
   - [ ] Impact financier global
   - [ ] Répartition des types de sport pratiqués
   - [ ] Nombre d'activités par mois (historique 12 mois)
@@ -308,4 +315,7 @@ _projet/
 | 27/02/2026 | Nettoyage : types corrigés, NaN → « Non déclaré », standardisation chaînes |
 | 27/02/2026 | Anonymisation RGPD : suppression Nom, Prénom, Date de naissance ; sélection des 8+2 colonnes utiles |
 | 27/02/2026 | Export des CSV nettoyés : `rh_clean.csv` (161×8), `sport_clean.csv` (161×2) |
+| 03/03/2026 | Choix architecture Option B (Privacy by Design) : XLSX = couche raw sur disque (jamais en base), staging = 1er niveau DB anonymisé, raw DB = Strava uniquement, Slack = lecture XLSX à la volée |
+| 03/03/2026 | Phase 1 terminée : `src/db/connexion.py` (connexion PostgreSQL via .env), `src/db/init_db.py` (3 schémas, 7 tables). Ajout de psycopg2-binary et python-dotenv aux dépendances. Vérification OK (PostgreSQL 16.12) |
+| 03/03/2026 | Phase 2 terminée : `src/ingestion/load_rh.py` (XLSX → anonymisation → staging.employes, 161 lignes), `src/ingestion/load_sport.py` (XLSX → nettoyage NaN + typo → staging.pratiques_declarees, 161 lignes). Cohérence IDs vérifiée (jointure 161/161) |
 
