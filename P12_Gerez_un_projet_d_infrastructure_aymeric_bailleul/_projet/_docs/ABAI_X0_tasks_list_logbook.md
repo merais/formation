@@ -200,32 +200,32 @@ _projet/
 
 ### Phase 3 – Simulation des données Strava
 
-- [ ] Définir les types de sport disponibles (course, randonnée, vélo, natation, etc.)
-- [ ] Écrire `src/simulation/generate_strava.py` :
-  - [ ] Générer plusieurs milliers d'activités sur les 12 derniers mois
-  - [ ] Basé sur les salariés RH et leur pratique déclarée
-  - [ ] Colonnes : `ID`, `ID salarié`, `Date début`, `Type sport`, `Distance (m)`, `Durée (s)`, `Commentaire`
-  - [ ] Respect des cohérences (distances positives, durées positives, dates valides)
-- [ ] Charger les données générées dans `raw.activites_strava`
+- [X] Définir les types de sport disponibles (15 sports avec paramètres réalistes : distance, vitesse, commentaires)
+- [X] Écrire `src/simulation/generate_strava.py` :
+  - [X] Générer 2 256 activités sur les 12 derniers mois (seed 42)
+  - [X] Basé sur les 95 salariés ayant une pratique déclarée (hors "Non déclaré")
+  - [X] Colonnes : `id_activite`, `id_salarie`, `date_debut`, `type_sport`, `distance_m`, `duree_s`, `commentaire`
+  - [X] Respect des cohérences (0 activité invalide, dates valides, 5-40 activités/salarié)
+  - [X] Option `--seed` pour reproductibilité
+- [X] Charger les données générées dans `raw.activites_strava` (TRUNCATE + INSERT)
 
 ---
 
 ### Phase 4 – Pipeline ETL (Staging → Gold)
 
-- [ ] Écrire `src/transformation/staging.py` :
-  - [ ] Nettoyage des activités Strava : raw → staging (types, cohérence dates/distances)
-  - [ ] Note : l'anonymisation RH et le nettoyage sport sont réalisés directement dans les scripts d'ingestion (load_rh.py, load_sport.py)
-- [ ] Écrire `src/transformation/distances.py` :
-  - [ ] Appel Google Maps API pour calculer la distance domicile-bureau
-  - [ ] Fallback haversine si la clé API est absente
-  - [ ] Mise en cache des résultats en base (éviter les appels répétés)
-  - [ ] Application des règles métier (15 km marche/running, 25 km vélo/trottinette)
-  - [ ] Flaggage des anomalies de déclaration
-- [ ] Écrire `src/transformation/gold.py` :
-  - [ ] Calcul de l'éligibilité à la prime sportive
-  - [ ] Calcul de l'éligibilité aux 5 journées bien-être (>= 15 activités/an)
-  - [ ] Calcul de l'impact financier (prime = salaire brut * 5 %)
-  - [ ] Alimentation des tables `gold.*`
+- [X] Écrire `src/transformation/staging.py` :
+  - [X] Nettoyage des activités Strava : raw → staging (types, cohérence dates/distances)
+- [X] Écrire `src/transformation/distances.py` :
+  - [X] Appel Google Maps API pour calculer la distance domicile-bureau
+  - [X] Fallback haversine si la clé API est absente
+  - [X] Mise en cache des résultats en base (éviter les appels répétés)
+  - [X] Application des règles métier (15 km marche/running, 25 km vélo/trottinette)
+  - [X] Flaggage des anomalies de déclaration
+- [X] Écrire `src/transformation/gold.py` :
+  - [X] Calcul de l'éligibilité à la prime sportive
+  - [X] Calcul de l'éligibilité aux 5 journées bien-être (>= 15 activités/an)
+  - [X] Calcul de l'impact financier (prime = salaire brut * 5 %)
+  - [X] Alimentation des tables `gold.*`
 
 ---
 
@@ -318,4 +318,5 @@ _projet/
 | 03/03/2026 | Choix architecture Option B (Privacy by Design) : XLSX = couche raw sur disque (jamais en base), staging = 1er niveau DB anonymisé, raw DB = Strava uniquement, Slack = lecture XLSX à la volée |
 | 03/03/2026 | Phase 1 terminée : `src/db/connexion.py` (connexion PostgreSQL via .env), `src/db/init_db.py` (3 schémas, 7 tables). Ajout de psycopg2-binary et python-dotenv aux dépendances. Vérification OK (PostgreSQL 16.12) |
 | 03/03/2026 | Phase 2 terminée : `src/ingestion/load_rh.py` (XLSX → anonymisation → staging.employes, 161 lignes), `src/ingestion/load_sport.py` (XLSX → nettoyage NaN + typo → staging.pratiques_declarees, 161 lignes). Cohérence IDs vérifiée (jointure 161/161) |
-
+| 03/03/2026 | Phase 3 terminée : `src/simulation/generate_strava.py` – 2 256 activités générées pour 95 sportifs, 15 sports, période 03/2025-03/2026, seed 42. 0 activité invalide. Insérées dans raw.activites_strava |
+| 03/03/2026 | Phase 4 terminée : pipeline ETL complet (staging → gold). `staging.py` : 2 256 activités raw → staging (0 rejetée). `distances.py` : 159 adresses via Google Maps API, cache en base (`staging.cache_distances`), règles métier appliquées (15 km marche, 25 km vélo). `gold.py` : 68 éligibles prime (172 482,50 EUR), 67 éligibles bien-être (335 jours), 5 départements agrégés dans `gold.impact_financier` |
