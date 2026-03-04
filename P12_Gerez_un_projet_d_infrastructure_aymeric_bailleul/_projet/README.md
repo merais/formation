@@ -8,9 +8,7 @@
 
 ## Objectif du projet
 
-Concevoir et deployer un POC (Proof of Concept) pour le programme "Avantages Sportifs"
-de Sport Data Solution : pipeline ETL complet, base de donnees PostgreSQL, calcul
-d'eligibilite aux primes sportives et journees bien-etre, dashboard PowerBI.
+Concevoir et deployer un POC (Proof of Concept) pour le programme "Avantages Sportifs" de Sport Data Solution : pipeline ETL complet, base de donnees PostgreSQL, calcul d'eligibilite aux primes sportives et journees bien-etre, dashboard PowerBI.
 
 ---
 
@@ -111,7 +109,17 @@ uv run python -m src.db.init_db
 uv run python -m src.ingestion.load_rh
 uv run python -m src.ingestion.load_sport
 
-# (A venir) Pipeline complet
+# Generer les donnees Strava simulees (seed 42 pour reproductibilite)
+uv run python -m src.simulation.generate_strava --seed 42
+
+# Pipeline ETL : raw -> staging -> gold
+uv run python -m src.transformation.staging
+uv run python -m src.transformation.gold
+
+# Notifications Slack (mock -> JSON)
+uv run python -m src.notifications.mock_slack
+
+# (A venir) Pipeline complet en une commande
 # uv run python -m src.main
 ```
 
@@ -124,8 +132,11 @@ uv run python -m src.db.init_db --reset
 # Tester la connexion PostgreSQL
 uv run python -m src.db.connexion
 
-# Lancer les tests
+# Lancer les 42 tests
 uv run pytest
+
+# Notifications Slack limitees aux 10 dernieres activites
+uv run python -m src.notifications.mock_slack --limit 10
 ```
 
 ---
@@ -137,10 +148,10 @@ uv run pytest
 | 0 | Initialisation (uv, Docker, notebook exploratoire) | Termine |
 | 1 | Infrastructure PostgreSQL (3 schemas, 7 tables) | Termine |
 | 2 | Ingestion des donnees sources (RH + Sport) | Termine |
-| 3 | Simulation des donnees Strava | A faire |
-| 4 | Pipeline ETL (staging -> gold) | A faire |
-| 5 | Tests qualite (pytest) | A faire |
-| 6 | Notifications Slack (mock) | A faire |
+| 3 | Simulation Strava (2 256 activites, 95 sportifs, 15 sports) | Termine |
+| 4 | Pipeline ETL staging->gold (distances API, eligibilites, impact) | Termine |
+| 5 | Tests qualite (42 tests pytest, 0 echec) | Termine |
+| 6 | Notifications Slack mock (2 256 messages JSON) | Termine |
 | 7 | Pipeline principal (main.py) | A faire |
 | 8 | Dashboard PowerBI | A faire |
 | 9 | Documentation et soutenance | A faire |

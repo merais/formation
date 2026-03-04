@@ -231,39 +231,39 @@ _projet/
 
 ### Phase 5 – Tests de qualité (pytest)
 
-- [ ] Écrire `tests/conftest.py` (fixtures : connexion DB, jeux de données de test)
-- [ ] Écrire `tests/test_distances.py` :
-  - [ ] Distance négative → erreur
-  - [ ] Distance incohérente avec le moyen de déplacement → flaggée
-  - [ ] Adresse invalide → gestion propre de l'erreur
-- [ ] Écrire `tests/test_simulation.py` :
-  - [ ] Distances >= 0
-  - [ ] Durées >= 0
-  - [ ] Dates dans les 12 derniers mois
-  - [ ] IDs salariés tous présents dans la table `employes`
-  - [ ] Types de sport valides (liste fermée)
-- [ ] Écrire `tests/test_staging.py` :
-  - [ ] Pas de doublon sur `ID salarié`
-  - [ ] Salaires positifs
-  - [ ] Dates d'embauche antérieures à aujourd'hui
-- [ ] Écrire `tests/test_gold.py` :
-  - [ ] Le montant de la prime = salaire brut * 0.05
-  - [ ] Aucun salarié non éligible ne reçoit la prime
-  - [ ] Nombre de jours bien-être = 5 si >= 15 activités, sinon 0
-- [ ] Vérifier que tous les tests passent (`uv run pytest`)
+- [X] Écrire `tests/conftest.py` (fixtures : connexion DB, jeux de données de test)
+- [X] Écrire `tests/test_distances.py` :
+  - [X] Distance négative → erreur
+  - [X] Distance incohérente avec le moyen de déplacement → flaggée
+  - [X] Adresse invalide → gestion propre de l'erreur
+- [X] Écrire `tests/test_simulation.py` :
+  - [X] Distances >= 0
+  - [X] Durées >= 0
+  - [X] Dates dans les 12 derniers mois
+  - [X] IDs salariés tous présents dans la table `employes`
+  - [X] Types de sport valides (liste fermée)
+- [X] Écrire `tests/test_staging.py` :
+  - [X] Pas de doublon sur `ID salarié`
+  - [X] Salaires positifs
+  - [X] Dates d'embauche antérieures à aujourd'hui
+- [X] Écrire `tests/test_gold.py` :
+  - [X] Le montant de la prime = salaire brut * 0.05
+  - [X] Aucun salarié non éligible ne reçoit la prime
+  - [X] Nombre de jours bien-être = 5 si >= 15 activités, sinon 0
+- [X] Vérifier que tous les tests passent (`uv run pytest`)
 
 ---
 
 ### Phase 6 – Notifications Slack (mock)
 
-- [ ] Écrire `src/notifications/mock_slack.py` :
-  - [ ] Générer un message pour chaque activité sportive (format Juliette)
-  - [ ] Utiliser uniquement l'ID salarié (pas de Nom/Prénom – conformité RGPD)
-  - [ ] Logger les messages dans `data/exports/slack_messages.json`
-  - [ ] Exemples de messages :
+- [X] Écrire `src/notifications/mock_slack.py` :
+  - [X] Générer un message pour chaque activité sportive (format Juliette)
+  - [X] Utiliser uniquement l'ID salarié (pas de Nom/Prénom – conformité RGPD)
+  - [X] Logger les messages dans `data/exports/slack_messages.json`
+  - [X] Exemples de messages :
     - "Bravo salarié ID [X] ! Tu viens de courir [X] km en [Y] min !"
     - "Magnifique salarié ID [X] ! Une randonnée de [X] km terminée !"
-- [ ] Intégrer l'appel au mock dans le pipeline principal
+- [ ] Intégrer l'appel au mock dans le pipeline principal (Phase 7)
 
 ---
 
@@ -320,3 +320,5 @@ _projet/
 | 03/03/2026 | Phase 2 terminée : `src/ingestion/load_rh.py` (XLSX → anonymisation → staging.employes, 161 lignes), `src/ingestion/load_sport.py` (XLSX → nettoyage NaN + typo → staging.pratiques_declarees, 161 lignes). Cohérence IDs vérifiée (jointure 161/161) |
 | 03/03/2026 | Phase 3 terminée : `src/simulation/generate_strava.py` – 2 256 activités générées pour 95 sportifs, 15 sports, période 03/2025-03/2026, seed 42. 0 activité invalide. Insérées dans raw.activites_strava |
 | 03/03/2026 | Phase 4 terminée : pipeline ETL complet (staging → gold). `staging.py` : 2 256 activités raw → staging (0 rejetée). `distances.py` : 159 adresses via Google Maps API, cache en base (`staging.cache_distances`), règles métier appliquées (15 km marche, 25 km vélo). `gold.py` : 68 éligibles prime (172 482,50 EUR), 67 éligibles bien-être (335 jours), 5 départements agrégés dans `gold.impact_financier` |
+| 03/03/2026 | Phase 5 terminée : 42 tests pytest, 0 échec (0.97s). `conftest.py` (fixtures DB session-scoped), `test_distances.py` (10 tests : haversine, seuils, éligibilité, adresse invalide), `test_simulation.py` (9 tests : distances, durées, dates, IDs, sports, volumes), `test_staging.py` (12 tests : doublons, salaires, dates, complétude, pratiques), `test_gold.py` (9 tests : primes 5%, bien-être, impact financier agrégé). Configuration `pythonpath` ajoutée au `pyproject.toml` |
+| 04/03/2026 | Phase 6 terminée : `src/notifications/mock_slack.py` – 2 256 messages Slack générés depuis staging.activites_strava. 15 sports × 2-3 templates (~35 messages distincts). Export JSON dans `data/exports/slack_messages.json`. Conformité RGPD : uniquement ID salarié (pas de Nom/Prénom). CLI avec option `--limit` |
