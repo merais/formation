@@ -269,11 +269,13 @@ def generate_activities(sportifs, seed=None):
             "commentaires": ["Activite sportive", None],
         })
 
-        # Nombre d'activites aleatoire pour ce salarie
+        # Nombre d'activites aleatoire pour ce salarie (entre 5 et 40 par an)
         nb_activites = random.randint(NB_ACTIVITES_MIN, NB_ACTIVITES_MAX)
 
         for _ in range(nb_activites):
-            # Date aleatoire sur les 12 derniers mois
+            # Date aleatoire repartie sur les 12 derniers mois :
+            # on tire un offset en jours (0-364) depuis la date de debut de periode,
+            # puis une heure realiste (6h-20h) pour simuler une pratique diurne
             jours_offset = random.randint(0, 364)
             heure = random.randint(6, 20)
             minute = random.randint(0, 59)
@@ -281,11 +283,12 @@ def generate_activities(sportifs, seed=None):
                 days=jours_offset, hours=heure, minutes=minute
             )
 
-            # Distance aleatoire dans la plage du sport
+            # Distance aleatoire dans la plage du sport (en metres)
             dist_min, dist_max = config["distance_range"]
             distance_m = round(random.uniform(dist_min, dist_max), 1)
 
-            # Duree calculee a partir de la distance et une vitesse aleatoire
+            # Duree calculee a partir de la distance et d'une vitesse aleatoire (en m/s)
+            # duree_s = distance / vitesse, ce qui donne une duree physiquement coherente
             vit_min, vit_max = config["vitesse_range"]
             vitesse = random.uniform(vit_min, vit_max)
             duree_s = int(distance_m / vitesse)
@@ -329,7 +332,7 @@ def insert_activities(activites):
         cursor.execute("TRUNCATE TABLE raw.activites_strava RESTART IDENTITY;")
         logger.info("Table raw.activites_strava videe (TRUNCATE)")
 
-        # Insertion par batch (plus performant que ligne par ligne)
+        # Insertion ligne par ligne
         insert_sql = """
             INSERT INTO raw.activites_strava
                 (id_salarie, date_debut, type_sport, distance_m, duree_s, commentaire)

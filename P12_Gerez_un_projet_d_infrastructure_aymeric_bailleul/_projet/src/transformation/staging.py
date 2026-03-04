@@ -60,7 +60,10 @@ def clean_strava_to_staging():
         cursor.execute("SELECT id_salarie FROM staging.employes;")
         ids_valides = {row[0] for row in cursor.fetchall()}
 
-        # --- Date limite : 13 mois en arriere (marge) ---
+        # --- Date limite : 13 mois en arriere (395 jours) ---
+        # On prend 13 mois (et non 12) comme marge de securite :
+        # les activites sont generees sur 365 jours, ce seuil plus large
+        # evite de rejeter des activites en bordure de periode
         date_limite = datetime.now() - timedelta(days=395)
 
         # --- Nettoyage ---

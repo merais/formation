@@ -133,6 +133,12 @@ def insert_impact_financier(cursor):
     cursor.execute("TRUNCATE TABLE gold.impact_financier;")
     logger.info("Table gold.impact_financier videe.")
 
+    # Requete CTE (Common Table Expression) qui agrege en une seule passe :
+    #   - primes  : nb et total des primes eligibles par departement
+    #   - bien_etre : nb et total des jours bien-etre par departement
+    # Le FULL OUTER JOIN garantit qu'un departement apparait meme
+    # s'il n'a que des primes ou que du bien-etre (jamais de perte)
+    # FILTER (WHERE est_eligible) permet de ne compter que les lignes eligibles
     cursor.execute("""
         WITH primes AS (
             SELECT

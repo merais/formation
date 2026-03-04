@@ -10,7 +10,7 @@ Regles metier :
   - Velo / Trottinette / Autres : distance max 25 km pour etre eligible
   - vehicule thermique/electrique et transports en commun : non eligible a la prime sportive
 
-Les resultats sont mis en cache dans une table temporaire pour eviter
+Les resultats sont mis en cache dans staging.cache_distances pour eviter
 les appels API repetitifs lors de re-executions.
 
 Utilisation :
@@ -175,9 +175,16 @@ def haversine(lat1, lon1, lat2, lon2):
     Calcule la distance a vol d'oiseau entre deux points GPS (en km).
     Formule de Haversine.
     """
-    R = 6371.0  # Rayon de la Terre en km
+    R = 6371.0  # Rayon moyen de la Terre en km
+
+    # Convertir les differences de coordonnees en radians
     d_lat = math.radians(lat2 - lat1)
     d_lon = math.radians(lon2 - lon1)
+
+    # Formule de Haversine :
+    # a = sin²(Δlat/2) + cos(lat1) * cos(lat2) * sin²(Δlon/2)
+    # c = 2 * atan2(√a, √(1-a))
+    # distance = R * c
     a = (
         math.sin(d_lat / 2) ** 2
         + math.cos(math.radians(lat1))
@@ -272,10 +279,16 @@ def calculate_all_distances():
 
         for id_salarie, departement, moyen_deplacement, adresse_domicile, salaire_brut in employes:
             # Determiner le seuil selon le moyen de deplacement
+            # Seuls Marche/running (15 km) et Velo/Trottinette/Autres (25 km)
+            # sont eligibles ; les autres moyens ont un seuil de 0 (non eligible)
             seuil_km = SEUILS_DISTANCE.get(moyen_deplacement, 0.0)
             est_mode_eligible = moyen_deplacement in MODES_ELIGIBLES
 
-            # Chercher dans le cache
+            # --- Strategie de resolution en cascade ---
+            # 1. Cache local (staging.cache_distances) pour eviter les appels API
+            # 2. API Google Maps Distance Matrix (distance routiere reelle)
+            # 3. Fallback haversine (distance a vol d'oiseau via geocodage)
+            # 4. Echec : distance = None, salarie marque non eligible
             cached = get_cached_distance(cursor, adresse_domicile)
             if cached:
                 distance_km, source = cached

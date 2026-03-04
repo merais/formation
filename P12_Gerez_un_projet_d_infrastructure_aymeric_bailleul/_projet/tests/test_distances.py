@@ -8,8 +8,6 @@ Verifie :
   - Gestion d'une adresse invalide (pas de crash)
 """
 
-import math
-
 import pytest
 
 from src.transformation.distances import (

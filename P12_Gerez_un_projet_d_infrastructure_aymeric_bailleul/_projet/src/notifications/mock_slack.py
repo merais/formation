@@ -252,4 +252,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     messages = generate_slack_messages(limit=args.limit)
-    logger.info(f"Terminé : {len(messages)} messages generes au total")
+    logger.info(f"Termine : {len(messages)} messages generes au total")

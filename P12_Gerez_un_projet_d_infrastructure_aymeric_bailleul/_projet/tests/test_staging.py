@@ -8,7 +8,7 @@ Verifie staging.employes et staging.activites_strava :
   - Coherence staging vs raw pour les activites Strava
 """
 
-from datetime import date, datetime
+from datetime import date
 
 import pytest
 
