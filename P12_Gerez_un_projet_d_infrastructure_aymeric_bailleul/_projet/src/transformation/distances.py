@@ -243,10 +243,16 @@ def distance_haversine(adresse_domicile):
 # Fonction principale : calcul des distances pour tous les salaries
 # ---------------------------------------------------------------------------
 
-def calculate_all_distances():
+def calculate_all_distances(skip_api=False):
     """
     Calcule la distance domicile-bureau pour chaque salarie.
     Utilise le cache, puis Google Maps API, puis fallback haversine.
+
+    Parameters
+    ----------
+    skip_api : bool
+        Si True, n'appelle pas l'API Google Maps et se base uniquement
+        sur le cache existant. Utile pour les re-executions rapides.
 
     Returns
     -------
@@ -293,6 +299,11 @@ def calculate_all_distances():
             if cached:
                 distance_km, source = cached
                 nb_cache += 1
+            elif skip_api:
+                # Mode skip_api : pas d'appel API, on marque comme echec
+                source = "echec"
+                distance_km = None
+                nb_echec += 1
             else:
                 # Essayer Google Maps Distance Matrix
                 distance_km = distance_google_maps(adresse_domicile)

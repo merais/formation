@@ -102,6 +102,35 @@ Copy-Item .env.example .env
 # Demarrer PostgreSQL
 docker compose -f docker/docker-compose.yml up -d
 
+# Pipeline complet (reset + ingestion + simulation + ETL + notifications)
+uv run python -m src.main --reset
+
+# Pipeline complet sans reset (reutilise la base existante)
+uv run python -m src.main
+```
+
+### Options du pipeline
+
+```powershell
+# Afficher les etapes sans les executer
+uv run python -m src.main --dry-run
+
+# Executer une seule etape (1-7)
+uv run python -m src.main --step 6      # recalcul gold uniquement
+
+# Seed personnalise pour la simulation Strava
+uv run python -m src.main --seed 123
+
+# Reinitialiser la base (DROP + CREATE)
+uv run python -m src.main --reset
+
+# Ne pas appeler l'API Google Maps (reutilise le cache existant, ~11s au lieu de ~60s)
+uv run python -m src.main --skip-api
+```
+
+### Commandes individuelles
+
+```powershell
 # Initialiser la base (schemas + tables)
 uv run python -m src.db.init_db
 
@@ -118,9 +147,6 @@ uv run python -m src.transformation.gold
 
 # Notifications Slack (mock -> JSON)
 uv run python -m src.notifications.mock_slack
-
-# (A venir) Pipeline complet en une commande
-# uv run python -m src.main
 ```
 
 ### Options utiles
@@ -152,6 +178,7 @@ uv run python -m src.notifications.mock_slack --limit 10
 | 4 | Pipeline ETL staging->gold (distances API, eligibilites, impact) | Termine |
 | 5 | Tests qualite (42 tests pytest, 0 echec) | Termine |
 | 6 | Notifications Slack mock (2 256 messages JSON) | Termine |
-| 7 | Pipeline principal (main.py) | A faire |
-| 8 | Dashboard PowerBI | A faire |
-| 9 | Documentation et soutenance | A faire |
+| 7 | Pipeline principal (main.py orchestrateur, config.py, CLI) | Termine |
+| 8 | Streaming temps reel (Redpanda + insertion Strava a la demande) | A faire |
+| 9 | Dashboard PowerBI | A faire |
+| 10 | Documentation et soutenance | A faire |

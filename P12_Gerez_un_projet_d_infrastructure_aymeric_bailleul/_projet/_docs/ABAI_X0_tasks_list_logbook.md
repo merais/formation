@@ -263,24 +263,43 @@ _projet/
   - [X] Exemples de messages :
     - "Bravo salarié ID [X] ! Tu viens de courir [X] km en [Y] min !"
     - "Magnifique salarié ID [X] ! Une randonnée de [X] km terminée !"
-- [ ] Intégrer l'appel au mock dans le pipeline principal (Phase 7)
+- [X] Intégrer l’appel au mock dans le pipeline principal (Phase 7)
 
 ---
 
 ### Phase 7 – Pipeline principal
 
-- [ ] Écrire `src/config.py` (constantes : adresse entreprise, seuils distances, taux prime)
-- [ ] Écrire `src/main.py` :
-  - [ ] Orchestrer les étapes dans l'ordre : ingestion → staging → distances → gold → mock Slack
-  - [ ] Logging clair de chaque étape (module `logging`)
-  - [ ] Gestion des erreurs (try/except avec messages explicites)
-- [ ] Tester le pipeline de bout en bout
+- [X] Écrire `src/config.py` (constantes : adresse entreprise, seuils distances, taux prime, chemins, RGPD, sports valides)
+- [X] Écrire `src/main.py` :
+  - [X] Orchestrer les 7 étapes dans l’ordre : init_db → ingestion RH → ingestion sport → simulation Strava → staging → gold → mock Slack
+  - [X] Logging clair de chaque étape (module `logging`)
+  - [X] Gestion des erreurs (try/except avec messages explicites, arrêt en cas d’erreur)
+  - [X] Options CLI : `--reset`, `--seed`, `--step N`, `--dry-run`, `--skip-api`
+- [X] Tester le pipeline de bout en bout (7/7 étapes OK, 59.8s, 42 tests pytest OK)
 
 ---
 
-### Phase 8 – Dashboard PowerBI
+### Phase 8 – Streaming temps réel (Redpanda)
 
-- [ ] Connecter PowerBI à PostgreSQL (connecteur natif)
+- [ ] Ajouter Redpanda au `docker-compose.yml` (image `redpandadata/redpanda`, ports 9092/8081/8082)
+- [ ] Ajouter la dépendance `confluent-kafka` au projet (`pyproject.toml`)
+- [ ] Créer le topic Kafka `strava.activities` dans Redpanda
+- [ ] Écrire `src/streaming/producer.py` :
+  - [ ] Script CLI pour injecter une nouvelle activité Strava à la demande
+  - [ ] Saisie interactive ou paramètres CLI (`--id-salarie`, `--sport`, `--distance`, `--duree`)
+  - [ ] Publication du message JSON sur le topic `strava.activities`
+- [ ] Écrire `src/streaming/consumer.py` :
+  - [ ] Boucle d'écoute sur le topic `strava.activities`
+  - [ ] Insertion en temps réel dans `raw.activites_strava`
+  - [ ] Propagation automatique vers `staging.activites_strava` (nettoyage)
+  - [ ] Recalcul incrémental des tables `gold.*` (éligibilité + impact financier)
+- [ ] Tester le flux de bout en bout (producer → Redpanda → consumer → PostgreSQL → PowerBI refresh)
+
+---
+
+### Phase 9 – Dashboard PowerBI
+
+- [ ] Connecter PowerBI à PostgreSQL (connecteur natif, mode DirectQuery pour le temps réel)
 - [ ] Créer les visuels :
   - [ ] Nombre de salariés éligibles à la prime / au bien-être
   - [ ] Montant total des primes par département
@@ -293,7 +312,7 @@ _projet/
 
 ---
 
-### Phase 9 – Documentation et soutenance
+### Phase 10 – Documentation et soutenance
 
 - [ ] Mettre à jour le README avec les instructions complètes d'installation et d'exécution
 - [ ] Créer le support de présentation (architecture, pipeline, choix techniques)
@@ -322,3 +341,6 @@ _projet/
 | 03/03/2026 | Phase 4 terminée : pipeline ETL complet (staging → gold). `staging.py` : 2 256 activités raw → staging (0 rejetée). `distances.py` : 159 adresses via Google Maps API, cache en base (`staging.cache_distances`), règles métier appliquées (15 km marche, 25 km vélo). `gold.py` : 68 éligibles prime (172 482,50 EUR), 67 éligibles bien-être (335 jours), 5 départements agrégés dans `gold.impact_financier` |
 | 03/03/2026 | Phase 5 terminée : 42 tests pytest, 0 échec (0.97s). `conftest.py` (fixtures DB session-scoped), `test_distances.py` (10 tests : haversine, seuils, éligibilité, adresse invalide), `test_simulation.py` (9 tests : distances, durées, dates, IDs, sports, volumes), `test_staging.py` (12 tests : doublons, salaires, dates, complétude, pratiques), `test_gold.py` (9 tests : primes 5%, bien-être, impact financier agrégé). Configuration `pythonpath` ajoutée au `pyproject.toml` |
 | 04/03/2026 | Phase 6 terminée : `src/notifications/mock_slack.py` – 2 256 messages Slack générés depuis staging.activites_strava. 15 sports × 2-3 templates (~35 messages distincts). Export JSON dans `data/exports/slack_messages.json`. Conformité RGPD : uniquement ID salarié (pas de Nom/Prénom). CLI avec option `--limit` |
+| 04/03/2026 | Review code : corrections coquilles (3 commentaires trompeurs, 2 imports inutiles), ajout commentaires explicatifs sur 6 parties complexes (haversine, cascade distances, CTE gold, seuil 395j, génération dates/durées). 42 tests OK |
+| 04/03/2026 | Phase 7 terminée : `src/config.py` (constantes centralisées : chemins, seuils, taux, RGPD, sports). `src/main.py` (orchestrateur 7 étapes, CLI : `--reset`, `--seed`, `--step N`, `--dry-run`). Pipeline complet exécuté : 7/7 OK, 59.8s. 42 tests pytest OK |
+| 09/03/2026 | Ajout option `--skip-api` au pipeline (`main.py`, `gold.py`, `distances.py`). Permet de réutiliser le cache des distances sans appeler l’API Google Maps. Pipeline en 11.4s au lieu de ~60s. README mis à jour |

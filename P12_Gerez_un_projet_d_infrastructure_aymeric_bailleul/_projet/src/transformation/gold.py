@@ -188,13 +188,18 @@ def insert_impact_financier(cursor):
 # Pipeline principal
 # ---------------------------------------------------------------------------
 
-def run_gold_pipeline():
+def run_gold_pipeline(skip_api=False):
     """
     Execute le pipeline complet gold :
     1. Calcul des distances (avec cache)
     2. Alimentation gold.eligibilite_prime
     3. Alimentation gold.eligibilite_bien_etre
     4. Alimentation gold.impact_financier
+
+    Parameters
+    ----------
+    skip_api : bool
+        Si True, ne pas appeler l'API Google Maps (reutilise le cache).
     """
     logger.info("=" * 60)
     logger.info("PHASE 4 – Pipeline Gold")
@@ -202,7 +207,9 @@ def run_gold_pipeline():
 
     # Etape 1 : Calcul des distances
     logger.info("Etape 1/4 : Calcul des distances domicile-bureau...")
-    results_distances = calculate_all_distances()
+    if skip_api:
+        logger.info("  Mode --skip-api : seul le cache sera utilise (pas d'appel API)")
+    results_distances = calculate_all_distances(skip_api=skip_api)
 
     # Etape 2-4 : Insertion dans les tables gold
     conn = get_connection()
