@@ -116,3 +116,14 @@ def salaires_par_id(db_cursor):
     """Dictionnaire {id_salarie: salaire_brut} pour les verifications de primes."""
     db_cursor.execute("SELECT id_salarie, salaire_brut FROM staging.employes;")
     return {row[0]: float(row[1]) for row in db_cursor.fetchall()}
+
+
+@pytest.fixture(scope="session")
+def identites(db_cursor):
+    """Charge les identites depuis rh_prive.identites (nom, prenom, date_naissance)."""
+    db_cursor.execute("""
+        SELECT id_salarie, nom, prenom, date_naissance
+        FROM rh_prive.identites
+        ORDER BY id_salarie;
+    """)
+    return db_cursor.fetchall()

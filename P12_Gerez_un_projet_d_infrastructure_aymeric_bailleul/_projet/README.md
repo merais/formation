@@ -16,7 +16,7 @@ Concevoir et deployer un POC (Proof of Concept) pour le programme "Avantages Spo
 
 ```
 Sources (couche raw = disque)
-  Donnees+RH.xlsx          -> anonymise en memoire -> staging.employes
+  Donnees+RH.xlsx          -> identites (rh_prive) + anonymise en memoire -> staging.employes
   Donnees+Sportive.xlsx    -> nettoye en memoire   -> staging.pratiques_declarees
   Simulation Strava        -> raw.activites_strava  -> staging.activites_strava
 
@@ -24,13 +24,20 @@ PostgreSQL (Docker, port 5433)
   schema raw       : activites_strava (donnees simulees uniquement)
   schema staging   : employes, pratiques_declarees, activites_strava
   schema gold      : eligibilite_prime, eligibilite_bien_etre, impact_financier
+  schema rh_prive  : identites (Nom, Prenom, DDN) — acces restreint RGPD
 
-Tests qualite (pytest) -> Mock Slack (JSON) -> PowerBI
+Droits PostgreSQL
+  role_pipeline  : lecture/ecriture raw + staging, lecture gold
+  role_analytics : lecture seule gold (PowerBI)
+  role_rh_admin  : herite pipeline + acces exclusif rh_prive
+
+Tests qualite (pytest) -> Notifications Slack nominatives (JSON) -> PowerBI
 ```
 
-**RGPD – Privacy by Design :** les fichiers XLSX contiennent des donnees personnelles
-(Nom, Prenom, Date de naissance). Ces colonnes ne sont jamais copiees en base.
-Le pipeline lit, anonymise en memoire, puis insere dans staging.
+**RGPD – Privacy by Design :** les colonnes nominatives (Nom, Prenom, Date de naissance)
+sont isolees dans le schema `rh_prive`, accessible uniquement via `role_rh_admin`.
+`staging.employes` ne contient que les 8 colonnes anonymisees. Les notifications Slack
+utilisent les prenoms/noms via une jointure `rh_prive.identites` avec connexion dediee.
 
 ---
 
@@ -47,16 +54,22 @@ _projet/
 │   └── docker-compose.yml  # PostgreSQL 16-alpine
 ├── src/
 │   ├── db/
-│   │   ├── connexion.py    # Connexion PostgreSQL via .env
-│   │   └── init_db.py      # Creation des schemas et tables
+│   │   ├── connexion.py    # Connexion PostgreSQL via .env (support multi-roles)
+│   │   └── init_db.py      # Creation des schemas, tables et roles PostgreSQL
 │   ├── ingestion/
-│   │   ├── load_rh.py      # XLSX RH -> staging.employes (anonymise)
+│   │   ├── load_rh.py      # XLSX RH -> rh_prive.identites + staging.employes (anonymise)
 │   │   └── load_sport.py   # XLSX Sport -> staging.pratiques_declarees
 │   ├── simulation/         # Generation des donnees Strava simulees
 │   ├── transformation/     # ETL staging -> gold (distances, eligibilites)
-│   ├── notifications/      # Mock Slack (JSON log)
+│   ├── notifications/      # Notifications Slack nominatives (JSON)
 │   └── main.py             # Pipeline complet
 ├── tests/                  # Tests pytest
+│   ├── conftest.py
+│   ├── test_distances.py
+│   ├── test_simulation.py
+│   ├── test_staging.py
+│   ├── test_gold.py
+│   └── test_rh_prive.py    # Tests schema rh_prive, droits et vue nominative
 ├── .env.example            # Modele de variables d'environnement
 ├── .gitignore
 ├── pyproject.toml          # Configuration uv (Python >= 3.13)
@@ -158,7 +171,7 @@ uv run python -m src.db.init_db --reset
 # Tester la connexion PostgreSQL
 uv run python -m src.db.connexion
 
-# Lancer les 42 tests
+# Lancer les 51 tests
 uv run pytest
 
 # Notifications Slack limitees aux 10 dernieres activites
@@ -172,12 +185,12 @@ uv run python -m src.notifications.mock_slack --limit 10
 | Phase | Description | Statut |
 |-------|-------------|--------|
 | 0 | Initialisation (uv, Docker, notebook exploratoire) | Termine |
-| 1 | Infrastructure PostgreSQL (3 schemas, 7 tables) | Termine |
-| 2 | Ingestion des donnees sources (RH + Sport) | Termine |
+| 1 | Infrastructure PostgreSQL (4 schemas, 8 tables, 3 roles) | Termine |
+| 2 | Ingestion des donnees sources (RH + Sport + identites rh_prive) | Termine |
 | 3 | Simulation Strava (2 256 activites, 95 sportifs, 15 sports) | Termine |
 | 4 | Pipeline ETL staging->gold (distances API, eligibilites, impact) | Termine |
-| 5 | Tests qualite (42 tests pytest, 0 echec) | Termine |
-| 6 | Notifications Slack mock (2 256 messages JSON) | Termine |
+| 5 | Tests qualite (51 tests pytest, 0 echec) | Termine |
+| 6 | Notifications Slack nominatives (2 256 messages JSON, Prenom + Nom) | Termine |
 | 7 | Pipeline principal (main.py orchestrateur, config.py, CLI) | Termine |
 | 8 | Streaming temps reel (Redpanda + insertion Strava a la demande) | A faire |
 | 9 | Dashboard PowerBI | A faire |

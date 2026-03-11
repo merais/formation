@@ -1,13 +1,17 @@
 """
-load_rh.py – Ingestion des donnees RH (XLSX -> staging.employes)
+load_rh.py – Ingestion des donnees RH (XLSX -> staging.employes + rh_prive.identites)
 
-Lit le fichier Donnees+RH.xlsx, anonymise en memoire (suppression
-des colonnes Nom, Prenom, Date de naissance conformement au RGPD),
-puis insere les 8 colonnes restantes dans staging.employes.
+Lit le fichier Donnees+RH.xlsx, puis :
+  1. Extrait les donnees nominatives (Nom, Prenom, Date de naissance)
+     et les insere dans rh_prive.identites (acces restreint RGPD)
+  2. Supprime les colonnes personnelles en memoire (anonymisation)
+  3. Insere les 8 colonnes anonymisees dans staging.employes
 
 Architecture (Privacy by Design) :
-  - Le XLSX fait office de couche raw (jamais copie en base)
-  - Le pipeline lit, anonymise en memoire, insere directement dans staging
+  - Le XLSX fait office de couche raw (jamais copie tel quel en base)
+  - Les donnees nominatives sont isolees dans rh_prive, accessible uniquement
+    via role_rh_admin (principe du moindre privilege)
+  - staging.employes ne contient aucune donnee permettant l'identification directe
 
 Utilisation :
     python -m src.ingestion.load_rh
@@ -63,6 +67,17 @@ def load_rh_to_staging():
     df = pd.read_excel(RAW_RH_PATH)
     logger.info(f"  {len(df)} lignes lues, {len(df.columns)} colonnes")
 
+    # --- Extraction des identites AVANT anonymisation ---
+    # On conserve Nom/Prenom/DDN pour rh_prive.identites avant de les supprimer
+    df_identites = df[["ID salarié", "Nom", "Prénom", "Date de naissance"]].copy()
+    df_identites = df_identites.rename(columns={
+        "ID salarié":        "id_salarie",
+        "Nom":               "nom",
+        "Prénom":            "prenom",
+        "Date de naissance": "date_naissance",
+    })
+    df_identites["date_naissance"] = pd.to_datetime(df_identites["date_naissance"]).dt.date
+
     # --- Anonymisation : suppression des colonnes personnelles ---
     df = df.drop(columns=COLONNES_A_SUPPRIMER)
     logger.info(f"  Anonymisation : colonnes supprimees ({', '.join(COLONNES_A_SUPPRIMER)})")
@@ -85,11 +100,13 @@ def load_rh_to_staging():
     cursor = conn.cursor()
 
     try:
-        # Vider la table avant insertion (idempotence du pipeline)
-        cursor.execute("TRUNCATE TABLE staging.employes;")
-        logger.info("  Table staging.employes videe (TRUNCATE)")
+        # Vider les deux tables en une seule instruction :
+        # PostgreSQL bloque TRUNCATE de la table parent (employes) si la FK enfant (identites)
+        # n'est pas videe dans le meme statement. TRUNCATE multi-tables resout le probleme.
+        cursor.execute("TRUNCATE TABLE rh_prive.identites, staging.employes;")
+        logger.info("  Tables rh_prive.identites et staging.employes videes (TRUNCATE)")
 
-        # Insertion ligne par ligne
+        # Insertion dans staging.employes (donnees anonymisees)
         insert_sql = """
             INSERT INTO staging.employes
                 (id_salarie, departement, date_embauche, salaire_brut,
@@ -109,9 +126,25 @@ def load_rh_to_staging():
                 row["moyen_deplacement"],
             ))
             nb_inserts += 1
+        logger.info(f"  {nb_inserts} lignes inserees dans staging.employes")
+
+        # Insertion dans rh_prive.identites (nominatif, apres staging pour respecter la FK)
+        insert_identites_sql = """
+            INSERT INTO rh_prive.identites (id_salarie, nom, prenom, date_naissance)
+            VALUES (%s, %s, %s, %s);
+        """
+        nb_identites = 0
+        for _, row in df_identites.iterrows():
+            cursor.execute(insert_identites_sql, (
+                int(row["id_salarie"]),
+                row["nom"],
+                row["prenom"],
+                row["date_naissance"],
+            ))
+            nb_identites += 1
+        logger.info(f"  {nb_identites} identites inserees dans rh_prive.identites")
 
         conn.commit()
-        logger.info(f"  {nb_inserts} lignes inserees dans staging.employes")
         return nb_inserts
 
     except Exception as err:

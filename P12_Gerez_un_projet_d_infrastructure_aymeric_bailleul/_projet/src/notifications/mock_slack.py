@@ -5,9 +5,11 @@ Genere un message de felicitation pour chaque activite sportive
 enregistree dans staging.activites_strava, au format demande par
 Juliette (responsable RH / bien-etre).
 
-Conformite RGPD :
-  - Utilise uniquement l'ID salarie (jamais de Nom/Prenom)
-  - Les messages sont loggues dans data/exports/slack_messages.json
+Acces aux donnees :
+  - Les activites sont lues depuis staging.activites_strava
+  - Les prenoms/noms sont joints depuis rh_prive.identites
+    via role_rh_admin (acces nominal autorise pour les notifications internes)
+  - Les messages sont exportes dans data/exports/slack_messages.json
 
 Utilisation :
     python -m src.notifications.mock_slack
@@ -43,73 +45,73 @@ EXPORT_PATH = EXPORT_DIR / "slack_messages.json"
 
 MESSAGES_TEMPLATES = {
     "Running": [
-        "Bravo salarie ID {id} ! Tu viens de courir {distance_km} km en {duree_min} min !",
-        "Superbe course salarie ID {id} ! {distance_km} km parcourus en {duree_min} min !",
-        "Bien joue salarie ID {id} ! Encore {distance_km} km de running aujourd'hui !",
+        "Bravo {prenom} ! Tu viens de courir {distance_km} km en {duree_min} min !",
+        "Superbe course {prenom} {nom} ! {distance_km} km parcourus en {duree_min} min !",
+        "Bien joue {prenom} ! Encore {distance_km} km de running aujourd'hui !",
     ],
     "Randonnée": [
-        "Magnifique salarie ID {id} ! Une randonnee de {distance_km} km terminee !",
-        "Bravo salarie ID {id} ! {distance_km} km en pleine nature en {duree_min} min !",
-        "Quelle balade salarie ID {id} ! {distance_km} km de randonnee, chapeau !",
+        "Magnifique {prenom} ! Une randonnee de {distance_km} km terminee !",
+        "Bravo {prenom} {nom} ! {distance_km} km en pleine nature en {duree_min} min !",
+        "Quelle balade {prenom} ! {distance_km} km de randonnee, chapeau !",
     ],
     "Tennis": [
-        "Ace salarie ID {id} ! Seance de tennis de {duree_min} min validee !",
-        "Bravo salarie ID {id} ! {distance_km} km parcourus sur le court en {duree_min} min !",
+        "Ace {prenom} ! Seance de tennis de {duree_min} min validee !",
+        "Bravo {prenom} {nom} ! {distance_km} km parcourus sur le court en {duree_min} min !",
     ],
     "Natation": [
-        "Splendide salarie ID {id} ! {distance_km} km en natation, {duree_min} min dans l'eau !",
-        "Bravo salarie ID {id} ! Belle seance de natation : {distance_km} km nages !",
+        "Splendide {prenom} ! {distance_km} km en natation, {duree_min} min dans l'eau !",
+        "Bravo {prenom} {nom} ! Belle seance de natation : {distance_km} km nages !",
     ],
     "Football": [
-        "Goal salarie ID {id} ! Match de foot : {distance_km} km parcourus en {duree_min} min !",
-        "Bravo salarie ID {id} ! Quelle seance de football aujourd'hui !",
+        "Goal {prenom} ! Match de foot : {distance_km} km parcourus en {duree_min} min !",
+        "Bravo {prenom} {nom} ! Quelle seance de football aujourd'hui !",
     ],
     "Rugby": [
-        "Essai transforme salarie ID {id} ! {distance_km} km sur le terrain en {duree_min} min !",
-        "Bravo salarie ID {id} ! Solide seance de rugby !",
+        "Essai transforme {prenom} ! {distance_km} km sur le terrain en {duree_min} min !",
+        "Bravo {prenom} {nom} ! Solide seance de rugby !",
     ],
     "Badminton": [
-        "Smash salarie ID {id} ! Seance de badminton : {duree_min} min d'effort !",
-        "Bravo salarie ID {id} ! {distance_km} km de courts en badminton !",
+        "Smash {prenom} ! Seance de badminton : {duree_min} min d'effort !",
+        "Bravo {prenom} {nom} ! {distance_km} km de courts en badminton !",
     ],
     "Voile": [
-        "Bon vent salarie ID {id} ! {distance_km} km en voile, {duree_min} min sur l'eau !",
-        "Bravo salarie ID {id} ! Navigation de {distance_km} km terminee !",
+        "Bon vent {prenom} ! {distance_km} km en voile, {duree_min} min sur l'eau !",
+        "Bravo {prenom} {nom} ! Navigation de {distance_km} km terminee !",
     ],
     "Boxe": [
-        "Uppercut salarie ID {id} ! {duree_min} min de boxe intense !",
-        "Bravo salarie ID {id} ! Seance de boxe de {duree_min} min validee !",
+        "Uppercut {prenom} ! {duree_min} min de boxe intense !",
+        "Bravo {prenom} {nom} ! Seance de boxe de {duree_min} min validee !",
     ],
     "Judo": [
-        "Ippon salarie ID {id} ! {duree_min} min de judo au dojo !",
-        "Bravo salarie ID {id} ! Belle seance de judo aujourd'hui !",
+        "Ippon {prenom} ! {duree_min} min de judo au dojo !",
+        "Bravo {prenom} {nom} ! Belle seance de judo aujourd'hui !",
     ],
     "Escalade": [
-        "Sommet atteint salarie ID {id} ! {distance_km} km de grimpe en {duree_min} min !",
-        "Bravo salarie ID {id} ! Seance d'escalade de {duree_min} min terminee !",
+        "Sommet atteint {prenom} ! {distance_km} km de grimpe en {duree_min} min !",
+        "Bravo {prenom} {nom} ! Seance d'escalade de {duree_min} min terminee !",
     ],
     "Triathlon": [
-        "Triple bravo salarie ID {id} ! {distance_km} km de triathlon en {duree_min} min !",
-        "Incroyable salarie ID {id} ! Triathlon de {distance_km} km boucle !",
+        "Triple bravo {prenom} ! {distance_km} km de triathlon en {duree_min} min !",
+        "Incroyable {prenom} {nom} ! Triathlon de {distance_km} km boucle !",
     ],
     "Tennis de table": [
-        "Top spin salarie ID {id} ! {duree_min} min de tennis de table !",
-        "Bravo salarie ID {id} ! Seance de ping-pong validee !",
+        "Top spin {prenom} ! {duree_min} min de tennis de table !",
+        "Bravo {prenom} {nom} ! Seance de ping-pong validee !",
     ],
     "Équitation": [
-        "Au galop salarie ID {id} ! {distance_km} km en equitation, {duree_min} min en selle !",
-        "Bravo salarie ID {id} ! Belle balade equestre de {distance_km} km !",
+        "Au galop {prenom} ! {distance_km} km en equitation, {duree_min} min en selle !",
+        "Bravo {prenom} {nom} ! Belle balade equestre de {distance_km} km !",
     ],
     "Basketball": [
-        "Panier salarie ID {id} ! {distance_km} km parcourus en basketball, {duree_min} min !",
-        "Bravo salarie ID {id} ! Seance de basket de {duree_min} min terminee !",
+        "Panier {prenom} ! {distance_km} km parcourus en basketball, {duree_min} min !",
+        "Bravo {prenom} {nom} ! Seance de basket de {duree_min} min terminee !",
     ],
 }
 
 # Template generique si le sport n'est pas dans la liste
 MESSAGES_GENERIQUES = [
-    "Bravo salarie ID {id} ! {distance_km} km de {sport} en {duree_min} min !",
-    "Bien joue salarie ID {id} ! Seance de {sport} terminee : {distance_km} km, {duree_min} min !",
+    "Bravo {prenom} ! {distance_km} km de {sport} en {duree_min} min !",
+    "Bien joue {prenom} {nom} ! Seance de {sport} terminee : {distance_km} km, {duree_min} min !",
 ]
 
 
@@ -117,13 +119,14 @@ MESSAGES_GENERIQUES = [
 # Generation des messages
 # ---------------------------------------------------------------------------
 
-def format_message(id_salarie, type_sport, distance_m, duree_s, commentaire=None, seed=None):
+def format_message(prenom, nom, type_sport, distance_m, duree_s, commentaire=None, seed=None):
     """
     Genere un message de felicitation pour une activite sportive.
 
     Parameters
     ----------
-    id_salarie : int
+    prenom : str
+    nom : str
     type_sport : str
     distance_m : float
         Distance en metres.
@@ -150,7 +153,8 @@ def format_message(id_salarie, type_sport, distance_m, duree_s, commentaire=None
         template = random.choice(templates)
 
     message = template.format(
-        id=id_salarie,
+        prenom=prenom,
+        nom=nom,
         distance_km=distance_km,
         duree_min=duree_min,
         sport=type_sport,
@@ -175,15 +179,21 @@ def generate_slack_messages(limit=None):
     list of dict
         Liste des messages generes.
     """
-    conn = get_connection()
+    # Connexion role_rh_admin : necessaire pour joindre rh_prive.identites (noms/prenoms)
+    conn = get_connection(role="rh_admin")
     cursor = conn.cursor()
 
     try:
-        # Lecture des activites depuis staging
+        # Lecture des activites + identites nominatives en une seule requete
+        # La jointure LEFT JOIN garantit qu'une activite sans identite (cas improbable)
+        # ne serait pas silencieusement exclue — le nom serait alors "Inconnu"
         query = """
             SELECT a.id_activite, a.id_salarie, a.date_debut, a.type_sport,
-                   a.distance_m, a.duree_s, a.commentaire
+                   a.distance_m, a.duree_s, a.commentaire,
+                   COALESCE(i.prenom, 'Inconnu') AS prenom,
+                   COALESCE(i.nom, 'Inconnu')   AS nom
             FROM staging.activites_strava a
+            LEFT JOIN rh_prive.identites i USING (id_salarie)
             ORDER BY a.date_debut DESC
         """
         if limit:
@@ -196,9 +206,10 @@ def generate_slack_messages(limit=None):
 
         # Generation des messages
         messages = []
-        for id_activite, id_salarie, date_debut, type_sport, distance_m, duree_s, commentaire in activites:
+        for id_activite, id_salarie, date_debut, type_sport, distance_m, duree_s, commentaire, prenom, nom in activites:
             msg_text = format_message(
-                id_salarie=id_salarie,
+                prenom=prenom,
+                nom=nom,
                 type_sport=type_sport,
                 distance_m=distance_m,
                 duree_s=duree_s,
@@ -209,6 +220,8 @@ def generate_slack_messages(limit=None):
                 "channel": "#sport-avantages",
                 "id_activite": id_activite,
                 "id_salarie": id_salarie,
+                "prenom": prenom,
+                "nom": nom,
                 "date_activite": date_debut.isoformat(),
                 "type_sport": type_sport,
                 "message": msg_text,
