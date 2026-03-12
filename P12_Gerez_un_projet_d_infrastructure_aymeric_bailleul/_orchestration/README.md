@@ -75,6 +75,8 @@ _orchestration/
 - **Python 3.12** — venv à `C:\Users\aymer\.venvs\orchestration`
 - Fichiers XLSX sources dans le dossier indiqué par `XLSX_DIR` dans `.env`
 
+> **Images locales** : les images `sport_data_kestra:local` et `sport_data_postgres:local` ne sont pas sur Docker Hub. Elles doivent être construites localement via `docker compose build` avant tout `docker compose up -d` (premier démarrage ou après suppression des images).
+
 ---
 
 ## Démarrage
@@ -86,23 +88,55 @@ Copy-Item .env.example .env
 # Editer .env : adapter XLSX_DIR si nécessaire
 ```
 
-### 2. Démarrage des conteneurs
+### 2. Construction des images (premier démarrage ou après reset complet)
+
+```powershell
+docker compose build
+```
+
+Construit les deux images locales (`sport_data_kestra:local`, `sport_data_postgres:local`).  
+Cette étape est **obligatoire** si les images n'existent pas (premier démarrage, ou après `docker system prune` / suppression des images). Si les images existent déjà, cette étape peut être sautée.
+
+### 3. Démarrage des conteneurs
 
 ```powershell
 docker compose up -d
 ```
 
-Lance 4 services :
+Lance 3 services :
 - **postgres** (port 5433) — base `sport_data` + base interne `kestra`
-- **kestra** (port 8080) — orchestrateur, attend que postgres soit healthy
+- **kestra** (port 9000) — orchestrateur, attend que postgres soit healthy  
+  Authentification via `basicAuth` : identifiants déclarés dans `KESTRA_EMAIL` / `KESTRA_PASSWORD` du `.env`, copiés dans la config YAML de Kestra au démarrage — **aucun état en base requis**, fonctionne dès les volumes vides.
 - **kestra-setup** — service éphémère qui, au démarrage :
-  1. Attend que l'API Kestra soit disponible
-  2. Importe automatiquement `sport_data_pipeline.yml` via `PUT /api/v1/flows` (idempotent)
-  3. Supprime les flows tutoriaux par défaut
+  1. Attend que l'endpoint `/health` de Kestra réponde `UP`
+  2. Boucle jusqu'à ce que l'authentification soit opérationnelle
+  3. Importe automatiquement `sport_data_pipeline.yml` via `POST /api/v1/flows` avec les credentials
+  4. Supprime les flows tutoriaux par défaut
 
 Le flow est donc **prêt à l'emploi sans action manuelle** dans l'UI.
 
-### 3. Initialisation locale
+### 4. Reset complet (containers + images + volumes)
+
+Procédure pour repartir de zéro :
+
+```powershell
+# 1. Tout supprimer
+docker compose down -v --rmi local
+
+# 2. Reconstruire les images
+docker compose build
+
+# 3. Redémarrer (flow importé automatiquement par kestra-setup)
+docker compose up -d
+
+# 4. Vérifier l'import du flow (doit afficher "importe avec succes")
+docker logs sport_data_kestra_setup
+
+# 5. Créer les schémas, tables et charger les données initiales
+.\init.ps1
+```
+
+### 5. Initialisation locale
 
 ```powershell
 .\init.ps1
@@ -113,9 +147,11 @@ Ce script :
 2. Exécute `main.py --reset` (crée schémas, tables, rôles, charge les données, lance dbt)
 3. Valide la connexion dbt avec `dbt debug`
 
-### 4. Interface Kestra
+### 6. Interface Kestra
 
-Ouvrir [http://localhost:8080](http://localhost:8080).
+Ouvrir [http://localhost:9000](http://localhost:9000).
+
+Connexion : email et mot de passe définis dans `KESTRA_EMAIL` / `KESTRA_PASSWORD` du `.env`.
 
 Le flow `sport_data / sport_data_pipeline` est déjà importé et actif. Deux modes de déclenchement :
 - **Manuel** : bouton "Execute" dans l'UI
@@ -140,6 +176,22 @@ Le flow ne relance dbt que si au moins un changement est détecté (`rh_changed 
 
 ## Configuration Kestra
 
+### Authentification (`basicAuth`)
+
+Kestra est configuré en mode `basicAuth` avec les credentials du `.env` :
+
+```yaml
+# Dans KESTRA_CONFIGURATION (docker-compose.yml)
+kestra:
+  server:
+    basicAuth:
+      enabled: true
+      username: ${KESTRA_EMAIL}
+      password: ${KESTRA_PASSWORD}
+```
+
+Ces credentials sont résolus au démarrage du conteneur à partir du `.env`. Ils ne sont **pas stockés dans la base de données** — la configuration fonctionne donc sur des volumes vierges sans étape d'initialisation manuelle.
+
 ### Variables de flow (`{{ vars.* }}`)
 
 Les paramètres de connexion et de chemin sont déclarés dans le bloc `variables:` du flow YAML et accessibles via `{{ vars.xxx }}` :
@@ -157,7 +209,7 @@ variables:
 
 ### Secrets (`{{ secret('...') }}`)
 
-Le mot de passe PostgreSQL est injecté via le mécanisme secret de Kestra :
+Le mot de passe PostgreSQL est injecté via le mécanisme secret de Kestra (toute variable d'environnement préfixée `SECRET_` dans le conteneur kestra devient un secret) :
 
 ```yaml
 # docker-compose.yml — variable d'environnement du container kestra

@@ -91,4 +91,4 @@ Pop-Location
 
 Write-Host ""
 Write-Host "Initialisation terminee."
-Write-Host "Pour demarrer Kestra : docker compose up -d"
+Write-Host "Le flow sport_data_pipeline est pret a etre execute dans Kestra : http://localhost:9000"

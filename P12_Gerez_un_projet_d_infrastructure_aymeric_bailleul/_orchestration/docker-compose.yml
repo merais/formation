@@ -53,7 +53,9 @@ services:
         kestra:
           server:
             basicAuth:
-              enabled: false
+              enabled: true
+              username: ${KESTRA_EMAIL}
+              password: ${KESTRA_PASSWORD}
           repository:
             type: postgres
           storage:
@@ -97,6 +99,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       # Secret Kestra (base64) — accessible via {{ secret('POSTGRES_PASSWORD') }} dans les flows
       SECRET_POSTGRES_PASSWORD: cG9zdGdyZXM=
+      KESTRA_EMAIL: ${KESTRA_EMAIL}
+      KESTRA_PASSWORD: ${KESTRA_PASSWORD}
 
       # Chemins des ressources montees dans le conteneur
       DATA_DIR: /opt/data/RAW
@@ -129,9 +133,6 @@ services:
   kestra-setup:
     # Meme image que le service kestra (deja buildee, pas de nouveau pull).
     # sport_data_pipeline.yml est bake dans l image a /opt/flows/.
-    build:
-      context: .
-      dockerfile: kestra.Dockerfile
     image: sport_data_kestra:local
     container_name: sport_data_kestra_setup
     restart: "no"
@@ -144,13 +145,18 @@ services:
       KESTRA_PASSWORD: ${KESTRA_PASSWORD}
     command:
       - >-
-        echo 'Attente de l API Kestra...' &&
-        until curl -sf -u "$$KESTRA_EMAIL:$$KESTRA_PASSWORD" http://kestra:8080/api/v1/flows/search > /dev/null 2>&1;
+        echo 'Attente du demarrage de Kestra (port 8081)...' &&
+        until curl -sf http://kestra:8081/health | grep -q UP;
           do sleep 3; done &&
+        sleep 5 &&
+        echo 'Attente que l authentification soit prete...' &&
+        until curl -sf -u "$$KESTRA_EMAIL:$$KESTRA_PASSWORD" http://kestra:8080/api/v1/flows/search > /dev/null 2>&1;
+          do echo 'Auth pas encore prete, nouvelle tentative...'; sleep 5; done &&
         echo 'Import du flow sport_data_pipeline...' &&
         result=$$(curl -s -o /dev/null -w "%{http_code}"
+        --max-time 30
         -u "$$KESTRA_EMAIL:$$KESTRA_PASSWORD"
-        -X PUT http://kestra:8080/api/v1/flows/sport_data/sport_data_pipeline
+        -X POST http://kestra:8080/api/v1/flows
         -H 'Content-Type: application/x-yaml'
         --data-binary @/opt/flows/sport_data_pipeline.yml) &&
         echo "Reponse API: $$result" &&
