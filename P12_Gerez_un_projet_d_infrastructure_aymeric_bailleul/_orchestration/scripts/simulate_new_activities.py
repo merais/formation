@@ -36,7 +36,11 @@ def get_connection():
     )
 
 
-ACTIVITES = ["Course", "Vélo", "Natation", "Randonnée", "Yoga", "Musculation", "Tennis", "Escalade"]
+ACTIVITES = [
+    "Running", "Randonnée", "Tennis", "Natation", "Football", "Rugby",
+    "Badminton", "Voile", "Boxe", "Judo", "Escalade", "Triathlon",
+    "Tennis de table", "Équitation", "Basketball",
+]
 
 INSERT_ACTIVITES = """
 INSERT INTO raw.activites_strava

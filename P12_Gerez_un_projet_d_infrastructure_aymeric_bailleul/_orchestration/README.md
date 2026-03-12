@@ -259,7 +259,7 @@ python main.py --seed
 
 ```
 raw
-└── activites_strava        (id_salarie, date_activite, type_activite, duree_minutes, distance_km, inserted_at)
+└── activites_strava        (id_salarie, date_debut, type_sport, duree_s, distance_m, commentaire, inserted_at)
 
 staging
 ├── employes                (id_salarie, nom, prenom, poste, departement, salaire, date_embauche, actif)
@@ -300,7 +300,7 @@ SELECT
 ### 2. Simuler de nouvelles entrées Strava
 
 ```powershell
-# Activer le venv de l'orchestration (psycopg2 requis)
+# Activer le venv de l'orchestration
 & "C:\Users\aymer\.venvs\orchestration\Scripts\Activate.ps1"
 
 # Insère entre 1 et 10 activités Strava aléatoires dans raw.activites_strava
