@@ -41,10 +41,10 @@ ACTIVITES = ["Course", "Vélo", "Natation", "Randonnée", "Yoga", "Musculation",
 
 INSERT_ACTIVITES = """
 INSERT INTO raw.activites_strava
-    (id_salarie, date_activite, type_activite, duree_minutes, distance_km)
+    (id_salarie, date_debut, type_sport, duree_s, distance_m)
 SELECT
     e.id_salarie,
-    %s::date,
+    %s::timestamp,
     %s,
     %s,
     %s
@@ -89,8 +89,8 @@ def simulate(nb_activites: int = 5) -> int:
             id_salarie = random.choice(ids)
             date_activite = random_date_recent()
             type_activite = random.choice(ACTIVITES)
-            duree = random.randint(20, 120)
-            distance = round(random.uniform(1.0, 42.0), 2)
+            duree = random.randint(20, 120) * 60        # minutes → secondes
+            distance = round(random.uniform(1.0, 42.0) * 1000, 1)  # km → metres
 
             cursor.execute(
                 INSERT_ACTIVITES,
