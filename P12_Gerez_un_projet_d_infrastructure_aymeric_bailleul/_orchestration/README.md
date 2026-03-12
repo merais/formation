@@ -304,8 +304,7 @@ SELECT
 & "C:\Users\aymer\.venvs\orchestration\Scripts\Activate.ps1"
 
 # Insère entre 1 et 10 activités Strava aléatoires dans raw.activites_strava
-$env:POSTGRES_HOST="localhost"; $env:POSTGRES_PORT="5433"
-$env:POSTGRES_DB="sport_data"; $env:POSTGRES_USER="postgres"; $env:POSTGRES_PASSWORD="postgres"
+# Les credentials sont lus automatiquement depuis .env
 python scripts/simulate_new_activities.py
 ```
 

@@ -18,9 +18,14 @@ Variable optionnelle :
 import os
 import random
 from datetime import date, timedelta
+from pathlib import Path
 
 import psycopg2
 import psycopg2.extras
+from dotenv import load_dotenv
+
+# Charge .env si les variables ne sont pas deja definies (execution locale)
+load_dotenv(Path(__file__).parent.parent / ".env")
 
 # ---------------------------------------------------------------------------
 # Helpers
