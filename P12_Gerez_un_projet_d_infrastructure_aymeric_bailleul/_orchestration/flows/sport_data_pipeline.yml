@@ -134,6 +134,22 @@ tasks:
           POSTGRES_USER: "{{ vars.postgres_user }}"
           POSTGRES_PASSWORD: "{{ secret('POSTGRES_PASSWORD') }}"
 
+      # ──────────────────────────────────────────────────────────────────────
+      # Etape 4b : Notifications Slack par activite (avant mise a jour watermark)
+      # ──────────────────────────────────────────────────────────────────────
+      - id: notify_slack_activities
+        type: io.kestra.plugin.scripts.python.Commands
+        description: "Envoie un message Slack personnalise par nouvelle activite Strava"
+        commands:
+          - python /opt/scripts/notify_slack_activities.py
+        env:
+          POSTGRES_HOST: "{{ vars.postgres_host }}"
+          POSTGRES_PORT: "{{ vars.postgres_port }}"
+          POSTGRES_DB: "{{ vars.postgres_db }}"
+          POSTGRES_USER: "{{ vars.postgres_user }}"
+          POSTGRES_PASSWORD: "{{ secret('POSTGRES_PASSWORD') }}"
+          SLACK_WEBHOOK_URL: "{{ secret('SLACK_WEBHOOK') }}"
+
       - id: update_strava_watermark
         type: io.kestra.plugin.jdbc.postgresql.Query
         description: "Avance le watermark Strava au MAX(inserted_at) des activites traitees"
@@ -166,8 +182,8 @@ tasks:
   # ────────────────────────────────────────────────────────────────────────────
   - id: notify_slack_success
     type: io.kestra.plugin.notifications.slack.SlackIncomingWebhook
-    description: "Notifie #sport-avantages du succes du pipeline"
-    url: "{{ secret('SLACK_WEBHOOK') }}"
+    description: "Notifie #sport-avantages du succes du pipeline (resume d'execution)"
+    url: "{{ secret('SLACK_WEBHOOK_INFO') }}"
     payload: |
       {
         "channel": "#sport-avantages",
@@ -193,8 +209,8 @@ errors:
 
   - id: notify_slack_failure
     type: io.kestra.plugin.notifications.slack.SlackIncomingWebhook
-    description: "Notifie #sport-avantages de l echec du pipeline"
-    url: "{{ secret('SLACK_WEBHOOK') }}"
+    description: "Notifie #sport-avantages de l echec du pipeline (resume d'execution)"
+    url: "{{ secret('SLACK_WEBHOOK_INFO') }}"
     payload: |
       {
         "channel": "#sport-avantages",

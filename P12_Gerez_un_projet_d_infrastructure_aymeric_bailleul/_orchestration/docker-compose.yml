@@ -100,6 +100,7 @@ services:
       # Secrets Kestra (base64) — accessibles via {{ secret('...') }} dans les flows
       SECRET_POSTGRES_PASSWORD: cG9zdGdyZXM=
       SECRET_SLACK_WEBHOOK: ${SLACK_WEBHOOK_B64}
+      SECRET_SLACK_WEBHOOK_INFO: ${SLACK_WEBHOOK_INFO_B64}
       KESTRA_EMAIL: ${KESTRA_EMAIL}
       KESTRA_PASSWORD: ${KESTRA_PASSWORD}
 
