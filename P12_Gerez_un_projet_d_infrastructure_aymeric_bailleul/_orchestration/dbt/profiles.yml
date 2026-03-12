@@ -1,0 +1,20 @@
+# profiles.yml – Connexion PostgreSQL pour le projet dbt Sport Data (Orchestration)
+#
+# Les valeurs sont lues depuis les variables d'environnement.
+# Dans Kestra : variables injectees dans le conteneur via docker-compose.yml.
+# En local : exporter les variables ou utiliser un .env charge par init.ps1.
+#
+# NE PAS VERSIONNER en production.
+
+sport_data:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('POSTGRES_HOST') }}"
+      port: "{{ env_var('POSTGRES_PORT') | int }}"
+      user: "{{ env_var('POSTGRES_USER') }}"
+      password: "{{ env_var('POSTGRES_PASSWORD') }}"
+      dbname: "{{ env_var('POSTGRES_DB') }}"
+      schema: public      # schema par defaut – surchargé par dbt_project.yml
+      threads: 4

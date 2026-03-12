@@ -1,0 +1,28 @@
+
+name: 'sport_data'
+version: '1.0.0'
+
+profile: 'sport_data'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Architecture Medallion : staging (nettoyage raw->staging) + gold (metriques metier)
+# Le macro generate_schema_name surcharge le comportement par defaut de dbt
+# pour ecrire directement dans 'staging' et 'gold' (sans prefix target.schema).
+models:
+  sport_data:
+    staging:
+      +materialized: table
+      +schema: staging
+    gold:
+      +materialized: table
+      +schema: gold
