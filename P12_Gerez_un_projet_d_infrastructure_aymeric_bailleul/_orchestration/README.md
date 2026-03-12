@@ -108,6 +108,7 @@ Lance 3 services :
 - **postgres** (port 5433) — base `sport_data` + base interne `kestra`
 - **kestra** (port 9000) — orchestrateur, attend que postgres soit healthy  
   Authentification via `basicAuth` : identifiants déclarés dans `KESTRA_EMAIL` / `KESTRA_PASSWORD` du `.env`, copiés dans la config YAML de Kestra au démarrage — **aucun état en base requis**, fonctionne dès les volumes vides.
+- **dbt-docs** (port 8082) — nginx servant la documentation dbt statique, mise à jour à chaque exécution du flow
 - **kestra-setup** — service éphémère qui, au démarrage :
   1. Attend que l'endpoint `/health` de Kestra réponde `UP`
   2. Boucle jusqu'à ce que l'authentification soit opérationnelle
@@ -151,15 +152,20 @@ Ce script :
 2. Exécute `main.py --reset` (crée schémas, tables, rôles, charge les données, lance dbt)
 3. Valide la connexion dbt avec `dbt debug`
 
-### 6. Interface Kestra
+### 6. Interfaces
 
-Ouvrir [http://localhost:9000](http://localhost:9000).
+| Interface | URL | Description |
+|---|---|---|
+| Kestra UI | [http://localhost:9000](http://localhost:9000) | Orchestrateur — flows, exécutions, logs |
+| dbt Docs | [http://localhost:4080](http://localhost:4080) | Documentation dbt — catalog, lineage graph, tests |
 
-Connexion : email et mot de passe définis dans `KESTRA_EMAIL` / `KESTRA_PASSWORD` du `.env`.
+Connexion Kestra : email et mot de passe définis dans `KESTRA_EMAIL` / `KESTRA_PASSWORD` du `.env`.
 
 Le flow `sport_data / sport_data_pipeline` est déjà importé et actif. Deux modes de déclenchement :
 - **Manuel** : bouton "Execute" dans l'UI
 - **Automatique** : cron quotidien à 06h00
+
+> **dbt Docs** : la page est vide jusquà la première exécution du flow (qui génère les fichiers `catalog.json` et `manifest.json`).
 
 ---
 
@@ -170,14 +176,13 @@ check_changes.py
     ├── rh_changed = True      →  reload_rh.py
     ├── sport_changed = True   →  reload_sport.py
     └── should_run = True      →  dbt run  (PASS=4)
-                               →  dbt test (PASS=36)
-                               →  notify_slack_activities   (1 msg/activité → webhook 1)
+                               →  dbt test (PASS=36)                               →  dbt docs generate  (http://localhost:8082)                               →  notify_slack_activities   (1 msg/activité → webhook 1)
                                →  update_strava_watermark
                                →  meta.pipeline_runs (INSERT résultat)
-                               →  Slack #sport-avantages ✅ (webhook 2)
+                               →  Slack #sport-avantages (webhook 2)
 
 En cas d'échec :             →  meta.pipeline_runs (status=failed)
-                               →  Slack #sport-avantages ❌ (webhook 2)
+                               →  Slack #sport-avantages (webhook 2)
 ```
 
 Deux webhooks Slack distincts :

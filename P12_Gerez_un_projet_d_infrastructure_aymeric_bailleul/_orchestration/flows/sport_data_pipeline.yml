@@ -135,7 +135,22 @@ tasks:
           POSTGRES_PASSWORD: "{{ secret('POSTGRES_PASSWORD') }}"
 
       # ──────────────────────────────────────────────────────────────────────
-      # Etape 4b : Notifications Slack par activite (avant mise a jour watermark)
+      # Etape 4b : Generation de la documentation dbt (export statique)
+      # ──────────────────────────────────────────────────────────────────────
+      - id: dbt_docs_generate
+        type: io.kestra.plugin.scripts.shell.Commands
+        description: "dbt docs generate : mise a jour de la doc (catalog + lineage graph)"
+        commands:
+          - dbt docs generate --project-dir {{ vars.dbt_project_dir }} --profiles-dir {{ vars.dbt_profiles_dir }} --no-use-colors
+        env:
+          POSTGRES_HOST: "{{ vars.postgres_host }}"
+          POSTGRES_PORT: "{{ vars.postgres_port }}"
+          POSTGRES_DB: "{{ vars.postgres_db }}"
+          POSTGRES_USER: "{{ vars.postgres_user }}"
+          POSTGRES_PASSWORD: "{{ secret('POSTGRES_PASSWORD') }}"
+
+      # ──────────────────────────────────────────────────────────────────────
+      # Etape 4c : Notifications Slack par activite (avant mise a jour watermark)
       # ──────────────────────────────────────────────────────────────────────
       - id: notify_slack_activities
         type: io.kestra.plugin.scripts.python.Commands

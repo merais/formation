@@ -121,6 +121,8 @@ services:
       - ${XLSX_DIR}:/opt/data/RAW:ro
       # scripts/, dbt/ et flows/ sont bakes dans l image via kestra.Dockerfile
       # (COPY au moment du build) — voir kestra.Dockerfile pour le detail.
+      # dbt docs : volume partage avec le service dbt-docs (nginx)
+      - dbt_docs:/opt/dbt/sport_data/target
 
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8081/health | grep -q UP"]
@@ -128,6 +130,20 @@ services:
       timeout: 5s
       retries: 10
       start_period: 60s
+
+  # ─── Documentation dbt (acces local via http://localhost:8082) ─────────────
+  # Sert les fichiers statiques generes par 'dbt docs generate' depuis le volume
+  # partage avec kestra. Mis a jour automatiquement a chaque execution du flow.
+  dbt-docs:
+    image: nginx:alpine
+    container_name: sport_data_dbt_docs
+    restart: unless-stopped
+    ports:
+      - "4080:80"
+    volumes:
+      - dbt_docs:/usr/share/nginx/html:ro
+    depends_on:
+      - kestra
 
   # ─── Import automatique du flow au premier demarrage ────────────────────────
   # Ce service one-shot attend que Kestra soit healthy, puis POSTe notre flow
@@ -178,5 +194,7 @@ volumes:
     name: sport_data_postgres_volume
   kestra_storage:
     name: sport_data_kestra_storage
+  dbt_docs:
+    name: sport_data_dbt_docs
 
 # Note : le service kestra-setup ne cree pas de volume, il est ephemere (restart: no).
