@@ -147,10 +147,10 @@ def get_new_activities(cursor, watermark) -> list[dict]:
             a.duree_s,
             a.distance_m,
             a.commentaire,
-            COALESCE(e.prenom, 'Sportif') AS prenom,
-            COALESCE(e.nom,    '')        AS nom
+            COALESCE(i.prenom, 'Sportif') AS prenom,
+            COALESCE(i.nom,    '')        AS nom
         FROM raw.activites_strava a
-        LEFT JOIN staging.employes e ON e.id_salarie = a.id_salarie
+        LEFT JOIN rh_prive.identites i ON i.id_salarie = a.id_salarie
         WHERE a.inserted_at > %s
         ORDER BY a.inserted_at
         """,
