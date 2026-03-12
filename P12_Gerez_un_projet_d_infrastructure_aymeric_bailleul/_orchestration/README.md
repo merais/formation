@@ -34,10 +34,11 @@ _orchestration/
 │       └── generate_strava.py  # Génération initiale d'activités Strava simulées
 │
 ├── scripts/                    # Scripts standalone exécutés par Kestra
-│   ├── check_changes.py        # Détection changements XLSX + watermark Strava
-│   ├── reload_rh.py            # Re-ingestion RH (UPSERT + soft-delete)
-│   ├── reload_sport.py         # Re-ingestion sport (UPSERT + delete-absent)
-│   └── simulate_new_activities.py  # Ajout incrémental d'activités Strava
+│   ├── check_changes.py              # Détection changements XLSX + watermark Strava
+│   ├── reload_rh.py                  # Re-ingestion RH (UPSERT + soft-delete)
+│   ├── reload_sport.py               # Re-ingestion sport (UPSERT + delete-absent)
+│   ├── simulate_new_activities.py    # Ajout incrémental d'activités Strava
+│   └── notify_slack_activities.py    # Notifications Slack par activité (message aléatoire)
 │
 ├── dbt/                        # Projet dbt autonome (copie de _projet_dbt)
 │   ├── profiles.yml            # Connexion dbt (via env_var())
@@ -170,13 +171,19 @@ check_changes.py
     ├── sport_changed = True   →  reload_sport.py
     └── should_run = True      →  dbt run  (PASS=4)
                                →  dbt test (PASS=36)
+                               →  notify_slack_activities   (1 msg/activité → webhook 1)
                                →  update_strava_watermark
                                →  meta.pipeline_runs (INSERT résultat)
-                               →  Slack #sport-avantages ✅
+                               →  Slack #sport-avantages ✅ (webhook 2)
 
 En cas d'échec :             →  meta.pipeline_runs (status=failed)
-                               →  Slack #sport-avantages ❌
+                               →  Slack #sport-avantages ❌ (webhook 2)
 ```
+
+Deux webhooks Slack distincts :
+- **Webhook 1** (`SLACK_WEBHOOK`) — message aléatoire et personnalisé par nouvelle activité Strava  
+  _ex. « Bravo Juliette ! Tu viens de courir 10.8 km en 46 min ! »_
+- **Webhook 2** (`SLACK_WEBHOOK_INFO`) — compte-rendu d'exécution (succès / échec), résumé chiffré
 
 Le flow ne relance dbt que si au moins un changement est détecté (`rh_changed OR sport_changed OR new_activities_count > 0`), évitant des exécutions inutiles.
 
@@ -267,7 +274,8 @@ raw
 └── activites_strava        (id_salarie, date_debut, type_sport, duree_s, distance_m, commentaire, inserted_at)
 
 staging
-├── employes                (id_salarie, nom, prenom, poste, departement, salaire, date_embauche, actif)
+├── employes                (id_salarie, departement, date_embauche, salaire_brut, type_contrat,
+│                            nb_jours_cp, adresse_domicile, moyen_deplacement, actif)
 ├── pratiques_declarees     (id_salarie, activite_preferee, frequence_semaine, annee_depart)
 └── activites_strava        (vue dbt)
 
@@ -277,7 +285,7 @@ gold
 └── impact_financier        (dbt)
 
 rh_prive
-└── identites               (id_salarie, email, telephone, adresse)
+├── identites               (id_salarie, nom, prenom, date_naissance)
 └── vue_primes_nominatives  (vue — filtre actif = true)
 
 meta
