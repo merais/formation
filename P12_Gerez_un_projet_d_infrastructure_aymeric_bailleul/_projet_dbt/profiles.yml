@@ -1,0 +1,23 @@
+# profiles.yml – Connexion PostgreSQL pour le projet dbt Sport Data
+# Placer ce fichier dans _projet_dbt/ et passer --profiles-dir .. lors des commandes dbt
+# (ou lancer depuis _projet_dbt/ avec --profiles-dir .)
+#
+# NE PAS VERSIONNER en production (contient les credentials)
+#
+# Les valeurs sont lues depuis le fichier .env via env_var().
+# Passer par main.py (qui charge .env via python-dotenv avant d'appeler dbt)
+# ou exporter les variables manuellement avant un appel dbt direct :
+#   $env:POSTGRES_USER="postgres" ; $env:POSTGRES_PASSWORD="postgres" ; dbt debug ...
+
+sport_data:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('POSTGRES_HOST') }}"
+      port: "{{ env_var('POSTGRES_PORT') | int }}"
+      user: "{{ env_var('POSTGRES_USER') }}"
+      password: "{{ env_var('POSTGRES_PASSWORD') }}"
+      dbname: "{{ env_var('POSTGRES_DB') }}"
+      schema: public      # schema par defaut – surchargé par dbt_project.yml
+      threads: 4

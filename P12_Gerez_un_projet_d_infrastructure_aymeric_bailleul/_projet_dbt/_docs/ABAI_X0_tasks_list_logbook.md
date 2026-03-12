@@ -1,8 +1,12 @@
-# P12 – Liste des tâches et journal de bord
+﻿# P12 – Liste des tâches et journal de bord – Projet dbt
 
 **Auteur :** Aymeric Bailleul
 **Formation :** Data Engineer – OpenClassrooms
 **Période :** 10/03/2026 → 11/04/2026
+
+> Ce projet (`_projet_dbt`) reconstruit la couche de transformation du pipeline P12 en SQL pur avec **dbt**.
+> Il s'appuie sur la même instance PostgreSQL que `_projet` (port 5433, DB `sport_data`) :
+> les schémas `raw` et `staging` sont alimentés par `_projet`, dbt prend en charge la transformation vers `gold`.
 
 ---
 
@@ -10,12 +14,12 @@
 
 | Composant | Outil retenu | Justification |
 |---|---|---|
-| Base de données | PostgreSQL via Docker | Simule un vrai environnement de production |
-| Calcul des distances | Google Maps API (+ fallback haversine si clé absente) | Distances routières réelles, plus précis pour la règle métier |
-| Notifications | Mock Slack (log JSON local) | Pas de dépendance externe, suffisant pour le POC |
-| Tests de qualité | pytest | Déjà maîtrisé, cohérent avec les projets précédents |
-| Orchestration | Scripts Python séquentiels | Suffisant pour un POC, lisible en soutenance |
-| Visualisation | PowerBI | Requis par Juliette, connexion PostgreSQL |
+| Base de données | PostgreSQL via Docker | Même instance que `_projet` (port 5433, DB `sport_data`) |
+| Calcul des distances | `staging.cache_distances` (alimenté par `_projet`) | Distances déjà calculées par Google Maps / haversine, réutilisées en SQL |
+| Transformation SQL | dbt-core 1.11.7 + dbt-postgres 1.10.0 | DAG automatique, tests intégrés, SQL lisible, reproductible |
+| Tests de qualité | dbt test (37 tests) | Tests natifs dbt : unique, not_null, accepted_values sur modèles et sources |
+| Orchestration | `main.py` Python (subprocess dbt) | Lance `dbt run` puis `dbt test` depuis un script unique |
+| Visualisation | PowerBI | Connexion PostgreSQL → schéma `gold` (même que `_projet`) |
 
 ---
 
@@ -56,43 +60,40 @@
 
 ## Architecture des données
 
-### Choix RGPD : Option B – Privacy by Design
+### Choix RGPD : Option B – Privacy by Design (hérité de `_projet`)
 
-Les fichiers XLSX (données RH et sportives) contiennent des données personnelles (Nom, Prénom, Date de naissance).
-Conformément au principe de **minimisation des données** (Art. 5.1.c RGPD) et de **privacy by design** (Art. 25 RGPD) :
+Les données nominatives (Nom, Prénom, DDN) sont gérées dans `_projet` :
+- Anonymisées à l'ingestion XLSX → `staging.employes` (8 colonnes sans données personnelles)
+- Stockées dans `rh_prive.identites` (accès restreint au rôle `role_rh_admin`)
 
-- Les XLSX font office de **couche raw** (source de vérité, sur disque, jamais copiés en base)
-- Le pipeline lit les XLSX, anonymise et nettoie en mémoire, puis insère directement dans **staging**
-- Seules les données Strava (simulées, sans données personnelles) transitent par le schéma **raw** en base
-- Pour les notifications Slack, Nom/Prénom sont lus à la volée depuis le XLSX (jamais stockés en base)
+dbt ne touche pas à `rh_prive`. Il lit uniquement les schémas `raw`, `staging` (anonymisés) et écrit dans `gold`.
 
 ```
-Sources (couche raw = disque)
-├── Données+RH.xlsx          → lu à la volée, anonymisé, inséré dans staging.employes
-├── Données+Sportive.xlsx    → lu à la volée, nettoyé, inséré dans staging.pratiques_declarees
-└── Simulation Strava        → raw.activites_strava (pas de données personnelles)
+_projet (Python ETL – pipeline source)
+├── Données+RH.xlsx          → anonymisé → staging.employes (8 col)
+│                                        → rh_prive.identites (Nom/Prénom/DDN – accès restreint)
+├── Données+Sportive.xlsx    → staging.pratiques_declarees
+├── Simulation Strava        → raw.activites_strava
+└── distances.py             → staging.cache_distances (Google Maps / haversine)
+
+                ↓  (même instance PostgreSQL – port 5433)
+
+_projet_dbt (dbt – transformation SQL)
+├── SOURCE raw     : raw.activites_strava
+├── SOURCE staging : employes, pratiques_declarees, cache_distances
+│
+├── MODEL staging/stg_activites_strava  →  staging.activites_strava (nettoyage 5 filtres)
+├── MODEL gold/eligibilite_prime        →  gold.eligibilite_prime   (règle distance + 5%)
+├── MODEL gold/eligibilite_bien_etre    →  gold.eligibilite_bien_etre (>= 15 activités)
+└── MODEL gold/impact_financier         →  gold.impact_financier    (agrégat département)
 
                 ↓
 
-PostgreSQL (Docker)
-├── schema raw       : uniquement activites_strava (données simulées)
-├── schema staging   : employes (8 col anonymisées) + pratiques_declarees + activites_strava
-└── schema gold      : tables métier calculées
-    ├── eligibilite_prime
-    ├── eligibilite_bien_etre
-    └── impact_financier
+dbt test (37 tests : unique, not_null, accepted_values)
 
                 ↓
 
-Tests qualité (pytest)
-
-                ↓
-
-Mock Slack (JSON log – Nom/Prénom lus à la volée depuis XLSX)
-
-                ↓
-
-PowerBI (connexion PostgreSQL → staging + gold uniquement)
+PowerBI (connexion PostgreSQL → gold uniquement)
 ```
 
 ---
@@ -100,46 +101,41 @@ PowerBI (connexion PostgreSQL → staging + gold uniquement)
 ## Structure cible du projet
 
 ```
-_projet/
+_projet_dbt/
 ├── _docs/
 │   ├── ABAI_X0_tasks_list_logbook.md   # Ce fichier
 │   ├── ABAI_X1_note_cadrage.md
 │   └── ABAI_X2_contexte.md
-├── analyses/                            # Analyses exploratoires
 ├── data/
-│   ├── RAW/                             # Fichiers sources (ne pas modifier)
-│   └── exports/                         # Exports PowerBI / rapports
-├── src/
-│   ├── config.py                        # Paramètres centraux (chemins, constantes métier)
-│   ├── db/
-│   │   ├── init_db.py                   # Création des schémas et tables PostgreSQL
-│   │   └── connexion.py                 # Gestion de la connexion (psycopg2 + .env)
-│   ├── ingestion/
-│   │   ├── load_rh.py                   # Chargement Données+RH.xlsx → PostgreSQL raw
-│   │   └── load_sport.py                # Chargement Données+Sportive.xlsx → PostgreSQL raw
-│   ├── simulation/
-│   │   └── generate_strava.py           # Génération des activités Strava simulées (12 mois)
-│   ├── transformation/
-│   │   ├── staging.py                   # Nettoyage et typage (raw → staging)
-│   │   ├── distances.py                 # Calcul distances via Google Maps API + fallback haversine
-│   │   └── gold.py                      # Calcul des éligibilités et de l'impact financier
-│   ├── notifications/
-│   │   └── mock_slack.py                # Génération des messages Slack (log JSON)
-│   └── main.py                          # Point d'entrée : exécute le pipeline complet
-├── tests/
-│   ├── conftest.py                      # Fixtures pytest (connexion DB, données de test)
-│   ├── test_distances.py                # Tests de la règle de distance domicile-bureau
-│   ├── test_simulation.py               # Tests de cohérence des données Strava simulées
-│   ├── test_staging.py                  # Tests de qualité des données staging
-│   └── test_gold.py                     # Tests de cohérence des calculs métier
-├── docker/
-│   └── docker-compose.yml               # PostgreSQL + (optionnel) pgAdmin
-├── .env.example                         # Modèle de variables d'environnement
-├── .gitignore
-├── pyproject.toml
-├── uv.lock
+│   └── RAW/                             # Fichiers sources (identiques à _projet)
+├── sport_data/                          # Projet dbt (dbt init sport_data)
+│   ├── dbt_project.yml                  # Config : profil, chemins, schémas cibles
+│   ├── macros/
+│   │   └── generate_schema_name.sql     # Surcharge pour schémas exacts (sans préfixe)
+│   ├── models/
+│   │   ├── sources.yml                  # Déclaration raw.* et staging.* comme sources
+│   │   ├── staging/
+│   │   │   ├── stg_activites_strava.sql # Nettoyage raw → staging (5 filtres)
+│   │   │   └── schema.yml               # Tests dbt du modèle staging
+│   │   └── gold/
+│   │       ├── eligibilite_prime.sql    # Règle distance (cache) + prime 5%
+│   │       ├── eligibilite_bien_etre.sql# Seuil >= 15 activités → 5 jours
+│   │       ├── impact_financier.sql     # Agrégat FULL OUTER JOIN par département
+│   │       └── schema.yml               # Tests dbt des modèles gold
+│   ├── analyses/
+│   ├── seeds/
+│   ├── snapshots/
+│   └── tests/
+├── profiles.yml                         # Connexion PostgreSQL (port 5433) – non versionné
+├── main.py                              # Wrapper : dbt run + dbt test
+├── pyproject.toml                       # Python 3.12, dbt-postgres, python-dotenv
+├── .env                                 # Variables d'environnement – non versionné
+├── .python-version                      # 3.12
 └── README.md
 ```
+
+> **Venv** : créé hors Google Drive (`C:\Users\aymer\.venvs\projet_dbt`) pour contourner
+> le blocage Windows sur les exécutables `.exe` dans les dossiers synchronisés.
 
 ---
 
@@ -267,7 +263,7 @@ _projet/
 
 ---
 
-### Phase 7 – Pipeline principal
+### Phase 7 – Pipeline principal (Manuel)
 
 - [X] Écrire `src/config.py` (constantes : adresse entreprise, seuils distances, taux prime, chemins, RGPD, sports valides)
 - [X] Écrire `src/main.py` :
@@ -279,21 +275,9 @@ _projet/
 
 ---
 
-### Phase 8 – Streaming temps réel (Redpanda)
+### Phase 8 – Orchestration pipeline
 
-- [ ] Ajouter Redpanda au `docker-compose.yml` (image `redpandadata/redpanda`, ports 9092/8081/8082)
-- [ ] Ajouter la dépendance `confluent-kafka` au projet (`pyproject.toml`)
-- [ ] Créer le topic Kafka `strava.activities` dans Redpanda
-- [ ] Écrire `src/streaming/producer.py` :
-  - [ ] Script CLI pour injecter une nouvelle activité Strava à la demande
-  - [ ] Saisie interactive ou paramètres CLI (`--id-salarie`, `--sport`, `--distance`, `--duree`)
-  - [ ] Publication du message JSON sur le topic `strava.activities`
-- [ ] Écrire `src/streaming/consumer.py` :
-  - [ ] Boucle d'écoute sur le topic `strava.activities`
-  - [ ] Insertion en temps réel dans `raw.activites_strava`
-  - [ ] Propagation automatique vers `staging.activites_strava` (nettoyage)
-  - [ ] Recalcul incrémental des tables `gold.*` (éligibilité + impact financier)
-- [ ] Tester le flux de bout en bout (producer → Redpanda → consumer → PostgreSQL → PowerBI refresh)
+
 
 ---
 
@@ -344,3 +328,9 @@ _projet/
 | 04/03/2026 | Review code : corrections coquilles (3 commentaires trompeurs, 2 imports inutiles), ajout commentaires explicatifs sur 6 parties complexes (haversine, cascade distances, CTE gold, seuil 395j, génération dates/durées). 42 tests OK |
 | 04/03/2026 | Phase 7 terminée : `src/config.py` (constantes centralisées : chemins, seuils, taux, RGPD, sports). `src/main.py` (orchestrateur 7 étapes, CLI : `--reset`, `--seed`, `--step N`, `--dry-run`). Pipeline complet exécuté : 7/7 OK, 59.8s. 42 tests pytest OK |
 | 09/03/2026 | Ajout option `--skip-api` au pipeline (`main.py`, `gold.py`, `distances.py`). Permet de réutiliser le cache des distances sans appeler l’API Google Maps. Pipeline en 11.4s au lieu de ~60s. README mis à jour |
+| 10/03/2026 | Initialisation de `_projet_dbt` : `uv init --no-workspace --name projet-dbt`. Découverte incompatibilité dbt-core 1.11.7 / Python 3.13 (erreur `JSONDecodeError` dans `jsonschema_specifications`). Passage à Python 3.12 |
+| 10/03/2026 | Venv créé hors Google Drive : `python -m venv C:\Users\aymer\.venvs\projet_dbt` (Google Drive bloque la création d'exécutables `.exe` dans les dossiers synchronisés). `pip install dbt-postgres python-dotenv` → 55 paquets, dbt-core 1.11.7, dbt-postgres 1.10.0 |
+| 11/03/2026 | Phase 1 terminée : `dbt init sport_data --skip-profile-setup`. `profiles.yml` (port 5433, DB sport_data). `macros/generate_schema_name.sql` (schémas exacts sans préfixe). `dbt debug` → `All checks passed!` |
+| 11/03/2026 | Phase 2 terminée : `models/sources.yml` – 2 sources déclarées (raw + staging), 4 tables, tests unique/not_null. `dbt compile` : 4 modèles, 0 erreur, 0 warning |
+| 11/03/2026 | Phases 3-4 terminées : `stg_activites_strava.sql` (5 filtres qualité), `eligibilite_prime.sql` (seuils 15/25 km + prime 5%), `eligibilite_bien_etre.sql` (seuil >= 15 activités), `impact_financier.sql` (FULL OUTER JOIN). `dbt run` : 4/4 OK en 0.53s (161 salariés, 2 256 activités, 5 départements) |
+| 11/03/2026 | Phase 5 terminée : `dbt test` → **37/37 PASS** en 1.00s. Phase 6 : `main.py` wrapper (`dbt run` + `dbt test`). Pipeline end-to-end OK |

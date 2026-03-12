@@ -1,0 +1,97 @@
+version: 2
+
+models:
+  # -----------------------------------------------------------------------
+  # Gold – eligibilite_prime
+  # -----------------------------------------------------------------------
+  - name: eligibilite_prime
+    description: >
+      Eligibilite a la prime sportive (5% du salaire brut).
+      Croisse staging.employes avec staging.cache_distances (distances Python).
+      Modes eligibles : Marche/running (<= 15 km), Velo/Trottinette/Autres (<= 25 km).
+    columns:
+      - name: id_salarie
+        description: Identifiant salarie (cle primaire)
+        tests:
+          - unique
+          - not_null
+      - name: departement
+        tests:
+          - not_null
+      - name: moyen_deplacement
+        tests:
+          - not_null
+      - name: adresse_domicile
+        tests:
+          - not_null
+      - name: distance_km
+        description: Distance domicile-bureau en km (null si adresse non mise en cache)
+      - name: seuil_km
+        description: Seuil d eligibilite en km (15 ou 25, null si mode non eligible)
+      - name: est_eligible
+        description: True si salarie eligible a la prime sportive
+        tests:
+          - not_null
+      - name: montant_prime
+        description: Montant de la prime en EUR (0 si non eligible)
+        tests:
+          - not_null
+
+  # -----------------------------------------------------------------------
+  # Gold – eligibilite_bien_etre
+  # -----------------------------------------------------------------------
+  - name: eligibilite_bien_etre
+    description: >
+      Eligibilite aux 5 journees bien-etre (>= 15 activites Strava sur la periode).
+      Compte les activites depuis stg_activites_strava (staging.activites_strava).
+    columns:
+      - name: id_salarie
+        description: Identifiant salarie (cle primaire)
+        tests:
+          - unique
+          - not_null
+      - name: departement
+        tests:
+          - not_null
+      - name: nb_activites_annee
+        description: Nombre d activites Strava nettoyees sur la periode
+        tests:
+          - not_null
+      - name: est_eligible
+        description: True si nb_activites_annee >= 15
+        tests:
+          - not_null
+      - name: nb_jours_bien_etre
+        description: Nombre de jours bien-etre accordes (5 si eligible, 0 sinon)
+        tests:
+          - not_null
+
+  # -----------------------------------------------------------------------
+  # Gold – impact_financier
+  # -----------------------------------------------------------------------
+  - name: impact_financier
+    description: >
+      Impact financier agrege par departement.
+      FULL OUTER JOIN entre primes et bien-etre pour ne perdre aucun departement.
+    columns:
+      - name: departement
+        description: Departement (cle primaire)
+        tests:
+          - unique
+          - not_null
+      - name: nb_primes
+        description: Nombre de salaries eligibles a la prime dans ce departement
+        tests:
+          - not_null
+      - name: total_primes
+        description: Montant total des primes en EUR pour ce departement
+        tests:
+          - not_null
+      - name: nb_bien_etre
+        description: Nombre de salaries eligibles aux journees bien-etre
+        tests:
+          - not_null
+      - name: total_jours_bien_etre
+        description: Total de jours bien-etre accordes dans ce departement
+        tests:
+          - not_null
