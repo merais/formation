@@ -170,7 +170,12 @@ check_changes.py
     ├── sport_changed = True   →  reload_sport.py
     └── should_run = True      →  dbt run  (PASS=4)
                                →  dbt test (PASS=36)
+                               →  update_strava_watermark
                                →  meta.pipeline_runs (INSERT résultat)
+                               →  Slack #sport-avantages ✅
+
+En cas d'échec :             →  meta.pipeline_runs (status=failed)
+                               →  Slack #sport-avantages ❌
 ```
 
 Le flow ne relance dbt que si au moins un changement est détecté (`rh_changed OR sport_changed OR new_activities_count > 0`), évitant des exécutions inutiles.
@@ -304,7 +309,6 @@ SELECT
 & "C:\Users\aymer\.venvs\orchestration\Scripts\Activate.ps1"
 
 # Insère entre 1 et 10 activités Strava aléatoires dans raw.activites_strava
-# Les credentials sont lus automatiquement depuis .env
 python scripts/simulate_new_activities.py
 ```
 

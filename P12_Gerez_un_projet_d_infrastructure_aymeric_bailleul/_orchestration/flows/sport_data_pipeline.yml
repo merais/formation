@@ -149,7 +149,7 @@ tasks:
   # ────────────────────────────────────────────────────────────────────────────
   - id: update_watermark
     type: io.kestra.plugin.jdbc.postgresql.Query
-    description: "Enregistre le run reussi dans meta.pipeline_runs (watermark)"
+    description: "Enregistre le run reussi dans meta.pipeline_runs"
     sql: |
       INSERT INTO meta.pipeline_runs
           (run_at, status, rh_changed, sport_changed, new_activities_count)
@@ -161,10 +161,49 @@ tasks:
           {{ outputs.check_changes.vars.new_activities_count }}
       );
 
+  # ────────────────────────────────────────────────────────────────────────────
+  # Etape 6 : Notification Slack (succes)
+  # ────────────────────────────────────────────────────────────────────────────
+  - id: notify_slack_success
+    type: io.kestra.plugin.notifications.slack.SlackIncomingWebhook
+    description: "Notifie #sport-avantages du succes du pipeline"
+    url: "{{ secret('SLACK_WEBHOOK') }}"
+    payload: |
+      {
+        "channel": "#sport-avantages",
+        "text": ":white_check_mark: *Pipeline Sport Data* — execution reussie",
+        "attachments": [{
+          "color": "good",
+          "fields": [
+            {"title": "Nouvelles activites", "value": "{{ outputs.check_changes.vars.new_activities_count }}", "short": true},
+            {"title": "RH mis a jour",       "value": "{{ outputs.check_changes.vars.rh_changed }}",            "short": true},
+            {"title": "Sport mis a jour",    "value": "{{ outputs.check_changes.vars.sport_changed }}",         "short": true},
+            {"title": "Execution",           "value": "{{ execution.id }}",                                     "short": true}
+          ]
+        }]
+      }
+
 errors:
-  # En cas d echec : enregistrer le run comme 'failed' dans meta.pipeline_runs
+  # En cas d echec : enregistrer le run comme 'failed' + notifier Slack
   - id: record_failure
     type: io.kestra.plugin.jdbc.postgresql.Query
     sql: |
       INSERT INTO meta.pipeline_runs (run_at, status, rh_changed, sport_changed, new_activities_count)
       VALUES (NOW(), 'failed', false, false, 0);
+
+  - id: notify_slack_failure
+    type: io.kestra.plugin.notifications.slack.SlackIncomingWebhook
+    description: "Notifie #sport-avantages de l echec du pipeline"
+    url: "{{ secret('SLACK_WEBHOOK') }}"
+    payload: |
+      {
+        "channel": "#sport-avantages",
+        "text": ":x: *Pipeline Sport Data* — echec de l'execution",
+        "attachments": [{
+          "color": "danger",
+          "fields": [
+            {"title": "Execution", "value": "{{ execution.id }}",    "short": true},
+            {"title": "Tache",    "value": "{{ task.id }}",          "short": true}
+          ]
+        }]
+      }

@@ -97,8 +97,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      # Secret Kestra (base64) — accessible via {{ secret('POSTGRES_PASSWORD') }} dans les flows
+      # Secrets Kestra (base64) — accessibles via {{ secret('...') }} dans les flows
       SECRET_POSTGRES_PASSWORD: cG9zdGdyZXM=
+      SECRET_SLACK_WEBHOOK: ${SLACK_WEBHOOK_B64}
       KESTRA_EMAIL: ${KESTRA_EMAIL}
       KESTRA_PASSWORD: ${KESTRA_PASSWORD}
 
