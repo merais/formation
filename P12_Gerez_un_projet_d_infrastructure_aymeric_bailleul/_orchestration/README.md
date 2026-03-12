@@ -134,6 +134,9 @@ docker logs sport_data_kestra_setup
 
 # 5. Créer les schémas, tables et charger les données initiales
 .\init.ps1
+
+# Ou en une seul ligne : 
+docker compose down -v --rmi local; docker compose build; docker compose up -d; Start-Sleep -Seconds 45; docker logs sport_data_kestra_setup; .\init.ps1
 ```
 
 ### 5. Initialisation locale
