@@ -134,8 +134,18 @@ tasks:
           POSTGRES_USER: "{{ vars.postgres_user }}"
           POSTGRES_PASSWORD: "{{ secret('POSTGRES_PASSWORD') }}"
 
+      - id: update_strava_watermark
+        type: io.kestra.plugin.jdbc.postgresql.Query
+        description: "Avance le watermark Strava au MAX(inserted_at) des activites traitees"
+        sql: |
+          INSERT INTO meta.pipeline_state (file_name, watermark, updated_at)
+          SELECT '_strava_watermark', MAX(inserted_at), NOW() FROM raw.activites_strava
+          ON CONFLICT (file_name) DO UPDATE SET
+              watermark  = EXCLUDED.watermark,
+              updated_at = NOW();
+
   # ────────────────────────────────────────────────────────────────────────────
-  # Etape 5 : Enregistrement du run dans meta.pipeline_runs (watermark)
+  # Etape 5 : Enregistrement du run dans meta.pipeline_runs
   # ────────────────────────────────────────────────────────────────────────────
   - id: update_watermark
     type: io.kestra.plugin.jdbc.postgresql.Query

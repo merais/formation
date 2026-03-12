@@ -284,14 +284,49 @@ meta
 
 ## Simulation d'un cycle incrémental
 
-Pour tester la détection de changements sans modifier les XLSX :
+### 1. Vérifier l'état avant
 
 ```powershell
-# Ajouter 10 nouvelles activités Strava dans la base
+# Nombre d'activités brutes + watermark actuel
+docker exec sport_data_postgres psql -U postgres -d sport_data -c "
+SELECT
+  (SELECT COUNT(*) FROM raw.activites_strava)          AS nb_activites_raw,
+  (SELECT COUNT(*) FROM staging.activites_strava)      AS nb_activites_staging,
+  (SELECT MAX(nb_activites_annee) FROM gold.eligibilite_bien_etre) AS max_activites_gold,
+  (SELECT watermark FROM meta.pipeline_state WHERE file_name = '_strava_watermark') AS watermark;
+"
+```
+
+### 2. Simuler de nouvelles entrées Strava
+
+```powershell
+# Activer le venv de l'orchestration (psycopg2 requis)
+& "C:\Users\aymer\.venvs\orchestration\Scripts\Activate.ps1"
+
+# Insère entre 1 et 10 activités Strava aléatoires dans raw.activites_strava
 $env:POSTGRES_HOST="localhost"; $env:POSTGRES_PORT="5433"
 $env:POSTGRES_DB="sport_data"; $env:POSTGRES_USER="postgres"; $env:POSTGRES_PASSWORD="postgres"
-$env:NB_ACTIVITES="10"
 python scripts/simulate_new_activities.py
+```
 
-# check_changes.py détectera new_activities_count = 10 au prochain cycle Kestra
+### 3. Exécuter le flow dans Kestra
+
+Ouvrir [http://localhost:9000](http://localhost:9000) → flow `sport_data / sport_data_pipeline` → bouton **Execute**.
+
+### 4. Vérifier l'état après
+
+```powershell
+# Même requête — staging et gold doivent refléter les nouvelles activités, watermark mis à jour
+docker exec sport_data_postgres psql -U postgres -d sport_data -c "
+SELECT
+  (SELECT COUNT(*) FROM raw.activites_strava)          AS nb_activites_raw,
+  (SELECT COUNT(*) FROM staging.activites_strava)      AS nb_activites_staging,
+  (SELECT MAX(nb_activites_annee) FROM gold.eligibilite_bien_etre) AS max_activites_gold,
+  (SELECT watermark FROM meta.pipeline_state WHERE file_name = '_strava_watermark') AS watermark;
+"
+
+# Historique des runs Kestra
+docker exec sport_data_postgres psql -U postgres -d sport_data -c "
+SELECT run_at, status, new_activities_count FROM meta.pipeline_runs ORDER BY run_at DESC LIMIT 5;
+"
 ```

@@ -5,15 +5,14 @@ Insere N nouvelles activites aleatoires dans raw.activites_strava SANS tronquer
 la table, simulant ainsi un flux Strava temps reel entre deux executions du pipeline.
 La colonne inserted_at est renseignee automatiquement via DEFAULT NOW().
 
-Une fois les lignes inserees, met a jour le watermark dans meta.pipeline_state
-pour que check_changes.py puisse detecter les nouveaux enregistrements lors
-du prochain cycle.
+NE MET PAS A JOUR le watermark — c'est le flow Kestra qui le fait apres avoir
+traite les donnees (dans la tache update_strava_watermark).
 
 Variables d'environnement requises :
   POSTGRES_HOST, POSTGRES_PORT, POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
 
 Variable optionnelle :
-  NB_ACTIVITES : nombre d'activites a inserer (defaut : 5)
+  NB_ACTIVITES : nombre d'activites a inserer (defaut : aleatoire entre 1 et 10)
 """
 
 import os
@@ -53,13 +52,7 @@ WHERE e.id_salarie = %s
   AND e.actif = TRUE;
 """
 
-UPDATE_WATERMARK = """
-INSERT INTO meta.pipeline_state (file_name, watermark, updated_at)
-VALUES ('_strava_watermark', NOW(), NOW())
-ON CONFLICT (file_name) DO UPDATE SET
-    watermark  = NOW(),
-    updated_at = NOW();
-"""
+
 
 # ---------------------------------------------------------------------------
 # Simulation
@@ -99,8 +92,6 @@ def simulate(nb_activites: int = 5) -> int:
             if cursor.rowcount > 0:
                 inserted += 1
 
-        # Mise a jour watermark
-        cursor.execute(UPDATE_WATERMARK)
         conn.commit()
         print(f"[simulate] {inserted}/{nb_activites} activites inserees.")
         return inserted
@@ -118,7 +109,7 @@ def simulate(nb_activites: int = 5) -> int:
 # ---------------------------------------------------------------------------
 
 def main():
-    nb = int(os.environ.get("NB_ACTIVITES", 5))
+    nb = int(os.environ.get("NB_ACTIVITES", random.randint(1, 10)))
     simulate(nb)
 
 
