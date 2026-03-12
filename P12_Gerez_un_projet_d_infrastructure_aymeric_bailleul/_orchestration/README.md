@@ -108,7 +108,7 @@ Lance 3 services :
 - **postgres** (port 5433) — base `sport_data` + base interne `kestra`
 - **kestra** (port 9000) — orchestrateur, attend que postgres soit healthy  
   Authentification via `basicAuth` : identifiants déclarés dans `KESTRA_EMAIL` / `KESTRA_PASSWORD` du `.env`, copiés dans la config YAML de Kestra au démarrage — **aucun état en base requis**, fonctionne dès les volumes vides.
-- **dbt-docs** (port 8082) — nginx servant la documentation dbt statique, mise à jour à chaque exécution du flow
+- **dbt-docs** (port 4080) — nginx servant la documentation dbt statique, mise à jour à chaque exécution du flow
 - **kestra-setup** — service éphémère qui, au démarrage :
   1. Attend que l'endpoint `/health` de Kestra réponde `UP`
   2. Boucle jusqu'à ce que l'authentification soit opérationnelle
@@ -176,7 +176,9 @@ check_changes.py
     ├── rh_changed = True      →  reload_rh.py
     ├── sport_changed = True   →  reload_sport.py
     └── should_run = True      →  dbt run  (PASS=4)
-                               →  dbt test (PASS=36)                               →  dbt docs generate  (http://localhost:8082)                               →  notify_slack_activities   (1 msg/activité → webhook 1)
+                               →  dbt test (PASS=36)
+                               →  dbt docs generate  (http://localhost:4080)
+                               →  notify_slack_activities   (1 msg/activité → webhook 1)
                                →  update_strava_watermark
                                →  meta.pipeline_runs (INSERT résultat)
                                →  Slack #sport-avantages (webhook 2)

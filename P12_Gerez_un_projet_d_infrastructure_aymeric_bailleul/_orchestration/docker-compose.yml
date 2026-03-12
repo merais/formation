@@ -28,6 +28,18 @@ services:
       retries: 5
       start_period: 15s
 
+  # ─── Init : permissions du volume dbt_docs ─────────────────────────────────────
+  # Service ephemere qui s'assure que le volume partage dbt_docs est accessible
+  # en ecriture par l'utilisateur kestra (le volume Docker est cree root:root 755
+  # par defaut, ce qui bloque dbt docs generate). Se termine immedicement apres.
+  dbt-docs-perms:
+    image: alpine
+    container_name: sport_data_dbt_docs_perms
+    restart: "no"
+    volumes:
+      - dbt_docs:/data
+    command: chmod -R 777 /data
+
   # ─── Kestra ─────────────────────────────────────────────────────────────────
   # Image personnalisee (kestra.Dockerfile) : ajoute Python 3 + dbt-postgres.
   kestra:
@@ -41,6 +53,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      dbt-docs-perms:
+        condition: service_completed_successfully
     environment:
       # ── Configuration Kestra (YAML inline) ──────────────────────────────────
       KESTRA_CONFIGURATION: |
