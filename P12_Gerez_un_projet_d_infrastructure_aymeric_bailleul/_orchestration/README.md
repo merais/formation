@@ -74,7 +74,7 @@ _orchestration/
 
 - **Docker Desktop** (PostgreSQL + Kestra)
 - **Python 3.12** — venv à `C:\Users\aymer\.venvs\orchestration`
-- Fichiers XLSX sources dans le dossier indiqué par `XLSX_DIR` dans `.env`
+- Fichiers XLSX sources dans `data/RAW/` (inclus dans `_orchestration`) — chemin configurable via `XLSX_DIR` dans `.env`
 
 > **Images locales** : les images `sport_data_kestra:local` et `sport_data_postgres:local` ne sont pas sur Docker Hub. Elles doivent être construites localement via `docker compose build` avant tout `docker compose up -d` (premier démarrage ou après suppression des images).
 
@@ -86,7 +86,7 @@ _orchestration/
 
 ```powershell
 Copy-Item .env.example .env
-# Editer .env : adapter XLSX_DIR si nécessaire
+# XLSX_DIR pointe par defaut vers _orchestration/data/RAW — adapter uniquement si les fichiers XLSX sont ailleurs
 ```
 
 ### 2. Construction des images (premier démarrage ou après reset complet)
