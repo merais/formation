@@ -91,7 +91,7 @@ def insert_eligibilite_bien_etre(cursor):
 
     # Compter les activites par salarie depuis staging.activites_strava
     cursor.execute("""
-        SELECT e.id_salarie, e.departement, COUNT(a.id_activite) AS nb_activites
+        SELECT e.id_salarie, e.departement, COUNT(*) AS nb_activites
         FROM staging.employes e
         LEFT JOIN staging.activites_strava a ON e.id_salarie = a.id_salarie
         GROUP BY e.id_salarie, e.departement

@@ -22,6 +22,7 @@ RUN python3 -m venv /opt/venv \
         openpyxl \
         python-dotenv \
         kestra \
+        requests \
         dbt-postgres==1.10.0
 
 # Rendre le venv accessible a tous les utilisateurs

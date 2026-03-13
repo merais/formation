@@ -37,6 +37,7 @@ _orchestration/
 │   ├── check_changes.py              # Détection changements XLSX + watermark Strava
 │   ├── reload_rh.py                  # Re-ingestion RH (UPSERT + soft-delete)
 │   ├── reload_sport.py               # Re-ingestion sport (UPSERT + delete-absent)
+│   ├── recalculate_distances.py      # Mise à jour staging.cache_distances via Google Maps API
 │   ├── simulate_new_activities.py    # Ajout incrémental d'activités Strava
 │   └── notify_slack_activities.py    # Notifications Slack par activité (message aléatoire)
 │
@@ -159,8 +160,14 @@ Ce script :
 |---|---|---|
 | Kestra UI | [http://localhost:9000](http://localhost:9000) | Orchestrateur — flows, exécutions, logs |
 | dbt Docs | [http://localhost:4080](http://localhost:4080) | Documentation dbt — catalog, lineage graph, tests |
+| Power BI | connexion PostgreSQL port 5433 | Dashboard RH + sport (role `analytics`, password dans `.env`) |
 
 Connexion Kestra : email et mot de passe définis dans `KESTRA_EMAIL` / `KESTRA_PASSWORD` du `.env`.
+
+Connexion Power BI :
+- Serveur : `localhost`, Port : `5433`, Base : `sport_data`
+- Utilisateur : `role_analytics` (lecture seule sur `gold.*` + `staging.*`)
+- Mode : **DirectQuery** (données toujours à jour sans import)
 
 Le flow `sport_data / sport_data_pipeline` est déjà importé et actif. Deux modes de déclenchement :
 - **Manuel** : bouton "Execute" dans l'UI
@@ -176,7 +183,8 @@ Le flow `sport_data / sport_data_pipeline` est déjà importé et actif. Deux mo
 check_changes.py
     ├── rh_changed = True      →  reload_rh.py
     ├── sport_changed = True   →  reload_sport.py
-    └── should_run = True      →  dbt run  (PASS=4)
+    └── should_run = True      →  recalculate_distances.py  (Google Maps → staging.cache_distances)
+                               →  dbt run  (PASS=4)
                                →  dbt test (PASS=36)
                                →  dbt docs generate  (http://localhost:4080)
                                →  notify_slack_activities   (1 msg/activité → webhook 1)
@@ -237,9 +245,11 @@ Le mot de passe PostgreSQL est injecté via le mécanisme secret de Kestra (tout
 ```yaml
 # docker-compose.yml — variable d'environnement du container kestra
 SECRET_POSTGRES_PASSWORD: cG9zdGdyZXM=   # base64('postgres')
+SECRET_GOOGLE_MAPS_API_KEY: QUl6YVN5QzBwR1NUX1Rjd1pFck5WOUtMZUZlVC13QnBHMU51elNz  # base64(clé API)
 
 # Utilisation dans le flow
 password: "{{ secret('POSTGRES_PASSWORD') }}"
+GOOGLE_MAPS_API_KEY: "{{ secret('GOOGLE_MAPS_API_KEY') }}"
 ```
 
 ### Connexion PostgreSQL mutualisée (`pluginDefaults`)

@@ -338,9 +338,18 @@ _orchestration/
   - [X] `dbt_run` : exécution des modèles dbt (staging + gold)
   - [X] `dbt_test` : tests dbt génériques
   - [X] `dbt_docs_generate` : génération de la doc dbt dans le volume partagé
+  - [X] `recalculate_distances` : calcul/mise à jour de `staging.cache_distances` via Google Maps API (avant dbt)
   - [X] `notify_slack_activities` : messages nominatifs par activité (webhook 1)
   - [X] `update_strava_watermark` / `update_watermark` : mise à jour du watermark pipeline
   - [X] `notify_slack_success` / `notify_slack_failure` : compte-rendu pipeline (webhook 2)
+- [X] Écrire `scripts/recalculate_distances.py` :
+  - [X] Script standalone (sans import `src/`) exécuté par Kestra avant `dbt run`
+  - [X] Connexion PostgreSQL via variables d'environnement (POSTGRES_HOST/PORT/DB/USER/PASSWORD)
+  - [X] Crée `staging.cache_distances` si elle n'existe pas (`CREATE TABLE IF NOT EXISTS`)
+  - [X] Ne calcule que les adresses absentes du cache (optimisation : évite les appels API redondants)
+  - [X] Appel Google Maps Distance Matrix → fallback haversine si échec ou clé absente
+  - [X] Sauvegarde en cache avec `ON CONFLICT DO UPDATE`
+  - [X] Secret `GOOGLE_MAPS_API_KEY` injecté via mécanisme Kestra (`SECRET_GOOGLE_MAPS_API_KEY` base64 dans docker-compose)
 - [X] Écrire `scripts/notify_slack_activities.py` :
   - [X] Lecture des nouvelles activités depuis `raw.activites_strava` (filtre sur `inserted_at > watermark`)
   - [X] JOIN `rh_prive.identites` pour nom/prénom nominatifs (connexion superuser)
@@ -356,16 +365,22 @@ _orchestration/
 
 ### Phase 9 – Dashboard PowerBI
 
-- [ ] Connecter PowerBI à PostgreSQL (connecteur natif, mode DirectQuery pour le temps réel)
-- [ ] Créer les visuels :
-  - [ ] Nombre de salariés éligibles à la prime / au bien-être
-  - [ ] Montant total des primes par département
-  - [ ] Impact financier global
-  - [ ] Répartition des types de sport pratiqués
-  - [ ] Nombre d'activités par mois (historique 12 mois)
-  - [ ] Liste des salariés avec anomalie de déclaration de distance
-- [ ] Implémenter le rafraîchissement : permettre le recalcul si les taux changent
-- [ ] Exporter le rapport `.pbix`
+- [X] Connecter PowerBI à PostgreSQL (connecteur natif Npgsql, port 5433, mode DirectQuery)
+- [X] Créer les visuels :
+  - [X] KPIs Interne publics :
+    - [X] Camembert sportifs / non-sportifs (59 % / 41 %)
+    - [X] Top 10 sports déclarés (histogramme horizontal)
+    - [X] Top 5 sportifs (classement par nb activités)
+    - [X] Taux de participation aux activités (3 derniers mois via données Strava)
+    - [X] Carte des salariés (adresse domicile → ville/département, sport pratiqué, nb activités)
+  - [X] KPIs RH :
+      - [X] Type de mobilité (histogramme : nb salariés par mode de transport)
+      - [X] Table salariés avec distance domicile-bureau + temps de trajet estimé
+      - [X] Total jours bien-être gagnés (carte KPI)
+      - [X] Nb salariés éligibles bien-être (carte KPI)
+      - [X] Prime moyenne par salarié éligible (carte KPI)
+      - [X] Total primes sport (carte KPI)
+- [X] Exporter le rapport `.pbix`
 
 ---
 
@@ -411,3 +426,6 @@ _orchestration/
 | 12/03/2026 | Génération docs dbt dans le flow (`dbt_docs_generate` après `dbt_test`) + service nginx `dbt-docs` port 4080, volume partagé `sport_data_dbt_docs`. Flow révision 5 |
 | 12/03/2026 | Fix permissions volume `dbt_docs` : service init `dbt-docs-perms` (alpine, `chmod -R 777`) ajouté au `docker-compose.yml`, kestra en dépend. Correction port 8082 → 4080 dans README |
 | 13/03/2026 | `data/RAW/` déplacé de `_projet/data/RAW` vers `_orchestration/data/RAW` — `_orchestration` devient autosuffisant. `.env`, `.env.example`, `README.md` mis à jour |
+| 13/03/2026 | Intégration Google Maps API dans le flow Kestra : `scripts/recalculate_distances.py` créé (script standalone, cache `staging.cache_distances`, fallback haversine). `kestra.Dockerfile` : ajout de `requests`. `docker-compose.yml` : ajout `SECRET_GOOGLE_MAPS_API_KEY` (base64) + logique POST→PUT pour import flow idempotent. Flow `sport_data_pipeline.yml` : nouvelle étape `recalculate_distances` avant `dbt_run`. Révision 2. |
+| 13/03/2026 | Dashboard PowerBI : connexion PostgreSQL (Npgsql, port 5433, role_analytics), visuels créés (camembert sportifs/non-sportifs, top 10 sports, top 5 sportifs avec trophées, carte, KPIs RH, taux participation, impact financier). Requêtes SQL DirectQuery sur gold.* + staging.* |
+| 13/03/2026 | KPIs RH enrichis : table salariés avec distance + temps de trajet estimé (vitesses par mode de transport), histogramme type de mobilité, cartes KPI bien-être (total jours, nb éligibles), cartes KPI primes (prime moy., total primes). Requêtes SQL sur `staging.cache_distances`, `gold.eligibilite_bien_etre`, `gold.eligibilite_prime` |

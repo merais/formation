@@ -110,6 +110,23 @@ tasks:
     description: "Lance dbt uniquement si des donnees ont change"
     condition: "{{ outputs.check_changes.vars.should_run }}"
     then:
+      # ──────────────────────────────────────────────────────────────────────
+      # Etape 4a : Mise a jour du cache de distances (Google Maps API)
+      # ──────────────────────────────────────────────────────────────────────
+      - id: recalculate_distances
+        type: io.kestra.plugin.scripts.python.Commands
+        description: "Calcul distances domicile-bureau via Google Maps → staging.cache_distances (cache : seules les nouvelles adresses sont calculees)"
+        commands:
+          - python /opt/scripts/recalculate_distances.py
+        env:
+          POSTGRES_HOST: "{{ vars.postgres_host }}"
+          POSTGRES_PORT: "{{ vars.postgres_port }}"
+          POSTGRES_DB: "{{ vars.postgres_db }}"
+          POSTGRES_USER: "{{ vars.postgres_user }}"
+          POSTGRES_PASSWORD: "{{ secret('POSTGRES_PASSWORD') }}"
+          GOOGLE_MAPS_API_KEY: "{{ secret('GOOGLE_MAPS_API_KEY') }}"
+          ENTREPRISE_ADRESSE: "1362 Av. des Platanes, 34970 Lattes"
+
       - id: dbt_run
         type: io.kestra.plugin.scripts.shell.Commands
         description: "dbt run : recalcul de staging.activites_strava + tables gold"

@@ -113,6 +113,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       # Secrets Kestra (base64) — accessibles via {{ secret('...') }} dans les flows
       SECRET_POSTGRES_PASSWORD: cG9zdGdyZXM=
+      SECRET_GOOGLE_MAPS_API_KEY: QUl6YVN5QzBwR1NUX1Rjd1pFck5WOUtMZUZlVC13QnBHMU51elNz
       SECRET_SLACK_WEBHOOK: ${SLACK_WEBHOOK_B64}
       SECRET_SLACK_WEBHOOK_INFO: ${SLACK_WEBHOOK_INFO_B64}
       KESTRA_EMAIL: ${KESTRA_EMAIL}
@@ -191,9 +192,23 @@ services:
         -X POST http://kestra:8080/api/v1/flows
         -H 'Content-Type: application/x-yaml'
         --data-binary @/opt/flows/sport_data_pipeline.yml) &&
-        echo "Reponse API: $$result" &&
+        echo "Reponse API (POST): $$result" &&
         if [ "$$result" = "200" ] || [ "$$result" = "201" ]; then
-          echo 'Flow sport_data_pipeline importe avec succes.';
+          echo 'Flow sport_data_pipeline cree avec succes.';
+        elif [ "$$result" = "422" ]; then
+          echo 'Flow existant - mise a jour via PUT...' &&
+          result_put=$$(curl -s -o /dev/null -w "%{http_code}"
+          --max-time 30
+          -u "$$KESTRA_EMAIL:$$KESTRA_PASSWORD"
+          -X PUT http://kestra:8080/api/v1/flows/sport_data/sport_data_pipeline
+          -H 'Content-Type: application/x-yaml'
+          --data-binary @/opt/flows/sport_data_pipeline.yml) &&
+          echo "Reponse API (PUT): $$result_put" &&
+          if [ "$$result_put" = "200" ]; then
+            echo 'Flow sport_data_pipeline mis a jour avec succes.';
+          else
+            echo "ATTENTION: Mise a jour flow echouee (HTTP $$result_put)";
+          fi;
         else
           echo "ATTENTION: Import flow echoue (HTTP $$result)";
         fi &&
