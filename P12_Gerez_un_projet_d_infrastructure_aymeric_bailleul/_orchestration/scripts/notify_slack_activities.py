@@ -35,84 +35,84 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 
 TEMPLATES: dict[str, list[str]] = {
     "Running": [
-        "Bravo {prenom} ! Tu viens de courir {distance_km} km en {duree_min} min ! Quelle energie !",
+        "Bravo {prenom} {nom} ! Tu viens de courir {distance_km} km en {duree_min} min ! Quelle energie !",
         "Superbe course {prenom} {nom} ! {distance_km} km parcourus en {duree_min} min !",
         "Bien joue {prenom} ! Encore {distance_km} km de running aujourd'hui, impressionnant !",
     ],
     "Randonnée": [
-        "Magnifique {prenom} ! Une randonnee de {distance_km} km terminee en {duree_min} min !",
+        "Magnifique {prenom} {nom} ! Une randonnee de {distance_km} km terminee en {duree_min} min !",
         "Bravo {prenom} {nom} ! {distance_km} km en pleine nature, quelle aventure !",
-        "Quelle balade {prenom} ! {distance_km} km de randonnee en {duree_min} min, chapeau !",
+        "Quelle balade {prenom} {nom} ! {distance_km} km de randonnee en {duree_min} min, chapeau !",
     ],
     "Tennis": [
-        "Ace {prenom} ! Seance de tennis de {duree_min} min validee, bravo !",
+        "Ace {prenom} {nom} ! Seance de tennis de {duree_min} min validee, bravo !",
         "Belle smash {prenom} {nom} ! {duree_min} min sur le court, continue !",
-        "Bravo {prenom} ! {duree_min} min de tennis aujourd'hui, super seance !",
+        "Bravo {prenom} {nom} ! {duree_min} min de tennis aujourd'hui, super seance !",
     ],
     "Natation": [
-        "Splendide {prenom} ! {distance_km} km en natation en {duree_min} min, magnifique !",
+        "Splendide {prenom} {nom} ! {distance_km} km en natation en {duree_min} min, magnifique !",
         "Bravo {prenom} {nom} ! Belle seance de natation : {distance_km} km nages !",
-        "Aquatique {prenom} ! {distance_km} km dans l'eau en {duree_min} min, superbe !",
+        "Aquatique {prenom} {nom} ! {distance_km} km dans l'eau en {duree_min} min, superbe !",
     ],
     "Football": [
-        "But {prenom} ! Match de foot : {distance_km} km parcourus en {duree_min} min !",
+        "But {prenom} {nom} ! Match de foot : {distance_km} km parcourus en {duree_min} min !",
         "Bravo {prenom} {nom} ! Quelle seance de football, {distance_km} km sur le terrain !",
-        "En forme {prenom} ! {duree_min} min de football, chapeau !",
+        "En forme {prenom} {nom} ! {duree_min} min de football, chapeau !",
     ],
     "Rugby": [
-        "Essai transforme {prenom} ! {distance_km} km sur le terrain en {duree_min} min !",
+        "Essai transforme {prenom} {nom} ! {distance_km} km sur le terrain en {duree_min} min !",
         "Bravo {prenom} {nom} ! Solide seance de rugby de {duree_min} min !",
-        "Plaquage parfait {prenom} ! {distance_km} km de rugby, formidable !",
+        "Plaquage parfait {prenom} {nom} ! {distance_km} km de rugby, formidable !",
     ],
     "Badminton": [
-        "Smash {prenom} ! Seance de badminton : {duree_min} min d'effort intense !",
+        "Smash {prenom} {nom} ! Seance de badminton : {duree_min} min d'effort intense !",
         "Bravo {prenom} {nom} ! {duree_min} min de badminton aujourd'hui !",
-        "Volant rapide {prenom} ! {duree_min} min sur le terrain, super !",
+        "Volant rapide {prenom} {nom} ! {duree_min} min sur le terrain, super !",
     ],
     "Voile": [
-        "Bon vent {prenom} ! {distance_km} km en voile, {duree_min} min sur l'eau !",
+        "Bon vent {prenom} {nom} ! {distance_km} km en voile, {duree_min} min sur l'eau !",
         "Bravo {prenom} {nom} ! Navigation de {distance_km} km terminee, chapeau marin !",
-        "Cap maintenu {prenom} ! {duree_min} min de voile et {distance_km} km parcourus !",
+        "Cap maintenu {prenom} {nom} ! {duree_min} min de voile et {distance_km} km parcourus !",
     ],
     "Boxe": [
-        "Uppercut {prenom} ! {duree_min} min de boxe intense, bravo !",
+        "Uppercut {prenom} {nom} ! {duree_min} min de boxe intense, bravo !",
         "Bravo {prenom} {nom} ! Seance de boxe de {duree_min} min validee, au top !",
-        "Sur le ring {prenom} ! {duree_min} min de boxe aujourd'hui, impressionnant !",
+        "Sur le ring {prenom} {nom} ! {duree_min} min de boxe aujourd'hui, impressionnant !",
     ],
     "Judo": [
-        "Ippon {prenom} ! {duree_min} min de judo au dojo, bravo !",
+        "Ippon {prenom} {nom} ! {duree_min} min de judo au dojo, bravo !",
         "Bravo {prenom} {nom} ! Belle seance de judo, {duree_min} min de pur effort !",
-        "Tatami {prenom} ! {duree_min} min de judo aujourd'hui, continue !",
+        "Tatami {prenom} {nom} ! {duree_min} min de judo aujourd'hui, continue !",
     ],
     "Escalade": [
-        "Sommet atteint {prenom} ! {duree_min} min de grimpe, magnifique !",
+        "Sommet atteint {prenom} {nom} ! {duree_min} min de grimpe, magnifique !",
         "Bravo {prenom} {nom} ! Seance d'escalade de {duree_min} min terminee !",
-        "En hauteur {prenom} ! {duree_min} min d'escalade, chapeau !",
+        "En hauteur {prenom} {nom} ! {duree_min} min d'escalade, chapeau !",
     ],
     "Triathlon": [
-        "Triple bravo {prenom} ! {distance_km} km de triathlon en {duree_min} min !",
+        "Triple bravo {prenom} {nom} ! {distance_km} km de triathlon en {duree_min} min !",
         "Incroyable {prenom} {nom} ! Triathlon de {distance_km} km boucle en {duree_min} min !",
-        "Titan {prenom} ! {distance_km} km de triathlon accomplis, quelle performance !",
+        "Titan {prenom} {nom} ! {distance_km} km de triathlon accomplis, quelle performance !",
     ],
     "Tennis de table": [
-        "Ping-pong champion {prenom} ! {duree_min} min de tennis de table, bravo !",
+        "Ping-pong champion {prenom} {nom} ! {duree_min} min de tennis de table, bravo !",
         "Bravo {prenom} {nom} ! {duree_min} min a la table de ping-pong, super seance !",
-        "Reflexes affutes {prenom} ! {duree_min} min de tennis de table !",
+        "Reflexes affutes {prenom} {nom} ! {duree_min} min de tennis de table !",
     ],
     "Équitation": [
-        "En selle {prenom} ! {distance_km} km a cheval en {duree_min} min, magnifique !",
+        "En selle {prenom} {nom} ! {distance_km} km a cheval en {duree_min} min, magnifique !",
         "Bravo {prenom} {nom} ! Belle seance d'equitation de {duree_min} min !",
-        "Galop {prenom} ! {distance_km} km d'equitation, bravo cavalier·e !",
+        "Galop {prenom} {nom} ! {distance_km} km d'equitation, bravo cavalier·e !",
     ],
     "Basketball": [
-        "Panier {prenom} ! {duree_min} min de basketball, quelle energie !",
+        "Panier {prenom} {nom} ! {duree_min} min de basketball, quelle energie !",
         "Bravo {prenom} {nom} ! {duree_min} min sur le parquet, super seance !",
-        "Dunk {prenom} ! {distance_km} km parcourus sur le terrain en {duree_min} min !",
+        "Dunk {prenom} {nom} ! {distance_km} km parcourus sur le terrain en {duree_min} min !",
     ],
 }
 
 TEMPLATE_DEFAUT = [
-    "Bravo {prenom} ! Seance de {sport} terminee : {duree_min} min d'effort !",
+    "Bravo {prenom} {nom} ! Seance de {sport} terminee : {duree_min} min d'effort !",
     "Bien joue {prenom} {nom} ! {duree_min} min de {sport} aujourd'hui !",
 ]
 

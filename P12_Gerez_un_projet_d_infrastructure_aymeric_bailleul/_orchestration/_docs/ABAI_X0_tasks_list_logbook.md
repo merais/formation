@@ -13,9 +13,10 @@
 | Base de données | PostgreSQL via Docker | Simule un vrai environnement de production |
 | Contrôle des accès | Rôles PostgreSQL (role_pipeline, role_analytics, role_rh_admin) | Principe du moindre privilège, conformité RGPD |
 | Calcul des distances | Google Maps API (+ fallback haversine si clé absente) | Distances routières réelles, plus précis pour la règle métier |
-| Notifications | Mock Slack (log JSON local, messages nominatifs) | Pas de dépendance externe, suffisant pour le POC |
-| Tests de qualité | pytest | Déjà maîtrisé, cohérent avec les projets précédents |
-| Orchestration | Scripts Python séquentiels | Suffisant pour un POC, lisible en soutenance |
+| Notifications Slack | Webhooks HTTP réels (deux canaux : activités + compte-rendu pipeline) | Répond à l'exigence de Juliette (publication automatique dans le channel Slack) |
+| Tests de qualité | pytest (51 tests) + tests génériques dbt | Couverture DB et transformations SQL, cohérent avec les projets précédents |
+| Transformations SQL | dbt (staging + gold) | Transformations versionnées et documentées, tests intégrés |
+| Orchestration & monitoring | Kestra (UI web, logs, historique d'exécutions) | Orchestre le pipeline de bout en bout, répond au §3.5 de la note de cadrage |
 | Visualisation | PowerBI | Requis par Juliette, connexion PostgreSQL |
 
 ---
@@ -29,7 +30,7 @@
 
 ### Données sportives (`data/RAW/Données+Sportive.xlsx`)
 
-- 1 000 lignes
+- 161 lignes (un enregistrement par salarié)
 - Colonnes : `ID salarié`, `Pratique d'un sport`
 
 ---
@@ -107,48 +108,77 @@ PowerBI (connexion role_analytics → gold uniquement)
 
 ---
 
-## Structure cible du projet
+## Structure du projet
+
+### `_projet/` — POC initial (pipeline Python)
 
 ```
 _projet/
+├── src/
+│   ├── config.py
+│   ├── db/{init_db.py, connexion.py}
+│   ├── ingestion/{load_rh.py, load_sport.py}
+│   ├── simulation/generate_strava.py
+│   ├── transformation/{staging.py, distances.py, gold.py}
+│   ├── notifications/mock_slack.py      # Export JSON local (Phases 1-7)
+│   └── main.py
+├── tests/{conftest.py, test_*.py}       # 51 tests pytest
+├── .env.example
+├── pyproject.toml
+└── README.md
+```
+
+### `_orchestration/` — Couche orchestration Kestra + dbt (Phase 8)
+
+```
+_orchestration/
 ├── _docs/
 │   ├── ABAI_X0_tasks_list_logbook.md   # Ce fichier
-│   ├── ABAI_X1_note_cadrage.md
-│   └── ABAI_X2_contexte.md
-├── analyses/                            # Analyses exploratoires
+│   ├── ABAI_X1_contexte.md
+│   └── ABAI_X2_note_cadrage.md
+├── analyses/
+│   └── ABAI_P12_analyse_exploratoire_data.ipynb
 ├── data/
-│   ├── RAW/                             # Fichiers sources (ne pas modifier)
-│   └── exports/                         # Exports PowerBI / rapports
+│   └── RAW/                             # Données+RH.xlsx, Données+Sportive.xlsx (gitignorés)
+├── dbt/
+│   ├── profiles.yml                     # Profil de connexion dbt (pointe vers PostgreSQL)
+│   └── sport_data/                      # Projet dbt
+│       ├── dbt_project.yml
+│       ├── macros/
+│       │   └── generate_schema_name.sql # Override du schéma cible
+│       └── models/
+│           ├── sources.yml              # Déclaration des sources (raw + staging)
+│           ├── staging/
+│           │   ├── schema.yml           # Tests + documentation modèles staging
+│           │   └── stg_activites_strava.sql
+│           └── gold/
+│               ├── schema.yml           # Tests + documentation modèles gold
+│               ├── eligibilite_prime.sql
+│               ├── eligibilite_bien_etre.sql
+│               └── impact_financier.sql
+├── flows/
+│   └── sport_data_pipeline.yml          # Flow Kestra (révision 5, 8 tâches)
+├── scripts/                             # Scripts Python exécutés par Kestra
+│   ├── check_changes.py                 # Détection nouvelles activités (watermark)
+│   ├── reload_rh.py                     # Réingestion conditionnelle XLSX RH
+│   ├── reload_sport.py                  # Réingestion conditionnelle XLSX Sport
+│   ├── notify_slack_activities.py       # Envoi HTTP Slack nominatif par activité
+│   └── simulate_new_activities.py       # Injection manuelle d'activités Strava (dev)
 ├── src/
-│   ├── config.py                        # Paramètres centraux (chemins, constantes métier)
-│   ├── db/
-│   │   ├── init_db.py                   # Création des schémas, tables et rôles PostgreSQL
-│   │   └── connexion.py                 # Gestion de la connexion (psycopg2 + .env, multi-rôles)
-│   ├── ingestion/
-│   │   ├── load_rh.py                   # XLSX RH → rh_prive.identites + staging.employes
-│   │   └── load_sport.py                # XLSX Sportif → staging.pratiques_declarees
-│   ├── simulation/
-│   │   └── generate_strava.py           # Génération des activités Strava simulées (12 mois)
-│   ├── transformation/
-│   │   ├── staging.py                   # Nettoyage et typage (raw → staging)
-│   │   ├── distances.py                 # Calcul distances via Google Maps API + fallback haversine
-│   │   └── gold.py                      # Calcul des éligibilités et de l'impact financier
-│   ├── notifications/
-│   │   └── mock_slack.py                # Notifications Slack nominatives (Prénom + Nom, JSON)
-│   └── main.py                          # Point d'entrée : exécute le pipeline complet
+│   ├── db/{init_db.py, connexion.py}
+│   ├── ingestion/{load_rh.py, load_sport.py}
+│   ├── simulation/generate_strava.py
+│   └── transformation/{staging.py, distances.py, gold.py}
 ├── tests/
-│   ├── conftest.py                      # Fixtures pytest (connexion DB, données de test)
-│   ├── test_distances.py                # Tests de la règle de distance domicile-bureau
-│   ├── test_simulation.py               # Tests de cohérence des données Strava simulées
-│   ├── test_staging.py                  # Tests de qualité des données staging
-│   ├── test_gold.py                     # Tests de cohérence des calculs métier
-│   └── test_rh_prive.py                 # Tests schéma rh_prive, droits et vue nominative
-├── docker/
-│   └── docker-compose.yml               # PostgreSQL + (optionnel) pgAdmin
-├── .env.example                         # Modèle de variables d'environnement
+├── docker-compose.yml                   # 5 services : postgres, kestra, kestra-setup, dbt-docs-perms, dbt-docs
+├── kestra.Dockerfile                    # Image Kestra custom (Python 3.12 + dbt-postgres)
+├── postgres.Dockerfile                  # Image PostgreSQL custom (init + extensions)
+├── init-db.sql                          # Script SQL d'initialisation (schémas, rôles, tables)
+├── main.py                              # Point d'entrée local (équivalent de _projet/src/main.py)
+├── init.ps1                             # Réinitialisation complète en une commande
+├── .env.example
 ├── .gitignore
 ├── pyproject.toml
-├── uv.lock
 └── README.md
 ```
 
@@ -287,21 +317,40 @@ _projet/
 
 ---
 
-### Phase 8 – Streaming temps réel (Redpanda)
+### Phase 8 – Orchestration (Kestra + dbt)
 
-- [ ] Ajouter Redpanda au `docker-compose.yml` (image `redpandadata/redpanda`, ports 9092/8081/8082)
-- [ ] Ajouter la dépendance `confluent-kafka` au projet (`pyproject.toml`)
-- [ ] Créer le topic Kafka `strava.activities` dans Redpanda
-- [ ] Écrire `src/streaming/producer.py` :
-  - [ ] Script CLI pour injecter une nouvelle activité Strava à la demande
-  - [ ] Saisie interactive ou paramètres CLI (`--id-salarie`, `--sport`, `--distance`, `--duree`)
-  - [ ] Publication du message JSON sur le topic `strava.activities`
-- [ ] Écrire `src/streaming/consumer.py` :
-  - [ ] Boucle d'écoute sur le topic `strava.activities`
-  - [ ] Insertion en temps réel dans `raw.activites_strava`
-  - [ ] Propagation automatique vers `staging.activites_strava` (nettoyage)
-  - [ ] Recalcul incrémental des tables `gold.*` (éligibilité + impact financier)
-- [ ] Tester le flux de bout en bout (producer → Redpanda → consumer → PostgreSQL → PowerBI refresh)
+- [X] Restructurer le projet : dossier `_orchestration/` séparé de `_projet/`, chacun autosuffisant
+- [X] Créer le projet dbt `dbt/sport_data/` (modèles staging + gold + macros + tests + docs)
+  - [X] Sources déclarées : `raw.activites_strava`, `staging.employes`, `staging.pratiques_declarees`, `staging.cache_distances`
+  - [X] Modèle staging : `stg_activites_strava` (filtre types invalides, salariés inactifs, dates hors période)
+  - [X] Modèles gold : `eligibilite_prime`, `eligibilite_bien_etre`, `impact_financier`
+  - [X] Tests génériques dbt (not_null, unique, accepted_values) + documentation YAML
+- [X] Écrire `kestra.Dockerfile` (extend `kestra:latest`, ajout Python 3.12, dbt-postgres, dépendances pip)
+- [X] Créer `docker-compose.yml` multi-services :
+  - [X] `postgres` (port 5433, image custom `sport_data_postgres:local`)
+  - [X] `kestra` (port 9000, image custom `sport_data_kestra:local`)
+  - [X] `kestra-setup` (import automatique du flow + création des secrets Kestra via API)
+  - [X] `dbt-docs-perms` (alpine, `chmod -R 777` sur volume `sport_data_dbt_docs` — service init)
+  - [X] `dbt-docs` (nginx:alpine, port 4080, sert la documentation dbt générée)
+- [X] Écrire le flow Kestra `flows/sport_data_pipeline.yml` (révision 5) :
+  - [X] `check_changes` : détecte les nouvelles activités Strava via watermark
+  - [X] `reload_rh` / `reload_sport` : réingestion conditionnelle si modifications détectées
+  - [X] `dbt_run` : exécution des modèles dbt (staging + gold)
+  - [X] `dbt_test` : tests dbt génériques
+  - [X] `dbt_docs_generate` : génération de la doc dbt dans le volume partagé
+  - [X] `notify_slack_activities` : messages nominatifs par activité (webhook 1)
+  - [X] `update_strava_watermark` / `update_watermark` : mise à jour du watermark pipeline
+  - [X] `notify_slack_success` / `notify_slack_failure` : compte-rendu pipeline (webhook 2)
+- [X] Écrire `scripts/notify_slack_activities.py` :
+  - [X] Lecture des nouvelles activités depuis `raw.activites_strava` (filtre sur `inserted_at > watermark`)
+  - [X] JOIN `rh_prive.identites` pour nom/prénom nominatifs (connexion superuser)
+  - [X] 15 sports × 2-3 templates (~35 messages distincts), envoi HTTP POST par activité
+- [X] Écrire `scripts/simulate_new_activities.py` : injection manuelle d'activités Strava, chargement `.env` via python-dotenv
+- [X] Écrire `init.ps1` : réinitialisation complète en une commande (reset DB, import flow, dbt seed)
+- [X] Configurer deux webhooks Slack :
+  - [X] `SLACK_WEBHOOK` → messages nominatifs par activité (`notify_slack_activities.py`)
+  - [X] `SLACK_WEBHOOK_INFO` → compte-rendu pipeline (`notify_slack_success/failure` dans le flow)
+- [X] Déplacer `data/RAW/` dans `_orchestration/` : projet autosuffisant, chemins `.env` / `.env.example` / `README.md` mis à jour
 
 ---
 
@@ -353,3 +402,12 @@ _projet/
 | 04/03/2026 | Review code : corrections coquilles (3 commentaires trompeurs, 2 imports inutiles), ajout commentaires explicatifs sur 6 parties complexes (haversine, cascade distances, CTE gold, seuil 395j, génération dates/durées). 42 tests OK |
 | 04/03/2026 | Phase 7 terminée : `src/config.py` (constantes centralisées : chemins, seuils, taux, RGPD, sports). `src/main.py` (orchestrateur 7 étapes, CLI : `--reset`, `--seed`, `--step N`, `--dry-run`, `--skip-api`). Pipeline complet exécuté : 7/7 OK, 51 tests pytest OK |
 | 11/03/2026 | Implémentation schéma `rh_prive` + 3 rôles PostgreSQL (role_pipeline, role_analytics, role_rh_admin). `init_db.py` : création automatique des rôles et droits au `--reset`. `connexion.py` : support multi-rôles via paramètre `role=`. `load_rh.py` : insertion des identités dans rh_prive.identites avant anonymisation. `mock_slack.py` : messages nominatifs via jointure rh_prive (role_rh_admin). 51/51 tests OK |
+| 12/03/2026 | Projet dbt `sport_data` créé : modèles staging (3) + gold (3), sources YAML, macros, tests génériques (not_null, unique, accepted_values), documentation |
+| 12/03/2026 | Phase 8 – Orchestration terminée : `docker-compose.yml` (5 services : postgres, kestra, kestra-setup, dbt-docs-perms, dbt-docs), `kestra.Dockerfile` (Python 3.12 + dbt-postgres), flow `sport_data_pipeline.yml` (8 tâches). Pipeline orchestré de bout en bout dans Kestra |
+| 12/03/2026 | Fixes pipeline : colonnes `raw.activites_strava` corrigées dans `simulate_new_activities.py`, watermark géré par le flow (pas par le script), types sports alignés avec whitelist dbt, `docker-compose.yml` sans valeurs par défaut (erreur explicite si `.env` manquant) |
+| 12/03/2026 | `simulate_new_activities.py` : chargement automatique de `.env` via python-dotenv |
+| 12/03/2026 | Notifications Slack réelles : double webhook — webhook 1 (`SLACK_WEBHOOK`) → `scripts/notify_slack_activities.py` (messages nominatifs par activité, 15 sports × 2-3 templates, ~35 messages distincts) ; webhook 2 (`SLACK_WEBHOOK_INFO`) → `notify_slack_success/failure` dans le flow (compte-rendu pipeline). Flow révision 4 |
+| 12/03/2026 | Fix `notify_slack_activities` : JOIN corrigé (`staging.employes` → `rh_prive.identites`) pour récupérer nom/prénom réels |
+| 12/03/2026 | Génération docs dbt dans le flow (`dbt_docs_generate` après `dbt_test`) + service nginx `dbt-docs` port 4080, volume partagé `sport_data_dbt_docs`. Flow révision 5 |
+| 12/03/2026 | Fix permissions volume `dbt_docs` : service init `dbt-docs-perms` (alpine, `chmod -R 777`) ajouté au `docker-compose.yml`, kestra en dépend. Correction port 8082 → 4080 dans README |
+| 13/03/2026 | `data/RAW/` déplacé de `_projet/data/RAW` vers `_orchestration/data/RAW` — `_orchestration` devient autosuffisant. `.env`, `.env.example`, `README.md` mis à jour |

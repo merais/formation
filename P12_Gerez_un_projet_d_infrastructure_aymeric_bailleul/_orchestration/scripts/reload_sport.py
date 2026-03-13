@@ -46,13 +46,11 @@ def compute_file_hash(path: Path) -> str:
 
 UPSERT_SPORT = """
 INSERT INTO staging.pratiques_declarees
-    (id_salarie, activite_preferee, frequence_semaine, annee_depart)
+    (id_salarie, pratique_sport)
 VALUES
     %s
 ON CONFLICT (id_salarie) DO UPDATE SET
-    activite_preferee = EXCLUDED.activite_preferee,
-    frequence_semaine = EXCLUDED.frequence_semaine,
-    annee_depart      = EXCLUDED.annee_depart;
+    pratique_sport = EXCLUDED.pratique_sport;
 """
 
 DELETE_ABSENTS = """
@@ -76,12 +74,10 @@ def reload_sport(path: Path) -> dict:
     Retourne un dict avec rows, deleted, hash.
     """
     df = pd.read_excel(path)
-    df.columns = [c.strip().lower().replace(" ", "_") for c in df.columns]
-
-    df["id_salarie"] = df["id_salarie"].astype(str).str.strip()
-    df["activite_preferee"] = df["activite_preferee"].fillna("").astype(str).str.strip()
-    df["frequence_semaine"] = pd.to_numeric(df["frequence_semaine"], errors="coerce")
-    df["annee_depart"] = pd.to_numeric(df["annee_depart"], errors="coerce").astype("Int64")
+    df = df.rename(columns={"ID salarié": "id_salarie", "Pratique d'un sport": "pratique_sport"})
+    df["id_salarie"] = df["id_salarie"].astype(int)
+    df["pratique_sport"] = df["pratique_sport"].fillna("Non déclaré").astype(str).str.strip()
+    df["pratique_sport"] = df["pratique_sport"].replace({"Runing": "Running"})
 
     ids = list(df["id_salarie"].unique())
     file_hash = compute_file_hash(path)
@@ -92,10 +88,8 @@ def reload_sport(path: Path) -> dict:
     try:
         rows = [
             (
-                row["id_salarie"],
-                row["activite_preferee"],
-                row["frequence_semaine"],
-                row["annee_depart"],
+                int(row["id_salarie"]),
+                row["pratique_sport"],
             )
             for _, row in df.iterrows()
         ]

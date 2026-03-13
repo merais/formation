@@ -9,13 +9,13 @@ Ce répertoire est le projet final autonome : il contient sa propre stack Python
 
 ```
 _orchestration/
-├── docker-compose.yml          # PostgreSQL + Kestra
-├── kestra.Dockerfile           # Image Kestra enrichie (Python 3 + dbt-postgres)
-├── init-db.sql                 # Crée la base 'kestra' au premier démarrage
+├── docker-compose.yml          # 5 services : postgres, kestra, kestra-setup, dbt-docs-perms, dbt-docs
+├── kestra.Dockerfile           # Image Kestra enrichie (Python 3.12 + dbt-postgres)
+├── postgres.Dockerfile         # Image PostgreSQL custom (init-db.sql embarqué)
+├── init-db.sql                 # Crée la base 'kestra' au premier démarrage du conteneur
 ├── init.ps1                    # Script d'initialisation locale (hors Docker)
 ├── main.py                     # Pipeline Python complet (6 étapes)
 ├── pyproject.toml              # Dépendances du package Python
-├── .python-version             # Python 3.12
 ├── .env                        # Configuration locale (non commité)
 ├── .env.example                # Template de configuration
 │
@@ -73,8 +73,8 @@ _orchestration/
 ## Prérequis
 
 - **Docker Desktop** (PostgreSQL + Kestra)
-- **Python 3.12** — venv à `C:\Users\aymer\.venvs\orchestration`
-- Fichiers XLSX sources dans `data/RAW/` (inclus dans `_orchestration`) — chemin configurable via `XLSX_DIR` dans `.env`
+- **Python 3.12** — `uv sync` pour créer l'environnement virtuel local
+- Fichiers XLSX sources dans `data/RAW/` — chemin configurable via `XLSX_DIR` dans `.env`
 
 > **Images locales** : les images `sport_data_kestra:local` et `sport_data_postgres:local` ne sont pas sur Docker Hub. Elles doivent être construites localement via `docker compose build` avant tout `docker compose up -d` (premier démarrage ou après suppression des images).
 
@@ -104,10 +104,11 @@ Cette étape est **obligatoire** si les images n'existent pas (premier démarrag
 docker compose up -d
 ```
 
-Lance 3 services :
+Lance 5 services :
 - **postgres** (port 5433) — base `sport_data` + base interne `kestra`
 - **kestra** (port 9000) — orchestrateur, attend que postgres soit healthy  
   Authentification via `basicAuth` : identifiants déclarés dans `KESTRA_EMAIL` / `KESTRA_PASSWORD` du `.env`, copiés dans la config YAML de Kestra au démarrage — **aucun état en base requis**, fonctionne dès les volumes vides.
+- **dbt-docs-perms** — service init (alpine) : applique `chmod -R 777` sur le volume dbt avant que kestra ne démarre
 - **dbt-docs** (port 4080) — nginx servant la documentation dbt statique, mise à jour à chaque exécution du flow
 - **kestra-setup** — service éphémère qui, au démarrage :
   1. Attend que l'endpoint `/health` de Kestra réponde `UP`
@@ -165,7 +166,7 @@ Le flow `sport_data / sport_data_pipeline` est déjà importé et actif. Deux mo
 - **Manuel** : bouton "Execute" dans l'UI
 - **Automatique** : cron quotidien à 06h00
 
-> **dbt Docs** : la page est vide jusquà la première exécution du flow (qui génère les fichiers `catalog.json` et `manifest.json`).
+> **dbt Docs** : la page est vide jusqu'à la première exécution du flow (qui génère les fichiers `catalog.json` et `manifest.json`).
 
 ---
 
