@@ -160,6 +160,8 @@ Ce script :
 |---|---|---|
 | Kestra UI | [http://localhost:9000](http://localhost:9000) | Orchestrateur — flows, exécutions, logs |
 | dbt Docs | [http://localhost:4080](http://localhost:4080) | Documentation dbt — catalog, lineage graph, tests |
+| Slack | [https://app.slack.com/client/T0ALBHPTW04/C0ALM1X3VLZ?entry_point=default_oauth&teamClassificationType=social](https://app.slack.com/client/T0ALBHPTW04/C0ALM1X3VLZ?entry_point=default_oauth&teamClassificationType=social) | Slack - Canal infos flow |
+| Slack | [https://app.slack.com/client/T0ALBHPTW04/C0ALLT3QQC9?entry_point=default_oauth&teamClassificationType=social](https://app.slack.com/client/T0ALBHPTW04/C0ALLT3QQC9?entry_point=default_oauth&teamClassificationType=social) | Slack - Canal message |
 | Power BI | connexion PostgreSQL port 5433 | Dashboard RH + sport (role `analytics`, password dans `.env`) |
 
 Connexion Kestra : email et mot de passe définis dans `KESTRA_EMAIL` / `KESTRA_PASSWORD` du `.env`.
@@ -294,8 +296,8 @@ raw
 staging
 ├── employes                (id_salarie, departement, date_embauche, salaire_brut, type_contrat,
 │                            nb_jours_cp, adresse_domicile, moyen_deplacement, actif)
-├── pratiques_declarees     (id_salarie, activite_preferee, frequence_semaine, annee_depart)
-└── activites_strava        (vue dbt)
+├── pratiques_declarees     (id_salarie, pratique_sport)
+└── activites_strava        (table matérialisée par dbt)
 
 gold
 ├── eligibilite_prime       (dbt — filtre actif = true)

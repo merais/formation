@@ -47,26 +47,28 @@ def compute_file_hash(path: Path) -> str:
 
 UPSERT_EMPLOYES = """
 INSERT INTO staging.employes
-    (id_salarie, nom, prenom, poste, departement, salaire, date_embauche, actif)
+    (id_salarie, departement, date_embauche, salaire_brut,
+     type_contrat, nb_jours_cp, adresse_domicile, moyen_deplacement, actif)
 VALUES
     %s
 ON CONFLICT (id_salarie) DO UPDATE SET
-    nom           = EXCLUDED.nom,
-    prenom        = EXCLUDED.prenom,
-    poste         = EXCLUDED.poste,
-    departement   = EXCLUDED.departement,
-    salaire       = EXCLUDED.salaire,
-    date_embauche = EXCLUDED.date_embauche,
-    actif         = EXCLUDED.actif;
+    departement       = EXCLUDED.departement,
+    date_embauche     = EXCLUDED.date_embauche,
+    salaire_brut      = EXCLUDED.salaire_brut,
+    type_contrat      = EXCLUDED.type_contrat,
+    nb_jours_cp       = EXCLUDED.nb_jours_cp,
+    adresse_domicile  = EXCLUDED.adresse_domicile,
+    moyen_deplacement = EXCLUDED.moyen_deplacement,
+    actif             = EXCLUDED.actif;
 """
 
 UPSERT_IDENTITES = """
-INSERT INTO rh_prive.identites (id_salarie, email, telephone, adresse)
+INSERT INTO rh_prive.identites (id_salarie, nom, prenom, date_naissance)
 VALUES %s
 ON CONFLICT (id_salarie) DO UPDATE SET
-    email     = EXCLUDED.email,
-    telephone = EXCLUDED.telephone,
-    adresse   = EXCLUDED.adresse;
+    nom            = EXCLUDED.nom,
+    prenom         = EXCLUDED.prenom,
+    date_naissance = EXCLUDED.date_naissance;
 """
 
 SOFT_DELETE = """
@@ -91,33 +93,59 @@ def reload_rh(path: Path) -> dict:
     Retourne un dict avec inserts, updates, deactivated, hash.
     """
     df = pd.read_excel(path)
-    df.columns = [c.strip().lower().replace(" ", "_") for c in df.columns]
 
-    df["id_salarie"] = df["id_salarie"].astype(str).str.strip()
-    df["nom"] = df["nom"].astype(str).str.strip()
-    df["prenom"] = df["prenom"].astype(str).str.strip()
-    df["poste"] = df["poste"].fillna("").astype(str).str.strip()
-    df["departement"] = df["departement"].fillna("").astype(str).str.strip()
-    df["salaire"] = pd.to_numeric(df["salaire"], errors="coerce")
-    df["date_embauche"] = pd.to_datetime(df["date_embauche"], errors="coerce").dt.date
+    # --- Extraction des identités AVANT anonymisation ---
+    df_identites = df[["ID salarié", "Nom", "Prénom", "Date de naissance"]].copy()
+    df_identites = df_identites.rename(columns={
+        "ID salarié":        "id_salarie",
+        "Nom":               "nom",
+        "Prénom":            "prenom",
+        "Date de naissance": "date_naissance",
+    })
+    df_identites["id_salarie"] = df_identites["id_salarie"].astype(int)
+    df_identites["nom"] = df_identites["nom"].astype(str).str.strip()
+    df_identites["prenom"] = df_identites["prenom"].astype(str).str.strip()
+    df_identites["date_naissance"] = pd.to_datetime(df_identites["date_naissance"]).dt.date
 
-    ids = list(df["id_salarie"].unique())
+    # --- Anonymisation : suppression des colonnes personnelles ---
+    df = df.drop(columns=["Nom", "Prénom", "Date de naissance"])
+
+    # --- Renommage et nettoyage ---
+    df = df.rename(columns={
+        "ID salarié":              "id_salarie",
+        "BU":                      "departement",
+        "Date d'embauche":         "date_embauche",
+        "Salaire brut":            "salaire_brut",
+        "Type de contrat":         "type_contrat",
+        "Nombre de jours de CP":   "nb_jours_cp",
+        "Adresse du domicile":     "adresse_domicile",
+        "Moyen de déplacement":    "moyen_deplacement",
+    })
+    df["id_salarie"] = df["id_salarie"].astype(int)
+    df["date_embauche"] = pd.to_datetime(df["date_embauche"]).dt.date
+    df["salaire_brut"] = df["salaire_brut"].astype(float)
+    df["nb_jours_cp"] = df["nb_jours_cp"].astype(int)
+    for col in ["departement", "type_contrat", "adresse_domicile", "moyen_deplacement"]:
+        df[col] = df[col].astype(str).str.strip()
+
+    ids = [int(x) for x in df["id_salarie"].unique()]
     file_hash = compute_file_hash(path)
 
     conn = get_connection()
     cursor = conn.cursor()
 
     try:
-        # Employes
+        # Employes (anonymises)
         employes_rows = [
             (
-                row["id_salarie"],
-                row["nom"],
-                row["prenom"],
-                row["poste"],
+                int(row["id_salarie"]),
                 row["departement"],
-                row["salaire"],
                 row["date_embauche"],
+                float(row["salaire_brut"]),
+                row["type_contrat"],
+                int(row["nb_jours_cp"]),
+                row["adresse_domicile"],
+                row["moyen_deplacement"],
                 True,
             )
             for _, row in df.iterrows()
@@ -128,14 +156,23 @@ def reload_rh(path: Path) -> dict:
         cursor.execute(SOFT_DELETE, (ids,))
         deactivated = cursor.rowcount
 
-        # Identites (si colonnes presentes)
-        identite_cols = {"email", "telephone", "adresse"}
-        if identite_cols.issubset(set(df.columns)):
-            identite_rows = [
-                (row["id_salarie"], row.get("email"), row.get("telephone"), row.get("adresse"))
-                for _, row in df.iterrows()
-            ]
-            psycopg2.extras.execute_values(cursor, UPSERT_IDENTITES, identite_rows)
+        # Identites nominatives (rh_prive)
+        identite_rows = [
+            (
+                int(row["id_salarie"]),
+                row["nom"],
+                row["prenom"],
+                row["date_naissance"],
+            )
+            for _, row in df_identites.iterrows()
+        ]
+        psycopg2.extras.execute_values(cursor, UPSERT_IDENTITES, identite_rows)
+
+        # Suppression RGPD des identites des employes retires du XLSX
+        cursor.execute(
+            "DELETE FROM rh_prive.identites WHERE id_salarie != ALL(%s)",
+            (ids,)
+        )
 
         # Mise a jour watermark
         cursor.execute(UPDATE_PIPELINE_STATE, (path.name, file_hash))

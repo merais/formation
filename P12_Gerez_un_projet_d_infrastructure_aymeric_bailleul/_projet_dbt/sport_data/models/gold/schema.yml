@@ -7,7 +7,7 @@ models:
   - name: eligibilite_prime
     description: >
       Eligibilite a la prime sportive (5% du salaire brut).
-      Croisse staging.employes avec staging.cache_distances (distances Python).
+      Croise staging.employes avec staging.cache_distances (distances Python).
       Modes eligibles : Marche/running (<= 15 km), Velo/Trottinette/Autres (<= 25 km).
     columns:
       - name: id_salarie

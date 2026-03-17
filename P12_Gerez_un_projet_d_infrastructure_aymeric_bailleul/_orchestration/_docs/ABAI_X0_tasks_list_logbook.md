@@ -162,6 +162,7 @@ _orchestration/
 │   ├── check_changes.py                 # Détection nouvelles activités (watermark)
 │   ├── reload_rh.py                     # Réingestion conditionnelle XLSX RH
 │   ├── reload_sport.py                  # Réingestion conditionnelle XLSX Sport
+│   ├── recalculate_distances.py         # Mise à jour staging.cache_distances via Google Maps API
 │   ├── notify_slack_activities.py       # Envoi HTTP Slack nominatif par activité
 │   └── simulate_new_activities.py       # Injection manuelle d'activités Strava (dev)
 ├── src/
