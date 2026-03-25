@@ -3,6 +3,9 @@
 Pipeline de données complet pour le projet **Sport Data Solution**.  
 Ce répertoire est le projet final autonome : il contient sa propre stack Python, son projet dbt et son orchestrateur Kestra.
 
+# Lien du porjet sur git :
+`https://github.com/merais/formation/tree/En-cours/P12_Gerez_un_projet_d_infrastructure_aymeric_bailleul/_orchestration`
+
 ---
 
 ## Architecture
