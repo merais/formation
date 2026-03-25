@@ -1,0 +1,79 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36" version="29.6.3">
+  <diagram name="Page-1" id="noSpNo7ZAChXr7zvf_sy">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="FdZlDRvUuEek5k5xnvnR-10" edge="1" parent="1" source="FdZlDRvUuEek5k5xnvnR-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=none;" target="FdZlDRvUuEek5k5xnvnR-4" value="&amp;nbsp;xlsx + api&amp;nbsp;">
+          <mxGeometry relative="1" y="10" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FdZlDRvUuEek5k5xnvnR-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="SOURCES&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;.xlsx, Strava, Google Maps API&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="200" x="40" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="FdZlDRvUuEek5k5xnvnR-11" edge="1" parent="1" source="FdZlDRvUuEek5k5xnvnR-2" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=none;" target="FdZlDRvUuEek5k5xnvnR-4" value="Orchestre">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FdZlDRvUuEek5k5xnvnR-12" edge="1" parent="1" source="FdZlDRvUuEek5k5xnvnR-2" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=none;" target="FdZlDRvUuEek5k5xnvnR-6" value="&amp;nbsp;Orchestre&amp;nbsp;">
+          <mxGeometry relative="1" y="10" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FdZlDRvUuEek5k5xnvnR-13" edge="1" parent="1" source="FdZlDRvUuEek5k5xnvnR-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="FdZlDRvUuEek5k5xnvnR-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FdZlDRvUuEek5k5xnvnR-20" connectable="0" parent="FdZlDRvUuEek5k5xnvnR-13" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;" value="En cas d&#39;echec" vertex="1">
+          <mxGeometry relative="1" x="-0.029" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FdZlDRvUuEek5k5xnvnR-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#10739e;" value="KESTRA&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Orchestration - CRON&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="200" x="40" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="FdZlDRvUuEek5k5xnvnR-14" edge="1" parent="1" source="FdZlDRvUuEek5k5xnvnR-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=none;" target="FdZlDRvUuEek5k5xnvnR-7" value="&amp;nbsp;Canal RH&amp;nbsp;">
+          <mxGeometry relative="1" y="10" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FdZlDRvUuEek5k5xnvnR-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="ERROR&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Détection des erreurs&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="200" x="40" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="FdZlDRvUuEek5k5xnvnR-16" edge="1" parent="1" source="FdZlDRvUuEek5k5xnvnR-4" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=none;" target="FdZlDRvUuEek5k5xnvnR-8" value="UPSERT">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FdZlDRvUuEek5k5xnvnR-4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Python ETL&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Ingestion - Calcul distance&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="200" x="360" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="FdZlDRvUuEek5k5xnvnR-17" edge="1" parent="1" source="FdZlDRvUuEek5k5xnvnR-6" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;startArrow=classic;startFill=1;labelBackgroundColor=none;" target="FdZlDRvUuEek5k5xnvnR-8" value="&amp;nbsp;Transformation&amp;nbsp;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="679.9999999999998" y="229.5882352941178" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FdZlDRvUuEek5k5xnvnR-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="DBT&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;4 model - 37 tests&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="200" x="360" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="FdZlDRvUuEek5k5xnvnR-7" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="SLACK&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Notifications - 2 canal&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="200" x="360" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="FdZlDRvUuEek5k5xnvnR-18" edge="1" parent="1" source="FdZlDRvUuEek5k5xnvnR-8" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=none;" target="FdZlDRvUuEek5k5xnvnR-7" value="Canal public">
+          <mxGeometry relative="1" x="0.354" y="-2" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FdZlDRvUuEek5k5xnvnR-19" edge="1" parent="1" source="FdZlDRvUuEek5k5xnvnR-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;labelBackgroundColor=none;" target="FdZlDRvUuEek5k5xnvnR-9" value="DirectQuery">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FdZlDRvUuEek5k5xnvnR-8" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="PostgreSQL&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;raw&amp;nbsp;→ staking&amp;nbsp;→ gold&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="200" x="680" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="FdZlDRvUuEek5k5xnvnR-9" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="PowerBI&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Dashboard&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="200" x="680" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="FdZlDRvUuEek5k5xnvnR-22" edge="1" parent="1" source="FdZlDRvUuEek5k5xnvnR-2" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=none;" target="FdZlDRvUuEek5k5xnvnR-7" value="Canal RH">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
