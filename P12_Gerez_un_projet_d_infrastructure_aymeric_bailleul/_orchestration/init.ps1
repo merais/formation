@@ -4,15 +4,15 @@
 
 .DESCRIPTION
     Ce script :
-      1. Charge les variables d'environnement depuis .env
-      2. Reinitialise la base de donnees via main.py --reset
-      3. Valide la connexion dbt
+      1. Cree le venv local via `uv sync` (pyproject.toml)
+      2. Charge les variables d'environnement depuis .env
+      3. Reinitialise la base de donnees via main.py --reset
+      4. Valide la connexion dbt
 
     A executer une seule fois apres le premier `docker compose up -d`.
-    Le venv doit deja exister a l'emplacement indique ci-dessous.
 
 .NOTES
-    Venv : C:\Users\aymer\.venvs\orchestration (Python 3.12)
+    Venv : .venv (cree par uv dans le repertoire du script)
     DB   : localhost:5433 / sport_data
 #>
 
@@ -29,9 +29,26 @@ $PythonExe  = Join-Path $VenvRoot "Scripts\python.exe"
 $DbtExe     = Join-Path $VenvRoot "Scripts\dbt.exe"
 $EnvFile    = Join-Path $ScriptDir ".env"
 
-if (-not (Test-Path $PythonExe)) {
-    throw "Python introuvable : $PythonExe -- cree le venv avec : python -m venv $VenvRoot"
+# ---------------------------------------------------------------------------
+# Creation / mise a jour du venv via uv
+# Le venv est cree sur C: (pas sur G:/Google Drive) pour eviter les erreurs
+# de hardlink et les limitations du systeme de fichiers Drive.
+# ---------------------------------------------------------------------------
+
+if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
+    throw "uv introuvable. Installez-le avec : winget install astral-sh.uv"
 }
+
+Write-Host "=== Creation du venv (uv sync) ==="
+Write-Host "  Venv : $VenvRoot"
+Push-Location $ScriptDir
+$env:UV_PROJECT_ENVIRONMENT = $VenvRoot
+uv sync --python 3.12 --link-mode copy
+if ($LASTEXITCODE -ne 0) {
+    Pop-Location
+    throw "uv sync a echoue (code $LASTEXITCODE)"
+}
+Pop-Location
 
 # ---------------------------------------------------------------------------
 # Chargement du fichier .env
@@ -82,7 +99,7 @@ Write-Host "=== Etape 2/2 : Validation dbt debug ==="
     --profiles-dir (Join-Path $ScriptDir "dbt")
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Warning "dbt debug a signale une erreur — verifier profiles.yml et la connexion PostgreSQL."
+    Write-Warning "dbt debug a signale une erreur - verifier profiles.yml et la connexion PostgreSQL."
 } else {
     Write-Host "dbt OK."
 }
