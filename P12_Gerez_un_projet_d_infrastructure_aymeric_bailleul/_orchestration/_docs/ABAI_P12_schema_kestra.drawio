@@ -1,0 +1,106 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36" version="29.6.4">
+  <diagram name="Page-1" id="pGOWgIfREPkSAuBR5L7m">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-1" parent="1" style="whiteSpace=wrap;strokeWidth=2;fillColor=#1B2A4A;strokeColor=#0E1A33;fontColor=#fff;" value="Déclenchement quotidien à 06h00" vertex="1">
+          <mxGeometry height="40" width="220" x="520" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fillColor=#2E86C1;strokeColor=#1B6FA0;fontColor=#fff;" value="Détection des changements&#xa;Comparaison XLSX + watermark Strava" vertex="1">
+          <mxGeometry height="40" width="220" x="520" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fillColor=#E67E22;strokeColor=#D35400;fontColor=#fff;" value="Mise à jour des employés&#xa;Désactivation des départs" vertex="1">
+          <mxGeometry height="40" width="160" x="190" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fillColor=#E67E22;strokeColor=#D35400;fontColor=#fff;" value="Mise à jour des sports Suppression des absents" vertex="1">
+          <mxGeometry height="40" width="160" x="370" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-5" parent="1" style="whiteSpace=wrap;strokeWidth=2;fillColor=#E67E22;strokeColor=#D35400;fontColor=#fff;" value="Calcul des distances&#xa;Google API &gt; cache en base" vertex="1">
+          <mxGeometry height="40" width="160" x="550" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-6" parent="1" style="whiteSpace=wrap;strokeWidth=2;fillColor=#27AE60;strokeColor=#1E8449;fontColor=#fff;" value="Transformations SQL (dbt)&#xa;4 modèles : staging + gold" vertex="1">
+          <mxGeometry height="40" width="160" x="550" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-7" parent="1" style="whiteSpace=wrap;strokeWidth=2;fillColor=#27AE60;strokeColor=#1E8449;fontColor=#fff;" value="Validation des données (dbt)&#xa;37 tests automatiques" vertex="1">
+          <mxGeometry height="40" width="160" x="550" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-8" parent="1" style="whiteSpace=wrap;strokeWidth=2;fillColor=#27AE60;strokeColor=#1E8449;fontColor=#fff;" value="Génération de la documentation" vertex="1">
+          <mxGeometry height="40" width="160" x="550" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-9" parent="1" style="whiteSpace=wrap;strokeWidth=2;fillColor=#8E44AD;strokeColor=#6C3483;fontColor=#fff;" value="Notifications individuelles&#xa;1 message personnalisé par activité" vertex="1">
+          <mxGeometry height="40" width="160" x="550" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-24" edge="1" parent="1" source="ebmjiBMh1oAqPvVCPnoV-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="ebmjiBMh1oAqPvVCPnoV-12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-10" parent="1" style="whiteSpace=wrap;strokeWidth=2;fillColor=#5D6D7E;strokeColor=#2C3E50;fontColor=#fff;" value="Finalisation&#xa;Watermark + historique + compte-rendu Slack" vertex="1">
+          <mxGeometry height="40" width="160" x="550" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-11" parent="1" style="whiteSpace=wrap;strokeWidth=2;fillColor=#E74C3C;strokeColor=#C0392B;fontColor=#fff;" value="Gestion des erreurs&#xa;Log en base + alerte Slack" vertex="1">
+          <mxGeometry height="40" width="160" x="730" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-12" parent="1" style="whiteSpace=wrap;strokeWidth=2;fillColor=#95A5A6;strokeColor=#7F8C8D;fontColor=#fff;" value="Pipeline terminé" vertex="1">
+          <mxGeometry height="40" width="162" x="548" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-13" edge="1" parent="1" source="ebmjiBMh1oAqPvVCPnoV-1" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;rounded=0;" target="ebmjiBMh1oAqPvVCPnoV-2" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-14" edge="1" parent="1" style="startArrow=none;endArrow=block;exitX=0;exitY=0.68;entryX=0.5;entryY=0;rounded=0;labelBackgroundColor=none;" value="RH modifié">
+          <mxGeometry relative="1" x="0.1143" y="-6" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="519.9999999999998" y="107.20000000000005" as="sourcePoint" />
+            <mxPoint x="269.9999999999998" y="140" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-15" edge="1" parent="1" source="ebmjiBMh1oAqPvVCPnoV-2" style="startArrow=none;endArrow=block;exitX=0;exitY=0.86;entryX=0.5;entryY=0;rounded=0;labelBackgroundColor=none;" target="ebmjiBMh1oAqPvVCPnoV-4" value="Sport modifié">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-16" edge="1" parent="1" source="ebmjiBMh1oAqPvVCPnoV-2" style="startArrow=none;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;rounded=0;labelBackgroundColor=none;" target="ebmjiBMh1oAqPvVCPnoV-5" value="Nouvelles activités">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-17" edge="1" parent="1" source="ebmjiBMh1oAqPvVCPnoV-2" style="startArrow=none;endArrow=block;rounded=0;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" value="Aucun changement">
+          <mxGeometry relative="1" x="-0.0866" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="900" y="100" />
+              <mxPoint x="900" y="520" />
+            </Array>
+            <mxPoint x="760" y="100" as="sourcePoint" />
+            <mxPoint x="700" y="520" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-18" edge="1" parent="1" source="ebmjiBMh1oAqPvVCPnoV-5" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;rounded=0;" target="ebmjiBMh1oAqPvVCPnoV-6" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-19" edge="1" parent="1" source="ebmjiBMh1oAqPvVCPnoV-6" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;rounded=0;" target="ebmjiBMh1oAqPvVCPnoV-7" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-20" edge="1" parent="1" source="ebmjiBMh1oAqPvVCPnoV-7" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;rounded=0;" target="ebmjiBMh1oAqPvVCPnoV-8" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-21" edge="1" parent="1" source="ebmjiBMh1oAqPvVCPnoV-8" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;rounded=0;" target="ebmjiBMh1oAqPvVCPnoV-9" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-22" edge="1" parent="1" source="ebmjiBMh1oAqPvVCPnoV-9" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;rounded=0;" target="ebmjiBMh1oAqPvVCPnoV-10" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ebmjiBMh1oAqPvVCPnoV-23" edge="1" parent="1" source="ebmjiBMh1oAqPvVCPnoV-2" style="dashed=1;dashPattern=2 3;startArrow=none;endArrow=block;exitX=1;exitY=0.87;entryX=0.5;entryY=0;rounded=0;labelBackgroundColor=none;" target="ebmjiBMh1oAqPvVCPnoV-11" value="En cas d&#39;échec">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

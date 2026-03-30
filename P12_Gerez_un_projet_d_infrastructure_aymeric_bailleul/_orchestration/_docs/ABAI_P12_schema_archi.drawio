@@ -1,0 +1,78 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36" version="29.6.5">
+  <diagram name="Page-1" id="noSpNo7ZAChXr7zvf_sy">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="uMutkAb1xYBzAPjRdMT2-7" parent="1" style="whiteSpace=wrap;strokeWidth=2;fillColor=#E67E22;strokeColor=#D35400;fontColor=#fff;" value="Sources&#xa;XLSX · Strava · Google Maps" vertex="1">
+          <mxGeometry height="40" width="200" x="360" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uMutkAb1xYBzAPjRdMT2-25" edge="1" parent="1" source="uMutkAb1xYBzAPjRdMT2-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=none;fontColor=default;" target="uMutkAb1xYBzAPjRdMT2-10" value="&#xa;&lt;span style=&quot;font-family: Helvetica; font-size: 11px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: center; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: nowrap; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; float: none; display: inline !important;&quot;&gt;UPSERT&lt;/span&gt;&#xa;&#xa;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uMutkAb1xYBzAPjRdMT2-8" parent="1" style="whiteSpace=wrap;strokeWidth=2;fillColor=#2E86C1;strokeColor=#1B6FA0;fontColor=#fff;" value="Python ETL&#xa;Ingestion · Distances" vertex="1">
+          <mxGeometry height="40" width="199" x="361" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="uMutkAb1xYBzAPjRdMT2-9" parent="1" style="whiteSpace=wrap;strokeWidth=2;fillColor=#1B2A4A;strokeColor=#0E1A33;fontColor=#fff;" value="Kestra&#xa;Orchestration · cron 06h00" vertex="1">
+          <mxGeometry height="40" width="200" x="40" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="uMutkAb1xYBzAPjRdMT2-24" edge="1" parent="1" source="uMutkAb1xYBzAPjRdMT2-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;labelBackgroundColor=none;fontColor=default;" target="uMutkAb1xYBzAPjRdMT2-12" value="&lt;br&gt;&lt;span style=&quot;font-family: Helvetica; font-size: 11px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: center; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: nowrap; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; float: none; display: inline !important;&quot;&gt;Noms + résultats&lt;/span&gt;&lt;div&gt;&lt;br/&gt;&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uMutkAb1xYBzAPjRdMT2-10" parent="1" style="whiteSpace=wrap;strokeWidth=2;fillColor=#2E86C1;strokeColor=#1B6FA0;fontColor=#fff;" value="PostgreSQL&#xa;raw → staging → gold" vertex="1">
+          <mxGeometry height="40" width="200" x="680" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="uMutkAb1xYBzAPjRdMT2-11" parent="1" style="whiteSpace=wrap;strokeWidth=2;fillColor=#27AE60;strokeColor=#1E8449;fontColor=#fff;" value="DBT&#xa;4 modèles · 37 tests" vertex="1">
+          <mxGeometry height="40" width="199" x="361" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="uMutkAb1xYBzAPjRdMT2-12" parent="1" style="whiteSpace=wrap;strokeWidth=2;fillColor=#8E44AD;strokeColor=#6C3483;fontColor=#fff;" value="Slack&#xa;Notifications" vertex="1">
+          <mxGeometry height="40" width="200" x="680" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uMutkAb1xYBzAPjRdMT2-13" parent="1" style="whiteSpace=wrap;strokeWidth=2;fillColor=#27AE60;strokeColor=#1E8449;fontColor=#fff;" value="Power BI&#xa;Dashboard" vertex="1">
+          <mxGeometry height="38" width="199" x="680" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="uMutkAb1xYBzAPjRdMT2-14" parent="1" style="whiteSpace=wrap;strokeWidth=2;fillColor=#E74C3C;strokeColor=#C0392B;fontColor=#fff;" value="Error Handler&#xa;meta.pipeline_runs + Slack" vertex="1">
+          <mxGeometry height="40" width="200" x="40" y="242" as="geometry" />
+        </mxCell>
+        <mxCell id="uMutkAb1xYBzAPjRdMT2-15" edge="1" parent="1" source="uMutkAb1xYBzAPjRdMT2-7" style="startArrow=none;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;rounded=0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;labelBackgroundColor=none;" target="uMutkAb1xYBzAPjRdMT2-8" value="XLSX + API">
+          <mxGeometry relative="1" x="-0.0002" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uMutkAb1xYBzAPjRdMT2-16" edge="1" parent="1" source="uMutkAb1xYBzAPjRdMT2-9" style="startArrow=none;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.5;rounded=0;edgeStyle=orthogonalEdgeStyle;exitDx=0;exitDy=0;entryDx=0;entryDy=0;labelBackgroundColor=none;" target="uMutkAb1xYBzAPjRdMT2-8" value="Orchestre">
+          <mxGeometry relative="1" x="0.4876" y="10" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uMutkAb1xYBzAPjRdMT2-17" edge="1" parent="1" source="uMutkAb1xYBzAPjRdMT2-9" style="startArrow=none;endArrow=block;exitX=1;exitY=0.75;entryX=0;entryY=0.5;rounded=0;edgeStyle=orthogonalEdgeStyle;exitDx=0;exitDy=0;labelBackgroundColor=none;" target="uMutkAb1xYBzAPjRdMT2-11" value="Orchestre">
+          <mxGeometry relative="1" x="0.6754" y="10" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uMutkAb1xYBzAPjRdMT2-18" edge="1" parent="1" source="uMutkAb1xYBzAPjRdMT2-9" style="startArrow=none;endArrow=block;exitX=1;exitY=0.25;entryX=0.5;entryY=0;rounded=0;edgeStyle=orthogonalEdgeStyle;entryDx=0;entryDy=0;exitDx=0;exitDy=0;labelBackgroundColor=none;" target="uMutkAb1xYBzAPjRdMT2-12" value="Orchestre">
+          <mxGeometry relative="1" x="-0.403" y="10" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="300" y="170" />
+              <mxPoint x="300" y="60" />
+              <mxPoint x="780" y="60" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uMutkAb1xYBzAPjRdMT2-19" edge="1" parent="1" source="uMutkAb1xYBzAPjRdMT2-9" style="dashed=1;dashPattern=2 3;startArrow=none;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;rounded=0;exitDx=0;exitDy=0;edgeStyle=orthogonalEdgeStyle;entryDx=0;entryDy=0;labelBackgroundColor=none;" target="uMutkAb1xYBzAPjRdMT2-14" value="En cas d&#39;échec">
+          <mxGeometry relative="1" x="-0.0476" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uMutkAb1xYBzAPjRdMT2-21" edge="1" parent="1" source="uMutkAb1xYBzAPjRdMT2-11" style="startArrow=none;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.75;rounded=0;edgeStyle=orthogonalEdgeStyle;entryDx=0;entryDy=0;labelBackgroundColor=none;" target="uMutkAb1xYBzAPjRdMT2-10" value="Transformations SQL">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uMutkAb1xYBzAPjRdMT2-23" edge="1" parent="1" source="uMutkAb1xYBzAPjRdMT2-10" style="startArrow=none;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;rounded=0;edgeStyle=orthogonalEdgeStyle;exitDx=0;exitDy=0;entryDx=0;entryDy=0;labelBackgroundColor=none;" target="uMutkAb1xYBzAPjRdMT2-13" value="DirectQuery">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

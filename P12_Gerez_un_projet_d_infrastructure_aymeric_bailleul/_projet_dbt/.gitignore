@@ -1,0 +1,12 @@
+# dbt artefacts générés à l'exécution
+sport_data/target/
+sport_data/dbt_packages/
+sport_data/logs/
+logs/
+
+# Profil utilisateur local (chemins absolus machine-spécifiques)
+.user.yml
+
+# Cache Python
+__pycache__/
+*.pyc

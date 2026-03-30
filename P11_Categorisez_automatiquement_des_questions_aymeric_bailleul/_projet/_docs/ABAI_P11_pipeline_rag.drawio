@@ -1,0 +1,62 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36" version="29.3.4">
+  <diagram name="Page-1" id="e0WefmoYmoL3mYWFhSpB">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="T-FPYWPXo4kNg2fe0azi-9" edge="1" parent="1" source="T-FPYWPXo4kNg2fe0azi-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="T-FPYWPXo4kNg2fe0azi-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="T-FPYWPXo4kNg2fe0azi-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="SOURCE&lt;div&gt;&amp;nbsp;&lt;div&gt;Open Agenda&lt;/div&gt;&lt;div&gt;913 818 évènements&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="140" x="80" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="T-FPYWPXo4kNg2fe0azi-10" edge="1" parent="1" source="T-FPYWPXo4kNg2fe0azi-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="T-FPYWPXo4kNg2fe0azi-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="T-FPYWPXo4kNg2fe0azi-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="&lt;div&gt;PREPROCESSING&lt;/div&gt;&lt;div&gt;&amp;nbsp;&lt;div&gt;7 960 évènement&amp;nbsp;&lt;br&gt;Occitanie&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="140" x="80" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="T-FPYWPXo4kNg2fe0azi-11" edge="1" parent="1" source="T-FPYWPXo4kNg2fe0azi-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="T-FPYWPXo4kNg2fe0azi-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="T-FPYWPXo4kNg2fe0azi-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;CHUNKING&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;10 480 chunks&lt;/div&gt;&lt;/div&gt;&lt;div&gt;250 tokens - 75 overlap&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="140" x="80" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="T-FPYWPXo4kNg2fe0azi-13" edge="1" parent="1" source="T-FPYWPXo4kNg2fe0azi-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="T-FPYWPXo4kNg2fe0azi-5">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="150" y="440" />
+              <mxPoint x="240" y="440" />
+              <mxPoint x="240" y="60" />
+              <mxPoint x="410" y="60" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="T-FPYWPXo4kNg2fe0azi-4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;VECTORISATION&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;10 480 embeddings&lt;/div&gt;&lt;/div&gt;&lt;div&gt;1024 dimentions&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="140" x="80" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="T-FPYWPXo4kNg2fe0azi-14" edge="1" parent="1" source="T-FPYWPXo4kNg2fe0azi-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="T-FPYWPXo4kNg2fe0azi-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="T-FPYWPXo4kNg2fe0azi-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;INDEX FAISS&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;IndexFlatIP&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="140" x="340" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="T-FPYWPXo4kNg2fe0azi-15" edge="1" parent="1" source="T-FPYWPXo4kNg2fe0azi-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="T-FPYWPXo4kNg2fe0azi-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="T-FPYWPXo4kNg2fe0azi-16" edge="1" parent="1" source="T-FPYWPXo4kNg2fe0azi-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="T-FPYWPXo4kNg2fe0azi-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="T-FPYWPXo4kNg2fe0azi-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;RAG SYSTEM&amp;nbsp;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;mistral-small-latest&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Retriever MMR&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="140" x="340" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="T-FPYWPXo4kNg2fe0azi-7" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="&lt;div&gt;INTERFACE&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;Streamlite&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="140" x="260" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="T-FPYWPXo4kNg2fe0azi-8" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="&lt;div&gt;ÉVALUATION&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Ragas&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="140" x="420" y="330" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

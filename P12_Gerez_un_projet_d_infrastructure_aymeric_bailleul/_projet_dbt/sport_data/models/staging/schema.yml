@@ -1,0 +1,36 @@
+version: 2
+
+models:
+  - name: stg_activites_strava
+    description: >
+      Activites Strava nettoyees (raw --> staging).
+      Filtre les activites invalides : distance nulle, duree nulle, date trop ancienne,
+      type de sport inconnu, ou id_salarie absent de staging.employes.
+      Materalise comme table dans le schema staging (alias activites_strava).
+    columns:
+      - name: id_salarie
+        description: Identifiant salarie valide (present dans staging.employes)
+        tests:
+          - not_null
+      - name: date_debut
+        description: Date de debut de l activite (dans les 395 derniers jours)
+        tests:
+          - not_null
+      - name: type_sport
+        description: Type de sport valide (liste de 15 sports references)
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Running', 'Randonnée', 'Tennis', 'Natation', 'Football',
+                         'Rugby', 'Badminton', 'Voile', 'Boxe', 'Judo',
+                         'Escalade', 'Triathlon', 'Tennis de table', 'Équitation',
+                         'Basketball']
+      - name: distance_m
+        description: Distance en metres (strictement positive)
+        tests:
+          - not_null
+      - name: duree_s
+        description: Duree en secondes (strictement positive)
+        tests:
+          - not_null

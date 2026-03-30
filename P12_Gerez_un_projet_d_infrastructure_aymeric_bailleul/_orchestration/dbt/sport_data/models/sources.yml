@@ -1,0 +1,86 @@
+version: 2
+
+sources:
+  # -----------------------------------------------------------------------
+  # Schema raw : donnees brutes simulees
+  # -----------------------------------------------------------------------
+  - name: raw
+    schema: raw
+    description: >
+      Donnees brutes simulees (Strava uniquement).
+      Chargees par le pipeline _orchestration (src/simulation/generate_strava.py).
+    tables:
+      - name: activites_strava
+        description: Activites Strava brutes avec id_salarie, type_sport, distance_m, duree_s, inserted_at
+        columns:
+          - name: id_activite
+            description: Identifiant technique auto-increment
+          - name: id_salarie
+            description: Identifiant salarie (FK vers staging.employes)
+          - name: date_debut
+            description: Date et heure de debut de l activite
+          - name: type_sport
+            description: Type de sport (peut contenir des valeurs invalides)
+          - name: distance_m
+            description: Distance en metres (peut etre nulle ou negative)
+          - name: duree_s
+            description: Duree en secondes (peut etre nulle ou negative)
+          - name: commentaire
+            description: Commentaire libre (nullable)
+          - name: inserted_at
+            description: Timestamp d insertion (watermark pour detection incrementale)
+
+  # -----------------------------------------------------------------------
+  # Schema staging : donnees nettoyees
+  # -----------------------------------------------------------------------
+  - name: staging
+    schema: staging
+    description: >
+      Donnees nettoyees et anonymisees (RGPD).
+      Chargees par le pipeline _orchestration (load_rh.py, load_sport.py, distances.py).
+    tables:
+      - name: employes
+        description: >
+          Salaries anonymises (pas de Nom, Prenom, DDN – stockes dans rh_prive).
+          actif = FALSE pour les employes ayant quitte l entreprise (soft-delete).
+        columns:
+          - name: id_salarie
+            description: Identifiant salarie (cle primaire)
+            tests:
+              - unique
+              - not_null
+          - name: departement
+            tests:
+              - not_null
+          - name: date_embauche
+            tests:
+              - not_null
+          - name: salaire_brut
+            tests:
+              - not_null
+          - name: moyen_deplacement
+            tests:
+              - not_null
+          - name: adresse_domicile
+            tests:
+              - not_null
+          - name: actif
+            description: FALSE si l employe a ete retire du fichier XLSX source (soft-delete)
+            tests:
+              - not_null
+
+      - name: pratiques_declarees
+        description: Pratiques sportives auto-declarees par les salaries
+        columns:
+          - name: id_salarie
+            tests:
+              - unique
+              - not_null
+          - name: pratique_sport
+            tests:
+              - not_null
+
+      - name: cache_distances
+        description: >
+          Cache des distances domicile-bureau calculees par distances.py
+          (Google Maps API ou haversine fallback). Cle = adresse_domicile.

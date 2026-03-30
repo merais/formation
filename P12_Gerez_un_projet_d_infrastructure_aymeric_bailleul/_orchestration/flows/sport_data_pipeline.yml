@@ -1,0 +1,257 @@
+id: sport_data_pipeline
+namespace: sport_data
+description: |
+  Pipeline quotidien Sport Data Solution.
+
+  Logique :
+    1. Detection des changements (hash XLSX + nouvelles activites Strava)
+    2. Re-ingestion RH si le fichier a change (UPSERT + soft-delete)
+    3. Re-ingestion sport si le fichier a change (UPSERT)
+    4. Si au moins un changement : dbt run + dbt test
+    5. Enregistrement du run dans meta.pipeline_runs
+
+  Declenchement :
+    - Automatique : cron quotidien a 06h00
+    - Manuel      : via l interface Kestra (bouton "Execute")
+
+labels:
+  project: sport_data
+  env: dev
+
+variables:
+  postgres_host: postgres
+  postgres_port: "5432"
+  postgres_db: sport_data
+  postgres_user: postgres
+  data_dir: /opt/data/RAW
+  dbt_project_dir: /opt/dbt/sport_data
+  dbt_profiles_dir: /opt/dbt
+
+# pluginDefaults : connexion PostgreSQL declaree une seule fois pour toutes
+# les taches io.kestra.plugin.jdbc.postgresql.*
+pluginDefaults:
+  - type: io.kestra.plugin.jdbc.postgresql
+    values:
+      url: "jdbc:postgresql://{{ vars.postgres_host }}:{{ vars.postgres_port }}/{{ vars.postgres_db }}"
+      username: "{{ vars.postgres_user }}"
+      password: "{{ secret('POSTGRES_PASSWORD') }}"
+
+triggers:
+  - id: cron_quotidien
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "0 6 * * *"
+    description: "Execution quotidienne a 06h00"
+
+tasks:
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Etape 1 : Detection des changements
+  # ────────────────────────────────────────────────────────────────────────────
+  - id: check_changes
+    type: io.kestra.plugin.scripts.python.Commands
+    description: "Detecte les modifications des fichiers XLSX et compte les nouvelles activites"
+    commands:
+      - python /opt/scripts/check_changes.py
+    env:
+      POSTGRES_HOST: "{{ vars.postgres_host }}"
+      POSTGRES_PORT: "{{ vars.postgres_port }}"
+      POSTGRES_DB: "{{ vars.postgres_db }}"
+      POSTGRES_USER: "{{ vars.postgres_user }}"
+      POSTGRES_PASSWORD: "{{ secret('POSTGRES_PASSWORD') }}"
+      DATA_DIR: "{{ vars.data_dir }}"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Etape 2 : Re-ingestion RH (si le fichier XLSX RH a change)
+  # ────────────────────────────────────────────────────────────────────────────
+  - id: reload_rh_if_changed
+    type: io.kestra.plugin.core.flow.If
+    description: "Re-charge staging.employes si Données+RH.xlsx a change"
+    condition: "{{ outputs.check_changes.vars.rh_changed }}"
+    then:
+      - id: reload_rh
+        type: io.kestra.plugin.scripts.python.Commands
+        description: "UPSERT employes + soft-delete absents + mise a jour hash"
+        commands:
+          - python /opt/scripts/reload_rh.py
+        env:
+          POSTGRES_HOST: "{{ vars.postgres_host }}"
+          POSTGRES_PORT: "{{ vars.postgres_port }}"
+          POSTGRES_DB: "{{ vars.postgres_db }}"
+          POSTGRES_USER: "{{ vars.postgres_user }}"
+          POSTGRES_PASSWORD: "{{ secret('POSTGRES_PASSWORD') }}"
+          DATA_DIR: "{{ vars.data_dir }}"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Etape 3 : Re-ingestion sport (si le fichier XLSX sport a change)
+  # ────────────────────────────────────────────────────────────────────────────
+  - id: reload_sport_if_changed
+    type: io.kestra.plugin.core.flow.If
+    description: "Re-charge staging.pratiques_declarees si Données+Sportive.xlsx a change"
+    condition: "{{ outputs.check_changes.vars.sport_changed }}"
+    then:
+      - id: reload_sport
+        type: io.kestra.plugin.scripts.python.Commands
+        description: "UPSERT pratiques + suppression absentes + mise a jour hash"
+        commands:
+          - python /opt/scripts/reload_sport.py
+        env:
+          POSTGRES_HOST: "{{ vars.postgres_host }}"
+          POSTGRES_PORT: "{{ vars.postgres_port }}"
+          POSTGRES_DB: "{{ vars.postgres_db }}"
+          POSTGRES_USER: "{{ vars.postgres_user }}"
+          POSTGRES_PASSWORD: "{{ secret('POSTGRES_PASSWORD') }}"
+          DATA_DIR: "{{ vars.data_dir }}"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Etape 4 : dbt run + dbt test (si au moins un changement detecte)
+  # ────────────────────────────────────────────────────────────────────────────
+  - id: dbt_pipeline_if_needed
+    type: io.kestra.plugin.core.flow.If
+    description: "Lance dbt uniquement si des donnees ont change"
+    condition: "{{ outputs.check_changes.vars.should_run }}"
+    then:
+      # ──────────────────────────────────────────────────────────────────────
+      # Etape 4a : Mise a jour du cache de distances (Google Maps API)
+      # ──────────────────────────────────────────────────────────────────────
+      - id: recalculate_distances
+        type: io.kestra.plugin.scripts.python.Commands
+        description: "Calcul distances domicile-bureau via Google Maps → staging.cache_distances (cache : seules les nouvelles adresses sont calculees)"
+        commands:
+          - python /opt/scripts/recalculate_distances.py
+        env:
+          POSTGRES_HOST: "{{ vars.postgres_host }}"
+          POSTGRES_PORT: "{{ vars.postgres_port }}"
+          POSTGRES_DB: "{{ vars.postgres_db }}"
+          POSTGRES_USER: "{{ vars.postgres_user }}"
+          POSTGRES_PASSWORD: "{{ secret('POSTGRES_PASSWORD') }}"
+          GOOGLE_MAPS_API_KEY: "{{ secret('GOOGLE_MAPS_API_KEY') }}"
+          ENTREPRISE_ADRESSE: "1362 Av. des Platanes, 34970 Lattes"
+
+      - id: dbt_run
+        type: io.kestra.plugin.scripts.shell.Commands
+        description: "dbt run : recalcul de staging.activites_strava + tables gold"
+        commands:
+          - dbt run --project-dir {{ vars.dbt_project_dir }} --profiles-dir {{ vars.dbt_profiles_dir }} --no-use-colors
+        env:
+          POSTGRES_HOST: "{{ vars.postgres_host }}"
+          POSTGRES_PORT: "{{ vars.postgres_port }}"
+          POSTGRES_DB: "{{ vars.postgres_db }}"
+          POSTGRES_USER: "{{ vars.postgres_user }}"
+          POSTGRES_PASSWORD: "{{ secret('POSTGRES_PASSWORD') }}"
+
+      - id: dbt_test
+        type: io.kestra.plugin.scripts.shell.Commands
+        description: "dbt test : validation qualite des 4 modeles (37 tests)"
+        commands:
+          - dbt test --project-dir {{ vars.dbt_project_dir }} --profiles-dir {{ vars.dbt_profiles_dir }} --no-use-colors
+        env:
+          POSTGRES_HOST: "{{ vars.postgres_host }}"
+          POSTGRES_PORT: "{{ vars.postgres_port }}"
+          POSTGRES_DB: "{{ vars.postgres_db }}"
+          POSTGRES_USER: "{{ vars.postgres_user }}"
+          POSTGRES_PASSWORD: "{{ secret('POSTGRES_PASSWORD') }}"
+
+      # ──────────────────────────────────────────────────────────────────────
+      # Etape 4b : Generation de la documentation dbt (export statique)
+      # ──────────────────────────────────────────────────────────────────────
+      - id: dbt_docs_generate
+        type: io.kestra.plugin.scripts.shell.Commands
+        description: "dbt docs generate : mise a jour de la doc (catalog + lineage graph)"
+        commands:
+          - dbt docs generate --project-dir {{ vars.dbt_project_dir }} --profiles-dir {{ vars.dbt_profiles_dir }} --no-use-colors
+        env:
+          POSTGRES_HOST: "{{ vars.postgres_host }}"
+          POSTGRES_PORT: "{{ vars.postgres_port }}"
+          POSTGRES_DB: "{{ vars.postgres_db }}"
+          POSTGRES_USER: "{{ vars.postgres_user }}"
+          POSTGRES_PASSWORD: "{{ secret('POSTGRES_PASSWORD') }}"
+
+      # ──────────────────────────────────────────────────────────────────────
+      # Etape 4c : Notifications Slack par activite (avant mise a jour watermark)
+      # ──────────────────────────────────────────────────────────────────────
+      - id: notify_slack_activities
+        type: io.kestra.plugin.scripts.python.Commands
+        description: "Envoie un message Slack personnalise par nouvelle activite Strava"
+        commands:
+          - python /opt/scripts/notify_slack_activities.py
+        env:
+          POSTGRES_HOST: "{{ vars.postgres_host }}"
+          POSTGRES_PORT: "{{ vars.postgres_port }}"
+          POSTGRES_DB: "{{ vars.postgres_db }}"
+          POSTGRES_USER: "{{ vars.postgres_user }}"
+          POSTGRES_PASSWORD: "{{ secret('POSTGRES_PASSWORD') }}"
+          SLACK_WEBHOOK_URL: "{{ secret('SLACK_WEBHOOK') }}"
+
+      - id: update_strava_watermark
+        type: io.kestra.plugin.jdbc.postgresql.Query
+        description: "Avance le watermark Strava au MAX(inserted_at) des activites traitees"
+        sql: |
+          INSERT INTO meta.pipeline_state (file_name, watermark, updated_at)
+          SELECT '_strava_watermark', MAX(inserted_at), NOW() FROM raw.activites_strava
+          ON CONFLICT (file_name) DO UPDATE SET
+              watermark  = EXCLUDED.watermark,
+              updated_at = NOW();
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Etape 5 : Enregistrement du run dans meta.pipeline_runs
+  # ────────────────────────────────────────────────────────────────────────────
+  - id: update_watermark
+    type: io.kestra.plugin.jdbc.postgresql.Query
+    description: "Enregistre le run reussi dans meta.pipeline_runs"
+    sql: |
+      INSERT INTO meta.pipeline_runs
+          (run_at, status, rh_changed, sport_changed, new_activities_count)
+      VALUES (
+          NOW(),
+          'success',
+          {{ outputs.check_changes.vars.rh_changed }},
+          {{ outputs.check_changes.vars.sport_changed }},
+          {{ outputs.check_changes.vars.new_activities_count }}
+      );
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Etape 6 : Notification Slack (succes)
+  # ────────────────────────────────────────────────────────────────────────────
+  - id: notify_slack_success
+    type: io.kestra.plugin.notifications.slack.SlackIncomingWebhook
+    description: "Notifie #sport-avantages du succes du pipeline (resume d'execution)"
+    url: "{{ secret('SLACK_WEBHOOK_INFO') }}"
+    payload: |
+      {
+        "channel": "#sport-avantages",
+        "text": ":white_check_mark: *Pipeline Sport Data* — execution reussie",
+        "attachments": [{
+          "color": "good",
+          "fields": [
+            {"title": "Nouvelles activites", "value": "{{ outputs.check_changes.vars.new_activities_count }}", "short": true},
+            {"title": "RH mis a jour",       "value": "{{ outputs.check_changes.vars.rh_changed }}",            "short": true},
+            {"title": "Sport mis a jour",    "value": "{{ outputs.check_changes.vars.sport_changed }}",         "short": true},
+            {"title": "Execution",           "value": "{{ execution.id }}",                                     "short": true}
+          ]
+        }]
+      }
+
+errors:
+  # En cas d echec : enregistrer le run comme 'failed' + notifier Slack
+  - id: record_failure
+    type: io.kestra.plugin.jdbc.postgresql.Query
+    sql: |
+      INSERT INTO meta.pipeline_runs (run_at, status, rh_changed, sport_changed, new_activities_count)
+      VALUES (NOW(), 'failed', false, false, 0);
+
+  - id: notify_slack_failure
+    type: io.kestra.plugin.notifications.slack.SlackIncomingWebhook
+    description: "Notifie #sport-avantages de l echec du pipeline (resume d'execution)"
+    url: "{{ secret('SLACK_WEBHOOK_INFO') }}"
+    payload: |
+      {
+        "channel": "#sport-avantages",
+        "text": ":x: *Pipeline Sport Data* — echec de l'execution",
+        "attachments": [{
+          "color": "danger",
+          "fields": [
+            {"title": "Execution", "value": "{{ execution.id }}",    "short": true},
+            {"title": "Tache",    "value": "{{ task.id }}",          "short": true}
+          ]
+        }]
+      }

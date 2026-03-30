@@ -1,0 +1,42 @@
+# Environnement virtuel
+.venv/
+
+# Variables d'environnement (contient des secrets)
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Tests
+.pytest_cache/
+htmlcov/
+.coverage
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker volumes locaux
+docker/volumes/
+
+# Exports temporaires
+data/exports/*.json
+data/exports/*.csv
+data/exports/*.xlsx
+
+# Logs
+*.log

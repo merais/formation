@@ -67,6 +67,11 @@ poetry.lock
 # Docker & Infrastructure
 .airbyte/
 
+# dbt artefacts générés à l'exécution
+**/dbt/sport_data/logs/
+**/dbt/sport_data/target/
+**/dbt/sport_data/dbt_packages/
+
 # OS generated files
 .DS_Store
 .DS_Store?

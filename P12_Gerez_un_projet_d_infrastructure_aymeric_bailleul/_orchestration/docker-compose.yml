@@ -1,0 +1,229 @@
+services:
+
+  # ─── PostgreSQL ─────────────────────────────────────────────────────────────
+  # Sert a la fois sport_data (nos donnees) et kestra (metadonnees orchestrateur).
+  # Le script init-db.sql cree la base 'kestra' au premier demarrage.
+  postgres:
+    build:
+      context: .
+      dockerfile: postgres.Dockerfile
+    image: sport_data_postgres:local
+    container_name: sport_data_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # init-db.sql est bake dans l image (postgres.Dockerfile) car les bind
+    # mounts depuis Google Drive echouent sous Docker Desktop / WSL2.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ─── Init : permissions du volume dbt_docs ─────────────────────────────────────
+  # Service ephemere qui s'assure que le volume partage dbt_docs est accessible
+  # en ecriture par l'utilisateur kestra (le volume Docker est cree root:root 755
+  # par defaut, ce qui bloque dbt docs generate). Se termine immedicement apres.
+  dbt-docs-perms:
+    image: alpine
+    container_name: sport_data_dbt_docs_perms
+    restart: "no"
+    volumes:
+      - dbt_docs:/data
+    command: chmod -R 777 /data
+
+  # ─── Kestra ─────────────────────────────────────────────────────────────────
+  # Image personnalisee (kestra.Dockerfile) : ajoute Python 3 + dbt-postgres.
+  kestra:
+    build:
+      context: .
+      dockerfile: kestra.Dockerfile
+    image: sport_data_kestra:local
+    container_name: sport_data_kestra
+    restart: unless-stopped
+    command: server standalone
+    depends_on:
+      postgres:
+        condition: service_healthy
+      dbt-docs-perms:
+        condition: service_completed_successfully
+    environment:
+      # ── Configuration Kestra (YAML inline) ──────────────────────────────────
+      KESTRA_CONFIGURATION: |
+        datasources:
+          postgres:
+            url: jdbc:postgresql://postgres:5432/kestra
+            driverClassName: org.postgresql.Driver
+            username: ${POSTGRES_USER}
+            password: ${POSTGRES_PASSWORD}
+        kestra:
+          server:
+            basicAuth:
+              enabled: true
+              username: ${KESTRA_EMAIL}
+              password: ${KESTRA_PASSWORD}
+          repository:
+            type: postgres
+          storage:
+            type: local
+            local:
+              basePath: /app/storage
+          queue:
+            type: postgres
+          tutorialFlows:
+            enabled: false
+          variables:
+            env:
+              postgres_host: postgres
+              postgres_port: "5432"
+              postgres_db: sport_data
+              postgres_user: postgres
+              postgres_password: postgres
+              data_dir: /opt/data/RAW
+              dbt_project_dir: /opt/dbt/sport_data
+              dbt_profiles_dir: /opt/dbt
+          tasks:
+            tmpDir:
+              path: /tmp/kestra-wd
+            defaults:
+              - type: io.kestra.plugin.scripts.python.Script
+                values:
+                  runner: PROCESS
+              - type: io.kestra.plugin.scripts.python.Commands
+                values:
+                  runner: PROCESS
+              - type: io.kestra.plugin.scripts.shell.Commands
+                values:
+                  runner: PROCESS
+      # ── Variables d environnement accessibles aux scripts Python ────────────
+      # IMPORTANT : POSTGRES_HOST=postgres (nom Docker interne, pas localhost)
+      # POSTGRES_PORT=5432 (port interne Docker, pas le port expose 5433)
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # Secrets Kestra (base64) — accessibles via {{ secret('...') }} dans les flows
+      SECRET_POSTGRES_PASSWORD: cG9zdGdyZXM=
+      SECRET_GOOGLE_MAPS_API_KEY: QUl6YVN5QzBwR1NUX1Rjd1pFck5WOUtMZUZlVC13QnBHMU51elNz
+      SECRET_SLACK_WEBHOOK: ${SLACK_WEBHOOK_B64}
+      SECRET_SLACK_WEBHOOK_INFO: ${SLACK_WEBHOOK_INFO_B64}
+      KESTRA_EMAIL: ${KESTRA_EMAIL}
+      KESTRA_PASSWORD: ${KESTRA_PASSWORD}
+
+      # Chemins des ressources montees dans le conteneur
+      DATA_DIR: /opt/data/RAW
+      DBT_PROJECT_DIR: /opt/dbt/sport_data
+      DBT_PROFILES_DIR: /opt/dbt
+
+    ports:
+      - "${KESTRA_PORT}:8080"
+
+    volumes:
+      - kestra_storage:/app/storage
+      # XLSX sources — chemin hote configurable via XLSX_DIR dans .env.
+      # NOTE : doit etre un chemin Windows local (ex: C:\data\sport-data\),
+      # pas un chemin Google Drive (G:\Mon Drive\...) : les chemins Drive
+      # ne sont pas accessibles via WSL2 / Docker Desktop au runtime.
+      - ${XLSX_DIR}:/opt/data/RAW:ro
+      # scripts/, dbt/ et flows/ sont bakes dans l image via kestra.Dockerfile
+      # (COPY au moment du build) — voir kestra.Dockerfile pour le detail.
+      # dbt docs : volume partage avec le service dbt-docs (nginx)
+      - dbt_docs:/opt/dbt/sport_data/target
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8081/health | grep -q UP"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  # ─── Documentation dbt (acces local via http://localhost:8082) ─────────────
+  # Sert les fichiers statiques generes par 'dbt docs generate' depuis le volume
+  # partage avec kestra. Mis a jour automatiquement a chaque execution du flow.
+  dbt-docs:
+    image: nginx:alpine
+    container_name: sport_data_dbt_docs
+    restart: unless-stopped
+    ports:
+      - "4080:80"
+    volumes:
+      - dbt_docs:/usr/share/nginx/html:ro
+    depends_on:
+      - kestra
+
+  # ─── Import automatique du flow au premier demarrage ────────────────────────
+  # Ce service one-shot attend que Kestra soit healthy, puis POSTe notre flow
+  # via l API REST. Il ne tourne qu une seule fois (restart: no).
+  kestra-setup:
+    # Meme image que le service kestra (deja buildee, pas de nouveau pull).
+    # sport_data_pipeline.yml est bake dans l image a /opt/flows/.
+    image: sport_data_kestra:local
+    container_name: sport_data_kestra_setup
+    restart: "no"
+    depends_on:
+      kestra:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    environment:
+      KESTRA_EMAIL: ${KESTRA_EMAIL}
+      KESTRA_PASSWORD: ${KESTRA_PASSWORD}
+    command:
+      - >-
+        echo 'Attente du demarrage de Kestra (port 8081)...' &&
+        until curl -sf http://kestra:8081/health | grep -q UP;
+          do sleep 3; done &&
+        sleep 5 &&
+        echo 'Attente que l authentification soit prete...' &&
+        until curl -sf -u "$$KESTRA_EMAIL:$$KESTRA_PASSWORD" http://kestra:8080/api/v1/flows/search > /dev/null 2>&1;
+          do echo 'Auth pas encore prete, nouvelle tentative...'; sleep 5; done &&
+        echo 'Import du flow sport_data_pipeline...' &&
+        result=$$(curl -s -o /dev/null -w "%{http_code}"
+        --max-time 30
+        -u "$$KESTRA_EMAIL:$$KESTRA_PASSWORD"
+        -X POST http://kestra:8080/api/v1/flows
+        -H 'Content-Type: application/x-yaml'
+        --data-binary @/opt/flows/sport_data_pipeline.yml) &&
+        echo "Reponse API (POST): $$result" &&
+        if [ "$$result" = "200" ] || [ "$$result" = "201" ]; then
+          echo 'Flow sport_data_pipeline cree avec succes.';
+        elif [ "$$result" = "422" ]; then
+          echo 'Flow existant - mise a jour via PUT...' &&
+          result_put=$$(curl -s -o /dev/null -w "%{http_code}"
+          --max-time 30
+          -u "$$KESTRA_EMAIL:$$KESTRA_PASSWORD"
+          -X PUT http://kestra:8080/api/v1/flows/sport_data/sport_data_pipeline
+          -H 'Content-Type: application/x-yaml'
+          --data-binary @/opt/flows/sport_data_pipeline.yml) &&
+          echo "Reponse API (PUT): $$result_put" &&
+          if [ "$$result_put" = "200" ]; then
+            echo 'Flow sport_data_pipeline mis a jour avec succes.';
+          else
+            echo "ATTENTION: Mise a jour flow echouee (HTTP $$result_put)";
+          fi;
+        else
+          echo "ATTENTION: Import flow echoue (HTTP $$result)";
+        fi &&
+        echo 'Suppression des flows tutorial...' &&
+        for flow_id in business-automation business-processes data-engineering-pipeline hello-world infrastructure-automation microservices-and-apis; do
+          curl -s -o /dev/null -u "$$KESTRA_EMAIL:$$KESTRA_PASSWORD" -X DELETE "http://kestra:8080/api/v1/flows/tutorial/$$flow_id";
+        done &&
+        echo 'Nettoyage termine.'
+
+volumes:
+  postgres_data:
+    name: sport_data_postgres_volume
+  kestra_storage:
+    name: sport_data_kestra_storage
+  dbt_docs:
+    name: sport_data_dbt_docs
+
+# Note : le service kestra-setup ne cree pas de volume, il est ephemere (restart: no).

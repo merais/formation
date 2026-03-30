@@ -3,9 +3,8 @@
 **Projet:** Developpement d'un assistant pour la recommandation d'evenements culturels  
 **Auteur:** Aymeric Bailleul  
 **Date de début** : 03/02/2026  
-**Date de derniere mise a jour** : 13/02/2026  
+**Date de derniere mise a jour** : 26/02/2026  
 **Date de fin maximum** : 10/03/2026  
-**Statut:** Phase 4 completee - RAG fonctionnel avec interface Streamlit  
 
 ---
 
@@ -83,13 +82,15 @@ P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/
 ├── _projet/
 │   ├── data/                      # Donnees du projet
 │   │   ├── RAW/                   # Donnees brutes Open Agenda (905 MB, 913K evenements)
-│   │   ├── processed/             # Donnees nettoyees (7,960 evenements Occitanie)
-│   │   │   ├── evenements_occitanie_clean.parquet (9.32 MB)
-│   │   │   └── evenements_chunks.parquet (3.28 MB, 10,646 chunks)
-│   │   └── vectorstore/           # Base vectorielle FAISS (140.64 MB)
-│   │       ├── embeddings.npy      (83.17 MB, 10,646 vecteurs 1024D)
-│   │       ├── metadata.parquet    (3.28 MB)
-│   │       ├── faiss_index.bin     (41.59 MB, IndexFlatIP)
+│   │   ├── processed/             # Donnees nettoyees (evenements Occitanie)
+│   │   │   ├── evenements_occitanie_clean.parquet (9.09 MB)
+│   │   │   └── evenements_chunks.parquet (3.20 MB, 10,363 chunks)
+│   │   ├── evaluation/            # Donnees et resultats d'evaluation
+│   │   │   └── test_dataset_ragas.json (5 questions annotees, plain text)
+│   │   └── vectorstore/           # Base vectorielle FAISS
+│   │       ├── embeddings.npy      (80.96 MB, 10,363 vecteurs 1024D)
+│   │       ├── metadata.parquet    (3.20 MB)
+│   │       ├── faiss_index.bin     (40.48 MB, IndexFlatIP)
 │   │       ├── config.txt
 │   │       └── index_config.txt
 │   ├── src/                       # Code source
@@ -100,20 +101,30 @@ P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/
 │   │   │   ├── vectorize_data.py  (305 lignes)
 │   │   │   └── create_faiss_index.py 
 │   │   ├── rag/                   # Systeme RAG et interface chat
-│   │   │   ├── rag_system.py      # Systeme RAG complet (468 lignes)
+│   │   │   ├── rag_system.py      # Systeme RAG complet (494 lignes)
 │   │   │   └── chat_interface.py  # Interface web Streamlit (309 lignes)
+│   │   ├── evaluation/            # Evaluation du systeme RAG
+│   │   │   └── evaluate_rag.py    # Script Ragas (4 metriques)
 │   │   └── build_vectorstore.py   # Orchestrateur pipeline complet
 │   ├── tests/                     # Tests unitaires
-│   │   ├── test_00_environnement.py # Tests de configuration (8/8)
+│   │   ├── test_00_environnement.py  # Tests de configuration (3/3)
 │   │   ├── test_01_preprocessing.py  # Tests du preprocessing (22/22)
-│   │   └── test_02_vectorstore.py    # Tests base vectorielle (27/27)
+│   │   ├── test_02_vectorstore.py    # Tests base vectorielle (27/27)
+│   │   ├── test_03_chunking.py       # Tests du chunking (42/42)
+│   │   └── test_04_rag_system.py     # Tests du systeme RAG (26/26)
 │   ├── analyses/                  # Notebooks d'exploration
 │   │   └── analyse_dataset.ipynb  # Analyse complete du dataset
 │   ├── _docs/                     # Documentation du projet
 │   │   └── ABAI_P11_X0_tasks_list_logbook.md
+│   ├── logs/                      # Logs d'execution
+│   │   ├── setup/                 # Logs horodates du pipeline de build
+│   │   └── tests/                 # Logs horodates de la suite de tests
 │   ├── README.md                  # Ce fichier
 │   ├── pyproject.toml             # Configuration Poetry
-│   └── requirements.txt           # Dependances Python
+│   ├── requirements.txt           # Dependances Python
+│   ├── setup_rag_from_scratch.bat # Installation et build complet (Windows)
+│   ├── launch_rag_interface.bat   # Lanceur interface Streamlit (Windows)
+│   └── test_rag_system.bat        # Execution de la suite de tests (Windows)
 ├── _cours/                        # Materiel de cours
 └── desktop.ini
 ```
@@ -127,12 +138,15 @@ P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/
 - **LangChain >= 0.3.19** : Framework pour orchestrer le systeme RAG
 - **LangChain-Community >= 0.3.19** : Extensions communautaires LangChain
 - **LangChain-Mistralai >= 0.2.7** : Integration Mistral avec LangChain
-- **Mistral AI >= 1.12.0** : SDK pour modeles de langage et embeddings
-- **Faiss-cpu >= 1.13.2** : Base de donnees vectorielle pour la recherche semantique
-- **Pandas >= 2.3.3** : Manipulation et analyse de donnees (downgrade pour Streamlit)
+- **Mistral AI >= 1.12.0** : SDK pour modeles de langage et embeddings (mistral-small pour la generation, mistral-embed pour les embeddings, mistral-large pour l'evaluation)
+- **Faiss-cpu >= 1.13.2** : Base de donnees vectorielle pour la recherche semantique (IndexFlatIP)
+- **Pandas >= 2.3.0** : Manipulation et analyse de donnees 
 - **NumPy >= 2.4.2** : Calculs numeriques et operations matricielles
 - **PyArrow >= 23.0.0** : Lecture/ecriture de fichiers Parquet
 - **Streamlit >= 1.54.0** : Framework pour interface web interactive
+- **Ragas >= 0.4.3** : Framework d'evaluation des systemes RAG
+- **Datasets >= 3.3.0** : Format de dataset Hugging Face (requis par Ragas)
+- **Nest-asyncio >= 1.6.0** : Gestion des event loops asyncio imbriquees
 - **Pytest >= 9.0.2** : Tests unitaires
 - **Jupyter Notebook >= 7.5.3** : Environnement de developpement interactif
 - **Tiktoken >= 0.12.0** : Comptage de tokens pour les modeles LLM
@@ -148,21 +162,36 @@ P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/
 - Python 3.11 ou superieur (Python 3.11.9 recommande)
 - Poetry installe sur votre systeme
 - Cle API Mistral AI (inscription gratuite sur https://console.mistral.ai)
-- Cle API Mistral AI
+
+### Demarrage rapide (Windows — scripts .bat)
+
+Trois scripts sont disponibles a la racine du projet pour simplifier l'utilisation sous Windows :
+
+| Script | Role |
+|---|---|
+| `setup_rag_from_scratch.bat` | Installation complete : cree le `.venv`, configure le `.env`, telecharge le dataset si absent, lance le pipeline de build |
+| `launch_rag_interface.bat` | Lance l'interface Streamlit en double-cliquant |
+| `test_rag_system.bat` | Execute la suite de 120 tests et sauvegarde un log horodate dans `logs/tests/` |
+
+**Premier lancement :**
+1. S'assurer que Python 3.11+ et Poetry sont dans le PATH
+2. **Clic droit sur `setup_rag_from_scratch.bat` → "Executer en tant qu'administrateur"** (requis pour la creation du .venv et l'installation des dependances)
+3. Suivre les instructions interactives (installation .venv, saisie cle API)
+4. Une fois le build termine, double-cliquer sur `launch_rag_interface.bat`
+
+> Le script `setup_rag_from_scratch.bat` detecte automatiquement un vectorstore existant et demande confirmation avant tout re-build (evite les appels API Mistral superflus).
+
+### Installation manuelle (toutes plateformes)
 
 ### Etapes d'installation
 
-1. Cloner le repository (ou extraire l'archive)
-
-```bash
-cd P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/_projet
-```
+1. Se placer dans le dossier du projet
 
 2. Creer et activer l'environnement virtuel avec Poetry
 
 ```bash
-# Installer les dependances depuis pyproject.toml
-poetry install
+# Installer les dependances depuis pyproject.toml (inclut pytest et les outils de dev)
+poetry install --no-root --extras dev
 
 # OU installer depuis requirements.txt
 poetry run pip install -r requirements.txt
@@ -219,7 +248,7 @@ poetry run python src/build_vectorstore.py
 # 2. Decoupage en chunks (chunk_texts.py)
 # 3. Vectorisation Mistral (vectorize_data.py)
 # 4. Creation index FAISS (create_faiss_index.py)
-# Duree totale : ~4-5 minutes pour 10,646 chunks
+# Duree totale : ~4-5 minutes pour 10,363 chunks
 
 # Option 2 : Etapes manuelles
 poetry run python src/vectorization/vectorize_data.py     # Vectorisation
@@ -229,7 +258,9 @@ poetry run python src/vectorization/create_faiss_index.py # Indexation
 ### 3. Lancer le chatbot Streamlit
 
 ```bash
-# Lancer l'interface web interactive
+# Option Windows : double-cliquer sur launch_rag_interface.bat
+
+# Option manuelle
 poetry run streamlit run src/rag/chat_interface.py
 
 # L'interface s'ouvre automatiquement dans votre navigateur
@@ -246,20 +277,53 @@ poetry run streamlit run src/rag/chat_interface.py
 ### 4. Executer les tests
 
 ```bash
-# IMPORTANT : Toujours executer depuis le repertoire _projet avec venv active
-cd P11_Categorisez_automatiquement_des_questions_aymeric_bailleul/_projet
+# Option Windows : double-cliquer sur test_rag_system.bat
+# (log horodate sauvegarde dans logs/tests/)
 
-# Tous les tests
+# IMPORTANT : Toujours executer depuis le repertoire _projet avec venv active
+
+# Tous les tests (120/120)
 poetry run pytest tests/ -v --disable-warnings
 
-# Tests de l'environnement
+# Tests de l'environnement (3 tests)
 poetry run pytest tests/test_00_environnement.py -v
 
-# Tests du preprocessing
+# Tests du preprocessing (22 tests)
 poetry run pytest tests/test_01_preprocessing.py -v
 
-# Tests de la base vectorielle
+# Tests de la base vectorielle (27 tests)
 poetry run pytest tests/test_02_vectorstore.py -v
+
+# Tests du chunking (42 tests)
+poetry run pytest tests/test_03_chunking.py -v
+
+# Tests du systeme RAG - sans appel API (26 tests)
+poetry run pytest tests/test_04_rag_system.py -v
+```
+
+### 5. Exemples de questions
+
+Voici quelques exemples de questions pour tester le chatbot :
+
+```
+# Evenements par type
+Y a-t-il des expositions a Montpellier ?
+Quels spectacles pour enfants en Occitanie ?
+Festivals de musique en ete en Occitanie
+
+# Evenements par lieu
+Qu'est-ce qui se passe a Carcassonne ce weekend ?
+Evenements a Toulouse ce mois-ci
+Que faire a Nimes en famille ?
+
+# Evenements par critere
+Evenements en plein air en Occitanie
+Activites gratuites a Montpellier
+Spectacles de theatre en octobre
+
+# Questions hors perimetre (le chatbot signale l'absence de donnees)
+Evenements a Paris ?
+Concerts a Lyon ?
 ```
 
 ---
@@ -270,58 +334,44 @@ poetry run pytest tests/test_02_vectorstore.py -v
 - **Periode** : 1 an en arriere (depuis le 09/02/2025) + tous evenements futurs
 - **Volume de donnees** : 
   - Dataset brut : 913,818 evenements
-  - Dataset nettoye : 7,960 evenements Occitanie
-  - Dataset chunks : 10,646 chunks (250 tokens/chunk, overlap 75 tokens)
-  - Base vectorielle : 10,646 embeddings 1024D + index FAISS 
-  - Repartition : 7,784 evenements passes + 176 evenements futurs
+  - Dataset chunks : 10,363 chunks (250 tokens/chunk, overlap 75 tokens) — recalcul filtre temporel 25/02/2026
+  - Base vectorielle : 10,363 embeddings 1024D + index FAISS (40.48 MB)
 - **Source de donnees** : Open Agenda (https://public.opendatasoft.com/explore/dataset/evenements-publics-openagenda)
 
 ---
 
 ## Evaluation
 
-Le systeme sera evalue sur un jeu de donnees test annote contenant des questions/reponses representatives (Phase 5 en cours)
+Le systeme est evalue avec le framework **Ragas** sur un jeu de 5 questions annotees manuellement (`data/evaluation/test_dataset_ragas.json`).
 
----
+### Metriques Ragas
 
-## Etat d'avancement
+Dataset : `data/evaluation/test_dataset_ragas.json` (5 questions, ground_truths plain text)  
+Modele d'evaluation : `mistral-large-latest` (temperature=0.1)  
+Embeddings d'evaluation : `mistral-embed`  
+Configuration RAG : k=10, MMR (fetch_k=20, lambda=0.7), temperature=0.0, prompt strict  
+Prompts Ragas : traduits en francais sauf context_precision (natif anglais)
 
-- [FAIT] **Phase 1** : Configuration environnement et API Mistral (8/8 tests PASSED)
-- [FAIT] **Phase 2.1-2.2** : Collection et exploration des donnees (notebook complet)
-- [FAIT] **Phase 2.3** : Script de nettoyage clean_data.py (9 fonctions documentees)
-- [FAIT] **Phase 2.4** : Structuration des donnees (48 colonnes finales)
-- [FAIT] **Phase 2.5** : Tests unitaires preprocessing (22/22 tests PASSED)
-- [FAIT] **Phase 2.6** : Chunking des textes (10,646 chunks crees, 250 tokens/chunk)
-- [FAIT] **Phase 3.1** : Vectorisation avec Mistral Embeddings (10,646 embeddings 1024D, 3.95 min)
-- [FAIT] **Phase 3.2** : Creation de l'index FAISS (IndexFlatIP, 41.70 MB, 0.39 sec)
-- [FAIT] **Phase 3.3** : Tests vectorisation et FAISS (27/27 tests PASSED)
-- [FAIT] **Phase 3.4** : Script de reconstruction complete (build_vectorstore.py, 4m 37s)
-- [FAIT] **Phase 4.1-4.3** : Systeme RAG avec LangChain
-- [FAIT] **Phase 4.4** : Tests et optimisation du RAG
-- [FAIT] **Phase 4.5** : Interface de chat Streamlit
-- [TODO] **Phase 5** : Evaluation et optimisation
-- [TODO] **Phase 6-8** : Documentation et livrables finaux
+| Metrique | Description | Run 1 (19/02) | Run 2 (25/02 matin) | Run 3 (25/02 soir) |
+|---|---|---|---|---|
+| `faithfulness` | La reponse est-elle fidele au contexte ? | **0.730** | stable | **0.802** |
+| `answer_relevancy` | La reponse repond-elle a la question ? | **0.910** | stable | **0.911** |
+| `context_precision` | Le contexte recupere est-il exempt de bruit ? | **0.678** | stable | **0.550** |
+| `context_recall` | Toutes les infos necessaires ont-elles ete recuperees ? | **0.650** | stable | **0.650** |
 
----
+> Le retriever utilise MMR (Maximal Marginal Relevance) pour diversifier les chunks recuperes et reduire les quasi-doublons issus du meme evenement. Le dataset de test couvre 5 questions representatives de la zone Occitanie : expositions, spectacles enfants, festivals, evenements locaux et plein air.
 
-## Livrables
+### Lancer l'evaluation
 
-1. [FAIT] README.md (ce fichier, mise a jour 13/02/2026)
-2. [FAIT] Gestion des dependances (pyproject.toml, requirements.txt)
-3. [FAIT] Scripts de pre-processing avec docstrings
-   - src/preprocessing/clean_data.py
-   - src/preprocessing/chunk_texts.py
-4. [FAIT] Scripts de vectorisation avec docstrings
-   - src/vectorization/vectorize_data.py
-   - src/vectorization/create_faiss_index.py
-   - src/build_vectorstore.py
-5. [FAIT] Tests unitaires avec pytest (57/57 tests PASSED : 8 environnement + 22 preprocessing + 27 vectorstore)
-6. [FAIT] Code du systeme RAG complet
-   - src/rag/rag_system.py (systeme RAG avec LangChain)
-   - src/rag/chat_interface.py (interface web Streamlit)
-7. [TODO] Rapport technique (5-10 pages)
-8. [TODO] Presentation PowerPoint (10-15 slides)
-9. [FAIT] Logbook detaille (ABAI_P11_X0_tasks_list_logbook.md)
-10. [FAIT] Notebook d'exploration (analyse_dataset.ipynb - 8 sections)
+```bash
+# Evaluation complete (5 questions)
+poetry run python src/evaluation/evaluate_rag.py
+
+# Evaluation rapide (N questions)
+$env:MAX_EVAL_QUESTIONS="3"; poetry run python src/evaluation/evaluate_rag.py
+
+# Regenerer le dataset de test (apres modification du RAG)
+poetry run python src/evaluation/generate_test_dataset.py
+```
 
 ---

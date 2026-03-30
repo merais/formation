@@ -1,0 +1,48 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36" version="29.6.4">
+  <diagram name="Page-1" id="6Rq2lXo-uxkM7Nl-hTNW">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="o9tlmWbXzpv3hZ_rnY5_-3" edge="1" parent="1" source="o9tlmWbXzpv3hZ_rnY5_-1" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=none;" target="o9tlmWbXzpv3hZ_rnY5_-2" value="Ingestion">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="o9tlmWbXzpv3hZ_rnY5_-5" edge="1" parent="1" source="o9tlmWbXzpv3hZ_rnY5_-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=none;" target="o9tlmWbXzpv3hZ_rnY5_-4" value="Anonymisation">
+          <mxGeometry relative="1" y="10" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="o9tlmWbXzpv3hZ_rnY5_-8" edge="1" parent="1" source="o9tlmWbXzpv3hZ_rnY5_-1" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=none;" target="o9tlmWbXzpv3hZ_rnY5_-7" value="Identites RGPD">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="o9tlmWbXzpv3hZ_rnY5_-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="SOURCES&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;2 xlsx + Stava simulé&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="200" x="40" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="o9tlmWbXzpv3hZ_rnY5_-6" edge="1" parent="1" source="o9tlmWbXzpv3hZ_rnY5_-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;labelBackgroundColor=none;" target="o9tlmWbXzpv3hZ_rnY5_-4" value="DBT Filtre">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="o9tlmWbXzpv3hZ_rnY5_-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="RAW&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;activites_strava&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="200" x="360" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="o9tlmWbXzpv3hZ_rnY5_-10" edge="1" parent="1" source="o9tlmWbXzpv3hZ_rnY5_-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=none;" target="o9tlmWbXzpv3hZ_rnY5_-9" value="Regles&lt;div&gt;metier&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="o9tlmWbXzpv3hZ_rnY5_-4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="STAGING&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;employes · pratiques · activites · cache_distances&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="200" x="360" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="o9tlmWbXzpv3hZ_rnY5_-11" edge="1" parent="1" source="o9tlmWbXzpv3hZ_rnY5_-7" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;dashed=1;labelBackgroundColor=none;" target="o9tlmWbXzpv3hZ_rnY5_-9" value="Jointure&lt;br&gt;nominative">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="o9tlmWbXzpv3hZ_rnY5_-7" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="rh_privé&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;identites · vue_primes_nominatives&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="200" x="360" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="o9tlmWbXzpv3hZ_rnY5_-9" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffff88;strokeColor=#36393d;" value="GOLD&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;eligibilite_prime · bien_etre · impact_financier&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="200" x="680" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="o9tlmWbXzpv3hZ_rnY5_-12" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="META&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;pipeline_state · pipeline_runs&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="200" x="680" y="40" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,15 @@
+[project]
+name = "sport_data_orchestration"
+version = "1.0.0"
+requires-python = ">=3.12"
+dependencies = [
+    "psycopg2-binary",
+    "pandas",
+    "openpyxl",
+    "python-dotenv",
+    "requests",
+    "dbt-postgres>=1.10.0",
+]
+
+[tool.uv]
+dev-dependencies = []
